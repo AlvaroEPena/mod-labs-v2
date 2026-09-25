@@ -6,7 +6,7 @@
 import { getImage } from "astro:assets";
 import GalleryGrid from "./GalleryGrid.astro";
 import Icon from "../ui/Icon.astro";
-import { photoByFile } from "../media/picks";
+import { videoPoster } from "../media/picks";
 import { categories, photosFor, photos, projects, projectsInCategory, type CategorySlug } from "../../data/gallery";
 import { builds } from "../../data/builds";
 
@@ -27,7 +27,7 @@ const tabs = [
 ];
 const catTitle = (slug: CategorySlug) => categories.find((c) => c.slug === slug)?.short ?? slug;
 const posterFor = async (slug: string) => {
-  const src = slug === "halo-xbox" ? photoByFile("custom/halo-xbox-04.jpg") : photosFor(slug)[0];
+  const src = videoPoster(slug);
   return (await getImage({ src: src.image, width: 720, format: "webp", quality: 70 })).src;
 };
 const posters = Object.fromEntries(

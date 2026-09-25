@@ -1,5 +1,5 @@
 {
-  "_about": "Photo picks by manifest id (scratchpad photos/manifest.json, reproducible via dedupe.py). ids 1-54 = old-site imgs (already vetted), 55+ = album. Duplicates already removed. Excluded: reference diagrams (56,58,59), phone screenshots (11,95,96,137), game-library grids (83,336,347,406,407,435,436), near-identical bursts, blurry/irrelevant shots. EXIF (incl. GPS) must be stripped on export.",
+  "_about": "Photo picks by manifest id (scratchpad photos/manifest.json, reproducible via dedupe.py). ids 1-54 = old-site imgs (already vetted), 55+ = album. Duplicates already removed. Excluded: reference diagrams (56,58,59), phone screenshots (11,95,96,137), game-library grids (83,336,347,406,407,435,436), near-identical bursts, blurry/irrelevant shots. EXIF (incl. GPS) must be stripped on export. HISTORICAL RECORD ONLY (2026-09-24): no longer read by any script. Photos were migrated to src/data/photos.json + src/assets/gallery/photos/pNNNN.jpg (named by the ids below) and are now managed with `npm run admin`.",
   "categories": {
     "switch": {
       "title": "Nintendo Switch Modchips",

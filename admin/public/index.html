@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="admin-token" content="__ADMIN_TOKEN__" />
+    <title>Photo admin · Mod Labs</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="/app.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to the photos</a>
+
+    <header class="topbar">
+      <div class="wrap topbar-inner">
+        <p class="brand">
+          <span class="brand-mark" aria-hidden="true"></span>Mod Labs
+          <span class="brand-sub">Photo admin</span>
+        </p>
+        <nav class="views" aria-label="Views">
+          <button type="button" class="view-tab" data-view="gallery" aria-pressed="true">Gallery</button>
+          <button type="button" class="view-tab" data-view="trash" aria-pressed="false">
+            Trash <span class="tab-count" id="trash-count">0</span>
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <div class="wrap">
+      <section class="banner" id="banner" aria-live="polite" aria-label="Publishing status"></section>
+    </div>
+
+    <main id="main" class="wrap" tabindex="-1">
+      <div id="gallery-view">
+        <section class="panel upload" id="upload-panel" aria-labelledby="upload-title">
+          <h2 id="upload-title">Add photos</h2>
+          <p class="hint">
+            Photos are resized, turned the right way up and cleaned of hidden data (like GPS location)
+            automatically.
+          </p>
+          <div class="upload-grid">
+            <div class="field">
+              <label for="upload-project">Add them to</label>
+              <select id="upload-project" required></select>
+            </div>
+            <div class="field">
+              <span class="label" id="upload-files-label">Photos</span>
+              <label class="dropzone" id="dropzone" for="upload-input">
+                <input
+                  id="upload-input"
+                  type="file"
+                  multiple
+                  accept="image/*,.heic,.heif"
+                  aria-labelledby="upload-files-label upload-files-hint"
+                />
+                <span class="dropzone-title">Choose photos</span>
+                <span class="hint" id="upload-files-hint">or drag them here. JPEG, PNG or WebP.</span>
+              </label>
+            </div>
+          </div>
+          <ul class="upload-list" id="upload-list" aria-label="Photos to upload"></ul>
+          <div class="upload-actions">
+            <button type="button" class="btn primary" id="upload-start" disabled>Upload photos</button>
+            <button type="button" class="btn ghost" id="upload-clear" hidden>Clear list</button>
+          </div>
+        </section>
+
+        <p class="hint how-to" id="reorder-help">
+          Drag a photo to reorder it, or use its arrow buttons. With the grip button focused, the arrow keys
+          move it too. The first photo of each project is its cover on the site.
+        </p>
+        <nav class="jump" id="jump" aria-label="Jump to a category"></nav>
+        <div id="gallery" aria-busy="true"><p class="loading">Loading photos…</p></div>
+      </div>
+
+      <div id="trash-view" hidden>
+        <h2 class="view-title">Trash</h2>
+        <p class="hint">
+          Deleted photos wait here. Restore puts a photo back where it was. They are never published.
+        </p>
+        <div id="trash"></div>
+      </div>
+    </main>
+
+    <div class="toast-region wrap" aria-live="polite" role="status" id="status"></div>
+
+    <dialog id="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-text">
+      <img class="dialog-thumb" id="confirm-thumb" alt="" />
+      <h2 id="confirm-title">Delete this photo?</h2>
+      <p id="confirm-text">It goes to the Trash, and you can restore it from there.</p>
+      <div class="dialog-actions">
+        <button type="button" class="btn ghost" data-close="cancel" autofocus>Cancel</button>
+        <button type="button" class="btn danger" data-close="confirm">Move to trash</button>
+      </div>
+    </dialog>
+
+    <dialog id="move-dialog" aria-labelledby="move-title">
+      <img class="dialog-thumb" id="move-thumb" alt="" />
+      <h2 id="move-title">Move photo</h2>
+      <div class="field">
+        <label for="move-project">Move it to</label>
+        <select id="move-project"></select>
+      </div>
+      <p class="hint">It goes to the end of that project.</p>
+      <div class="dialog-actions">
+        <button type="button" class="btn ghost" data-close="cancel">Cancel</button>
+        <button type="button" class="btn primary" data-close="confirm">Move photo</button>
+      </div>
+    </dialog>
+  </body>
+</html>

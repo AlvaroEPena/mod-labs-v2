@@ -5,11 +5,10 @@ import SectionHead from "../components/ui/SectionHead.astro";
 import FinalCta from "../components/ui/FinalCta.astro";
 import Photo from "../components/media/Photo.astro";
 import Icon from "../components/ui/Icon.astro";
-import { photoByFile } from "../components/media/picks";
+import { aboutPhotos } from "../components/media/picks";
 import { site } from "../data/site";
 
-const bench = photoByFile("switch/switch-misc-02.jpg");
-const board = photoByFile("custom/gwii-14.jpg");
+const { bench, board } = aboutPhotos();
 ---
 
 <BaseLayout

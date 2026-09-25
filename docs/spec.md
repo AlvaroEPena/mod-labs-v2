@@ -176,3 +176,23 @@ Not in scope: editing text/prices, online access.
 - Processing logic is shared with the migration (`scripts/lib/process-photo.mjs`). Pure list operations
   (`admin/lib/photos.ts`: move/reorder/delete/restore/add, plus validation like unique ids and known
   projects) are unit tested. Server handlers are tested for the token/Host/Origin guards.
+
+**Implementation notes (2026-09-24, frontend build of §15)** — where the build made a concrete choice or deviated:
+- *Shared contract:* `categories`/`projects` moved verbatim from `gallery.ts` to import-free `src/data/projects.ts`
+  (re-exported by `gallery.ts`, API unchanged), and the photos.json contract/validation/format lives in
+  `src/lib/gallery/records.ts`. Why: the admin runs in plain Node and can't import `gallery.ts` (it uses
+  `import.meta.glob`), and the rules must not be duplicated. Build-time checks add: file name must equal
+  `photos/p<id>.jpg`, width/height must match the actual file, and the list must not be empty.
+- *photos.json format:* one photo per line (stable key order), always written **grouped by project** in
+  `projects.ts` order (each project in its display order). The file is then fully determined by what the
+  site shows, so any undo (move out and back, delete then restore) gives identical bytes and a clean git diff.
+  The migration regrouped the old per-category export order this way; per-project display order is unchanged.
+  It's in `.prettierignore`.
+- *Thumbnails* carry the token as `?t=` (an `<img>` can't send headers); only the thumb route accepts it,
+  and every response sends `Referrer-Policy: no-referrer`. All other API calls need the `X-Admin-Token` header.
+- *Uploads* are one file per request (XHR for upload progress; a 40 MB per-file limit, counted while reading).
+- *Restore* returns a photo to its exact old index if nothing around it changed (photos.json then ends up
+  byte-identical), else right after its old neighbour, else first (if it was the cover) or last in its project.
+- *"Unpublished changes"* is the number of changed files under the gallery paths since the last **git commit**
+  (git can't know what was deployed). The banner always shows the `npm run deploy` hint.
+- *Picks:* the about page's two photos also moved from file names to ids (254, 351).

@@ -23,3 +23,6 @@ coverage/
 npm-debug.log*
 .DS_Store
 .idea/
+
+# local photo admin trash (deleted photos, restorable from the admin)
+.admin-trash/

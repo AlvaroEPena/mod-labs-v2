@@ -40,7 +40,10 @@ function scheduleWrite() {
   }, 250);
 }
 
-/** `file` is relative to src/assets/gallery, e.g. "switch/switch-misc-01.jpg". */
+/**
+ * `file` is relative to src/assets/gallery, e.g. "photos/p0332.jpg". Ids are never reused, and the
+ * key includes size + mtime, so moving, restoring or replacing a photo can't serve a stale LQIP.
+ */
 export function lqip(file: string): Promise<string> {
   const abs = path.join(GALLERY_DIR, file);
   const stat = fs.statSync(abs);

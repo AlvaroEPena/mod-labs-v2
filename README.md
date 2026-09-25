@@ -33,17 +33,49 @@ Needs Node ≥ 22.12. It's built and tested on Node 24 with npm 11 on Windows.
 | `npm run check` | Type checks, lint and unit tests |
 | `npm run build` | Production build to `dist/` |
 | `npm run test:e2e` | Playwright end-to-end, accessibility and responsive tests |
-| `npm run photos` | Re-exports the curated gallery photos (resizes them and strips EXIF/GPS). Run it only after changing `docs/gallery-curation.json`. |
+| `npm run admin` | Opens the local photo admin at http://127.0.0.1:4400 (this computer only). See "Managing photos" below. |
 | `npm run deploy` | Runs the safety checks, builds and deploys to Cloudflare. See the checklist below. |
 
 ## Editing content
 All the text lives in `src/data/`:
 - `services.ts`: prices and what's included
 - `builds.ts`: the GWii and Wii Miicro commissions
-- `gallery.ts`: categories and project write-ups
+- `projects.ts`: gallery categories and project write-ups
+- `photos.json`: the gallery photos and their order (use `npm run admin` rather than editing by hand)
 - `faq.ts`: the FAQ
 - `reviews.ts`: **real** reviews only. The section stays hidden while this is empty.
 - `site.ts`: social links. Empty links stay hidden.
+
+## Managing photos
+Gallery photos are managed with a small admin page that runs **only on your computer**. It is
+never uploaded with the site, needs no account, and costs nothing.
+
+1. In this folder, run `npm run admin` and open the address it prints (http://127.0.0.1:4400).
+   Leave the terminal open while you work; press Ctrl+C there to stop it.
+2. Make your changes. Each one is saved straight away:
+   - **Reorder:** drag a photo onto a new spot in the same project, or use its arrow buttons.
+     The ★ button makes a photo the project's **cover** (the first photo is the one the site shows first).
+     Keyboard: focus a photo's grip button (⠿) and use the arrow keys, Home or End.
+   - **Move…** puts a photo in another project (it lands at the end of that project).
+   - **Delete** asks first, then moves the photo to the **Trash**. Nothing is lost: use **Undo**
+     right after, or open the Trash tab later and press **Restore** (it goes back where it was).
+   - **Add photos:** choose the project, pick or drag in one or more photos, then press Upload.
+     Each photo is turned upright, resized to at most 2048 px and saved as a JPEG with **all hidden
+     data removed** (including GPS location). iPhone HEIC photos can't be read: set the iPhone to
+     Settings → Camera → Formats → Most Compatible, or share/export them as JPEG first.
+3. Optional preview: in a second terminal run `npm run dev` and open http://localhost:4321/gallery.
+   It refreshes as you make changes.
+4. **Publish:** run `npm run deploy`. The admin's banner shows how many gallery files have
+   changed since the last git commit.
+
+Good to know:
+- `src/data/photos.json` is the list of photos (order, project, size). The photos themselves are
+  `src/assets/gallery/photos/p0001.jpg` and so on, named by a number that is never reused.
+- The Trash lives in `.admin-trash/` in this folder. It is never published. To free the space for
+  good, delete that folder (this can't be undone).
+- If a photo picked for the home page, the builds page or the about page is moved or deleted, the
+  site shows the first photo of that project or category instead. Nothing breaks.
+- To use another port: `npm run admin -- --port 4401`.
 
 ## Environment variables
 | Name | Where | Purpose |

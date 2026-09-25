@@ -2,6 +2,5 @@ dist
 .astro
 .wrangler
 node_modules
-src/data/photos.generated.json
-scripts/photo-sources.json
+src/data/photos.json
 package-lock.json
