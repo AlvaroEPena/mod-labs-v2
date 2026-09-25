@@ -1,19 +1,19 @@
 # Progress Log
 
-**Current phase:** 7-review fixes (in progress)
+**Current phase:** 8-handoff
 <!-- phases: 1-intake · 2-research · 3-spec-approved · 4-scaffolded · 5-building (slice N) · 6-qa · 7-review · 8-done -->
-**Next step:** finish fix round (backend + frontend agents), rerun all gates incl. e2e, commit, handoff screenshots
+**Next step:** owner: create Cloudflare + Resend accounts, follow README deploy checklist; optional: per-photo alt text, zod/mini for JS budget
 
 ## Gate status
 | Gate | Status | Last run |
 |---|---|---|
-| typecheck | – | |
-| lint | – | |
-| unit | – | |
-| build | – | |
-| e2e | – | |
-| a11y | – | |
-| review | – | |
+| typecheck | pass (0 errors) | 2026-09-24 |
+| lint | pass | 2026-09-24 |
+| unit | pass 104/104 | 2026-09-24 |
+| build | pass 16 pages | 2026-09-24 |
+| e2e | pass 257, 0 fail, 51 intentional skips | 2026-09-24 |
+| a11y | axe clean all routes; Lighthouse a11y 100 (/), 96 (/gallery, content-visibility artifact) | 2026-09-24 |
+| review | no Critical; H1/H2 guarded by predeploy check + README; M1–M5 fixed | 2026-09-24 |
 
 ## Log
 <!-- newest first: ### <date> — <phase>  · done · decisions · open issues -->
@@ -52,3 +52,8 @@
 - Done by orchestrator: README + deploy checklist, scripts/predeploy-check.mjs wired into `npm run deploy` (c81432b); honeypot renamed in schema → hp / hp_7f3 (uncommitted, waiting for agents); builds.ts "library" wording.
 - Fix round delegated: backend (M1, H1 server-side, L2, L3, L7, _redirects 301, honeypot); frontend (QA bugs 1/2/4, M3, L1, L4, L5, turnstile action, remove astro redirect, M4, "runs cooler" copy, optional zod/mini).
 - Interrupted once by API rate limit (agents had made no edits); resumed.
+
+### 2026-09-24 — 7-review fixes (done) → 8-handoff
+- Backend ae078bb, frontend fixes commit: all review M-items + QA bugs fixed. Gates rerun by orchestrator: check 0 errors, 104 unit, build OK, e2e 257 pass / 0 fail, audit 0.
+- Accepted: /book & /quote JS 31.1 KB gz total (zod lazy on first focus; 1.1 KB over budget) → optional zod/mini later. No-JS form path can't pass Turnstile (noscript note shown). Alt text generic.
+- NOT deployed. Owner must do README deploy checklist (Cloudflare, Turnstile, Resend, secrets, .env.production).
