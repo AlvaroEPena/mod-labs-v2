@@ -378,9 +378,14 @@
     position: relative;
     display: inline-flex;
     align-items: baseline;
+    justify-content: center;
+    /* never let a neighbouring label squeeze the badge (it would push the number off-centre) */
+    flex: none;
+    white-space: nowrap;
+    line-height: 1.1;
     gap: 0.15rem;
     overflow: hidden;
-    padding: 0.2rem 0.7rem 0.25rem;
+    padding: 0.3rem 0.7rem;
     border-radius: 0.6rem;
     font-family: var(--font-display);
     font-weight: 800;

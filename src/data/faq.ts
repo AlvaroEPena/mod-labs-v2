@@ -28,7 +28,8 @@ export const faqs: Faq[] = [
   },
   {
     q: "What do I need to bring?",
-    a: "The console and its power supply or charger. For repairs, bring the device plus a note on what happened right before the issue started.",
+    a: "The console and its power supply or charger. For Switch mods, bring a microSD card too: 128GB works, but I recommend 256GB or more. Buy it from a reputable seller, because there are a lot of fake SD cards out there that report the wrong size and corrupt your data. For repairs, bring the device plus a note on what happened right before the issue started.",
+    home: true,
   },
   {
     q: "Is there a warranty?",

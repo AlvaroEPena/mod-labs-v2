@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { builds } from "../../src/data/builds";
+import { faqs } from "../../src/data/faq";
 import { categories, photos, photosFor, projects } from "../../src/data/gallery";
 import { services } from "../../src/data/services";
 import { bookSchema, quoteSchema, buildRequestType } from "../../src/lib/forms/schema";
@@ -26,6 +27,21 @@ describe("content integrity", () => {
   it("never mentions game libraries or preloaded games in customer-facing copy", () => {
     const copy = JSON.stringify({ services, builds, projects });
     expect(copy).not.toMatch(/game(s)? (list|archive|librar)|preload|curated .*titles|selection of games/i);
+  });
+});
+
+describe("owner-confirmed details", () => {
+  it("ships every commission build with a USB-C PD power brick but no cable", () => {
+    for (const b of builds) {
+      expect(b.included.some((i) => /USB-C PD power brick/.test(i)), b.slug).toBe(true);
+      expect(b.notIncluded, b.slug).toContain("USB-C cable");
+    }
+  });
+
+  it("tells Switch customers to bring a genuine 256GB+ microSD card", () => {
+    const bring = faqs.find((f) => f.q === "What do I need to bring?");
+    expect(bring?.a).toMatch(/256GB/);
+    expect(bring?.a).toMatch(/reputable seller/);
   });
 });
 

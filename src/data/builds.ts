@@ -34,8 +34,8 @@ export const builds: Build[] = [
       { title: "Battery monitoring", detail: "Software battery indicator plus LED charge status." },
       { title: "Temperature readout", detail: "Integrated monitoring for safe, reliable operation." },
     ],
-    included: ["GWii handheld console"],
-    notIncluded: [],
+    included: ["GWii handheld console", "USB-C PD power brick"],
+    notIncluded: ["USB-C cable"],
     project: "gwii",
   },
   {
@@ -54,7 +54,7 @@ export const builds: Build[] = [
       { title: "Ultra-compact", detail: "Light, tiny and extremely portable." },
     ],
     included: ["Wii Miicro Deluxe console", "20W USB-C PD power brick", "128GB USB drive"],
-    notIncluded: ["Controllers", "Cables", "Sensor bar"],
+    notIncluded: ["USB-C cable", "Controllers", "HDMI cable", "Sensor bar"],
     project: "wii-miicro",
   },
 ];

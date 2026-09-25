@@ -8,10 +8,13 @@ import { builds } from "../../data/builds";
 
 const photo = heroPhoto();
 const gwii = builds.find((b) => b.slug === "gwii")!;
-const fromPrice = Math.min(...builds.map((b) => b.price));
+/** Lowest price in a group, shown as "$X+" so the strip stays correct when prices change. */
+const fromPrice = (prices: (number | null)[]) => `$${Math.min(...prices.filter((p): p is number => p !== null))}+`;
+const rgh = services.find((s) => s.id === "xbox-360-rgh")!;
 const strip = [
-  ...services.filter((s) => s.id === "switch-oled" || s.id === "xbox-360-rgh").map((s) => ({ label: s.name, value: formatPrice(s.price) })),
-  { label: "Custom builds", value: `$${fromPrice}+` },
+  { label: rgh.name, value: formatPrice(rgh.price) },
+  { label: "Switch", value: fromPrice(services.filter((s) => s.platform === "switch").map((s) => s.price)) },
+  { label: "Custom builds", value: fromPrice(builds.map((b) => b.price)) },
 ];
 ---
 
