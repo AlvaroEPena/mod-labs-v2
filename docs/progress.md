@@ -1,8 +1,8 @@
 # Progress Log
 
-**Current phase:** 5-building
+**Current phase:** 6-qa + 7-review (parallel)
 <!-- phases: 1-intake · 2-research · 3-spec-approved · 4-scaffolded · 5-building (slice N) · 6-qa · 7-review · 8-done -->
-**Next step:** integrate frontend + backend agent output, run gates, then QA
+**Next step:** fix QA bugs + Critical/High review findings, re-run gates, handoff
 
 ## Gate status
 | Gate | Status | Last run |
@@ -37,3 +37,10 @@
 - 188 photos exported to src/assets/gallery (≤2048px, metadata stripped, 72.6 MB; verified 0 files with EXIF). Halo video → public/media (no GPS atoms).
 - Content data in src/data (site, services, builds, gallery, faq, reviews[] empty), shared form contract src/lib/forms/schema.ts, 6 unit tests passing. check/build green. Commits ac72ad0 + ownership commit.
 - Launched in parallel: backend-engineer (worker API, _headers) and frontend-engineer (design, logo, all pages, gallery, forms UI).
+
+### 2026-09-24 — 5-building (done)
+- Backend (35ae8b6): Worker /api/book + /api/quote, Turnstile, Zod, photo sniffing, Resend via fetch, EMAIL_MODE log|send, rate limit binding + fallback, _headers CSP. 44 worker tests.
+- Frontend (46fb8e5): Oxanium + Geist, new chip/flask logo, circuit hero, all routes, gallery + PhotoSwipe, forms UI (zod client validation, canvas downscale, Turnstile). Agent-reported Lighthouse mobile 95–100.
+- Orchestrator: user asked to drop photo #57 and merge clear RGB Xbox into "Custom Halo 4 RGH + RGB Xbox 360" (fa18491). "Get a free quote" → "Get a quote" (no free claim from owner).
+- Gates at integration: check 0 errors, 78 unit tests pass, build 16 pages (~6s warm).
+- Deferred: per-photo alt text (currently "<project>, photo n of m").
