@@ -1,0 +1,44 @@
+---
+import Icon from "../ui/Icon.astro";
+import type { IconName } from "../ui/icons";
+
+interface Props {
+  title: string;
+  steps: { icon: IconName; text: string }[];
+}
+const { title, steps } = Astro.props;
+---
+
+<aside class="card p-6 sm:p-7" aria-labelledby="aside-title">
+  <h2 id="aside-title" class="text-xl">{title}</h2>
+  <ol class="mt-5 grid gap-4">
+    {
+      steps.map((s, i) => (
+        <li class="flex gap-3.5">
+          <span class="aside-step" aria-hidden="true">
+            <Icon name={s.icon} size={18} />
+          </span>
+          <span class="pt-1 leading-relaxed text-muted">
+            <span class="sr-only">Step {i + 1}: </span>
+            {s.text}
+          </span>
+        </li>
+      ))
+    }
+  </ol>
+  <slot />
+</aside>
+
+<style>
+  .aside-step {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.7rem;
+    color: var(--color-cyan);
+    border: 1px solid rgb(0 229 255 / 0.4);
+    background: rgb(0 229 255 / 0.06);
+  }
+</style>

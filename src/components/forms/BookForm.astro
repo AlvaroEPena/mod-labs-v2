@@ -1,0 +1,35 @@
+---
+import LabForm from "./LabForm.astro";
+import { bookServiceOptions, fieldNames as F } from "../../lib/forms/schema";
+import { serviceIds } from "../../data/services";
+
+/** "Switch Lite modchip ($140)" → { name: "Switch Lite modchip", price: "$140" } */
+const split = (opt: string) => {
+  const m = opt.match(/^(.*)\s\((\$\d+)\)$/);
+  return m ? { name: m[1], price: m[2] } : { name: opt, price: "" };
+};
+---
+
+<LabForm kind="book" submitLabel="Send booking request" messagePlaceholder="Which console and model, anything wrong with it, and when you'd like to drop it off.">
+  <fieldset slot="top" class="grid gap-3" aria-describedby="book-services-error">
+    <legend class="field-label">Which mod? <span class="font-normal text-dim">Pick one or more</span></legend>
+    <div class="grid gap-3 sm:grid-cols-2">
+      {
+        bookServiceOptions.map((opt, i) => {
+          const s = split(opt);
+          return (
+            <label class="tile">
+              <input type="checkbox" name={F.services} value={opt} data-service-id={serviceIds[i]} />
+              <span class="flex flex-1 items-center justify-between gap-3">
+                <span class="font-semibold text-fg">{s.name}</span>
+                {s.price && <span class="font-display text-lg font-bold text-cyan">{s.price}</span>}
+              </span>
+            </label>
+          );
+        })
+      }
+    </div>
+    <p class="field-error" id="book-services-error" data-error-for={F.services}></p>
+  </fieldset>
+  <Fragment slot="message-hint">At least 20 characters. The console model helps (e.g. "OLED, white joy-cons").</Fragment>
+</LabForm>

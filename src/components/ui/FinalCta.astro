@@ -1,0 +1,44 @@
+---
+import Icon from "./Icon.astro";
+import LogoMark from "../brand/LogoMark.astro";
+
+interface Props {
+  title?: string;
+  body?: string;
+}
+const {
+  title = "Ready to mod your console?",
+  body = "Book a priced mod in a couple of minutes, or tell me what you have in mind and I'll get back to you with a clear quote.",
+} = Astro.props;
+---
+
+<section class="section-y" aria-labelledby="final-cta-title">
+  <div class="container-x">
+    <div class="final reveal relative isolate overflow-hidden rounded-[1.75rem] px-6 py-14 text-center sm:px-12 sm:py-20">
+      <div class="pcb absolute inset-0 -z-10" aria-hidden="true"></div>
+      <LogoMark size={64} id="cta-mk" class="final-mark mx-auto" />
+      <h2 id="final-cta-title" class="mx-auto mt-6 max-w-2xl text-3xl sm:text-5xl">{title}</h2>
+      <p class="lead mx-auto mt-4 max-w-xl">{body}</p>
+      <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+        <a href="/book" class="btn btn-primary btn-lg">Book a service <Icon name="arrow" size={18} /></a>
+        <a href="/quote" class="btn btn-ghost btn-lg">Get a quote</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .final {
+    background:
+      radial-gradient(30rem 18rem at 15% 0%, rgb(0 229 255 / 0.2), transparent 70%),
+      radial-gradient(30rem 20rem at 90% 100%, rgb(168 85 247 / 0.3), transparent 70%),
+      linear-gradient(180deg, #11154a, #0b0d26);
+    border: 1px solid rgb(0 229 255 / 0.25);
+    box-shadow:
+      0 0 0 1px rgb(168 85 247 / 0.15) inset,
+      0 40px 100px -40px rgb(168 85 247 / 0.6);
+  }
+  .final :global(.final-mark) {
+    filter: drop-shadow(0 0 22px rgb(0 229 255 / 0.5));
+  }
+</style>

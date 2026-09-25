@@ -1,0 +1,34 @@
+---
+interface Props {
+  eyebrow?: string;
+  title: string;
+  /** highlighted words inside the title (rendered with the neon gradient) */
+  highlight?: string;
+  intro?: string;
+  align?: "left" | "center";
+  as?: "h1" | "h2";
+  id?: string;
+  class?: string;
+}
+const { eyebrow, title, highlight, intro, align = "left", as: Tag = "h2", id, class: cls } = Astro.props;
+const parts = highlight && title.includes(highlight) ? title.split(highlight) : null;
+---
+
+<div class:list={["reveal max-w-3xl", align === "center" && "mx-auto text-center", cls]}>
+  {eyebrow && <p class:list={["eyebrow mb-4", align === "center" && "justify-center"]}>{eyebrow}</p>}
+  <Tag id={id} class="text-3xl sm:text-4xl lg:text-5xl">
+    {
+      parts ? (
+        <>
+          {parts[0]}
+          <span class="text-gradient">{highlight}</span>
+          {parts[1]}
+        </>
+      ) : (
+        title
+      )
+    }
+  </Tag>
+  {intro && <p class:list={["lead mt-4", align === "center" && "mx-auto max-w-2xl"]}>{intro}</p>}
+  <slot />
+</div>

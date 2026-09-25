@@ -1,0 +1,108 @@
+---
+import { Font } from "astro:assets";
+import "../styles/global.css";
+import Header from "../components/layout/Header.astro";
+import Footer from "../components/layout/Footer.astro";
+import MobileCtaBar from "../components/layout/MobileCtaBar.astro";
+import { ldJson } from "../components/layout/seo";
+import { site } from "../data/site";
+
+interface Props {
+  /** page title without the brand suffix; omit on the home page */
+  title?: string;
+  description?: string;
+  /** absolute path of the social image */
+  image?: string;
+  noindex?: boolean;
+  /** hide the sticky mobile Book/Quote bar (form pages) */
+  ctaBar?: boolean;
+  jsonLd?: unknown[];
+}
+
+const {
+  title,
+  description = site.description,
+  image = "/og.png",
+  noindex = false,
+  ctaBar = true,
+  jsonLd = [],
+} = Astro.props;
+
+const siteUrl = (Astro.site?.toString() ?? site.url).replace(/\/$/, "");
+const fullTitle = title ? `${title} | ${site.name}` : `${site.name} · Console Modding & Repair in Seattle`;
+const path = Astro.url.pathname.replace(/\.html$/, "").replace(/\/index$/, "") || "/";
+const canonical = `${siteUrl}${path === "/" ? "/" : path.replace(/\/$/, "")}`;
+const ogImage = `${siteUrl}${image}`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    {noindex ? <meta name="robots" content="noindex" /> : <link rel="canonical" href={canonical} />}
+    <meta name="theme-color" content="#070815" />
+    <meta name="color-scheme" content="dark" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Mod Labs logo on a neon circuit-board background" />
+    <meta property="og:locale" content="en_US" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <Font cssVariable="--font-oxanium" preload />
+    <Font cssVariable="--font-geist" preload />
+
+    <script is:inline>
+      // JS-on flag + LQIP fade: mark a photo frame loaded when its <img> finishes (capture phase catches every img).
+      (function () {
+        const d = document.documentElement;
+        d.classList.add("js");
+        const done = function (e) {
+          const t = e.target;
+          if (t && t.tagName === "IMG") {
+            const f = t.closest(".ph");
+            if (f) f.classList.add("is-loaded");
+          }
+        };
+        document.addEventListener("load", done, true);
+        document.addEventListener("error", done, true);
+        // scroll-reveal fallback for browsers without scroll-driven animations
+        if (!(window.CSS && CSS.supports("animation-timeline: view()")) && matchMedia("(prefers-reduced-motion: no-preference)").matches && "IntersectionObserver" in window) {
+          d.classList.add("io-reveal");
+        }
+      })();
+    </script>
+
+    {jsonLd.map((d) => <script type="application/ld+json" set:html={ldJson(d)} />)}
+    <slot name="head" />
+  </head>
+  <body class:list={[ctaBar && "has-cta-bar"]}>
+    <a href="#main" class="skip-link sr-only-focusable">Skip to content</a>
+    <Header />
+    <main id="main" tabindex="-1" class="flex-1 outline-none">
+      <slot />
+    </main>
+    <Footer />
+    {ctaBar && <MobileCtaBar />}
+    <script>
+      import "../scripts/reveal";
+    </script>
+  </body>
+</html>

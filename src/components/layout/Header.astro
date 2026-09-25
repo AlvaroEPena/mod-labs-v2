@@ -1,0 +1,241 @@
+---
+import Logo from "../brand/Logo.astro";
+import Icon from "../ui/Icon.astro";
+import { mainNav, isCurrent } from "./nav";
+
+const path = Astro.url.pathname;
+---
+
+<header class="site-header glass">
+  <div class="container-x flex h-(--header-h) items-center justify-between gap-4">
+    <a href="/" class="-ml-1 flex min-h-11 items-center rounded-lg px-1" aria-label="Mod Labs home">
+      <Logo id="hdr" size="md" />
+    </a>
+
+    <nav aria-label="Main" class="hidden lg:block">
+      <ul class="flex items-center gap-1">
+        {
+          mainNav.map((l) => (
+            <li>
+              <a href={l.href} class="nav-link" aria-current={isCurrent(path, l.href) ? "page" : undefined}>
+                {l.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <div class="flex items-center gap-2">
+      <a href="/quote" class="btn btn-ghost btn-sm hidden lg:inline-flex">Get a quote</a>
+      <a href="/book" class="btn btn-primary btn-sm hidden md:inline-flex">Book a service</a>
+      <button type="button" class="burger grid lg:hidden" popovertarget="mobile-menu" aria-label="Menu" aria-controls="mobile-menu">
+        <span class="burger-lines" aria-hidden="true"><span></span><span></span><span></span></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div id="mobile-menu" popover class="mobile-menu">
+  <nav aria-label="Mobile" class="container-x pt-3 pb-6">
+    <ul class="grid gap-1">
+      {
+        mainNav.map((l, i) => (
+          <li style={`--i:${i}`}>
+            <a href={l.href} class="mm-link" aria-current={isCurrent(path, l.href) ? "page" : undefined}>
+              <span>{l.label}</span>
+              <Icon name="arrow" size={18} />
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+    <div class="mt-5 grid grid-cols-2 gap-3">
+      <a href="/quote" class="btn btn-ghost">Get a quote</a>
+      <a href="/book" class="btn btn-primary">Book a service</a>
+    </div>
+    <p class="mt-5 flex items-center gap-2 text-sm text-(--color-dim)">
+      <Icon name="pin" size={16} /> Seattle local drop-off · Mail-in welcome
+    </p>
+  </nav>
+</div>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    border-width: 0 0 1px;
+    view-transition-name: site-header;
+  }
+  .nav-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0 0.85rem;
+    border-radius: 0.7rem;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 0.97rem;
+    color: var(--color-muted);
+    text-decoration: none;
+    transition:
+      color 0.2s,
+      background-color 0.2s;
+  }
+  .nav-link:hover {
+    color: var(--color-fg);
+    background: rgb(255 255 255 / 0.04);
+  }
+  .nav-link[aria-current="page"] {
+    color: var(--color-fg);
+  }
+  .nav-link[aria-current="page"]::after {
+    content: "";
+    position: absolute;
+    left: 0.85rem;
+    right: 0.85rem;
+    bottom: 0.35rem;
+    height: 2px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--color-cyan), var(--color-purple));
+    box-shadow: 0 0 10px rgb(0 229 255 / 0.7);
+  }
+
+  .burger {
+    place-items: center;
+    width: 2.875rem;
+    height: 2.875rem;
+    border-radius: 0.8rem;
+    border: 1px solid rgb(125 242 255 / 0.28);
+    background: rgb(20 26 68 / 0.6);
+    color: var(--color-fg);
+    cursor: pointer;
+  }
+  .burger-lines {
+    position: relative;
+    display: block;
+    width: 1.25rem;
+    height: 0.9rem;
+  }
+  .burger-lines span {
+    position: absolute;
+    left: 0;
+    height: 2px;
+    width: 100%;
+    border-radius: 2px;
+    background: currentColor;
+    transition:
+      transform 0.3s var(--ease-out-expo),
+      opacity 0.2s;
+  }
+  .burger-lines span:nth-child(1) {
+    top: 0;
+  }
+  .burger-lines span:nth-child(2) {
+    top: calc(50% - 1px);
+    width: 70%;
+  }
+  .burger-lines span:nth-child(3) {
+    bottom: 0;
+  }
+  :global(body:has(#mobile-menu:popover-open)) .burger-lines span:nth-child(1) {
+    transform: translateY(0.4rem) rotate(45deg);
+  }
+  :global(body:has(#mobile-menu:popover-open)) .burger-lines span:nth-child(2) {
+    opacity: 0;
+  }
+  :global(body:has(#mobile-menu:popover-open)) .burger-lines span:nth-child(3) {
+    transform: translateY(-0.4rem) rotate(-45deg);
+  }
+
+  .mobile-menu {
+    position: fixed;
+    inset: var(--header-h) 0 auto 0;
+    width: 100%;
+    max-width: none;
+    max-height: calc(100dvh - var(--header-h));
+    overflow-y: auto;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-bottom: 1px solid var(--color-line-soft);
+    color: var(--color-fg);
+    background: rgb(9 10 28 / 0.97);
+    box-shadow: 0 30px 60px -20px rgb(0 0 0 / 0.8);
+  }
+  .mobile-menu::backdrop {
+    top: 4rem; /* keep the header (and its close button) undimmed */
+    background: rgb(3 4 12 / 0.55);
+  }
+  .mm-link {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 3.25rem;
+    padding: 0 0.75rem;
+    border-radius: 0.8rem;
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 600;
+    text-decoration: none;
+    color: var(--color-fg);
+  }
+  .mm-link svg {
+    color: var(--color-cyan);
+  }
+  .mm-link:hover,
+  .mm-link[aria-current="page"] {
+    background: rgb(0 229 255 / 0.07);
+  }
+  .mm-link[aria-current="page"] span {
+    color: var(--color-cyan);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .mobile-menu {
+      transition:
+        opacity 0.25s ease,
+        transform 0.35s var(--ease-out-expo),
+        overlay 0.35s allow-discrete,
+        display 0.35s allow-discrete;
+      opacity: 0;
+      transform: translateY(-12px);
+    }
+    .mobile-menu:popover-open {
+      opacity: 1;
+      transform: none;
+    }
+    @starting-style {
+      .mobile-menu:popover-open {
+        opacity: 0;
+        transform: translateY(-12px);
+      }
+    }
+    .mobile-menu:popover-open li {
+      animation: mm-in 0.45s var(--ease-out-expo) both;
+      animation-delay: calc(0.04s + var(--i) * 0.035s);
+    }
+  }
+  @keyframes mm-in {
+    from {
+      opacity: 0;
+      transform: translateX(-10px);
+    }
+  }
+</style>
+
+<script>
+  // Popover handles open/close, Esc and light-dismiss natively. We just move focus in and close on navigation.
+  const menu = document.getElementById("mobile-menu");
+  menu?.addEventListener("toggle", (e) => {
+    if ((e as ToggleEvent).newState === "open") menu.querySelector<HTMLElement>("a")?.focus();
+  });
+  menu?.addEventListener("click", (e) => {
+    if ((e.target as Element).closest("a")) menu.hidePopover();
+  });
+  matchMedia("(min-width: 64rem)").addEventListener("change", (m) => {
+    if (m.matches && menu?.matches(":popover-open")) menu.hidePopover();
+  });
+</script>

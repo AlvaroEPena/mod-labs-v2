@@ -1,0 +1,294 @@
+---
+/**
+ * Shared request-form shell for /book and /quote.
+ * Progressive enhancement: a real multipart POST to the Worker that works without JS (native
+ * required/minlength checks, 303 back with ?sent=1 / ?error=code). src/scripts/forms/controller.ts
+ * takes over when JS runs: zod validation with the shared schema, fetch + inline states.
+ * Field names come from `fieldNames` in the shared contract.
+ */
+import Icon from "../ui/Icon.astro";
+import Turnstile from "./Turnstile.astro";
+import { deliveryOptions, fieldNames as F, PHOTO_MAX_BYTES, PHOTO_MAX_FILES } from "../../lib/forms/schema";
+
+interface Props {
+  kind: "book" | "quote";
+  submitLabel: string;
+  /** extra data-* for the controller (JSON maps, etc.) */
+  data?: Record<string, string>;
+  messagePlaceholder?: string;
+}
+const { kind, submitLabel, data = {}, messagePlaceholder } = Astro.props;
+const id = kind;
+const action = `/api/${kind}`;
+const deliveryHints: Record<string, string> = {
+  [deliveryOptions[0]]: "Fast turnaround, usually same or next day.",
+  [deliveryOptions[1]]: "We'll sort out shipping and timing before you send anything.",
+};
+const e = (name: string) => `${id}-${name}-error`;
+const dataAttrs = Object.fromEntries(Object.entries(data).map(([k, v]) => [`data-${k}`, v]));
+---
+
+<div class="form-shell" data-form-shell>
+  <form
+    id={id}
+    class="lab-form"
+    method="post"
+    action={action}
+    enctype="multipart/form-data"
+    data-lab-form={kind}
+    data-max-files={PHOTO_MAX_FILES}
+    data-max-bytes={PHOTO_MAX_BYTES}
+    aria-describedby={`${id}-status`}
+    {...dataAttrs}
+  >
+    <div id={`${id}-status`} class="form-status" role="status" aria-live="polite" tabindex="-1"></div>
+
+    <div class="grid gap-7">
+      <slot name="top" />
+
+      <div class="grid gap-5 sm:grid-cols-2">
+        <div>
+          <label class="field-label" for={`${id}-name`}>Your name</label>
+          <input
+            class="input"
+            id={`${id}-name`}
+            name={F.name}
+            type="text"
+            autocomplete="name"
+            required
+            minlength="2"
+            maxlength="80"
+            aria-describedby={e("name")}
+          />
+          <p class="field-error" id={e("name")} data-error-for={F.name}></p>
+        </div>
+        <div>
+          <label class="field-label" for={`${id}-email`}>Email</label>
+          <input
+            class="input"
+            id={`${id}-email`}
+            name={F.email}
+            type="email"
+            inputmode="email"
+            autocomplete="email"
+            required
+            maxlength="254"
+            aria-describedby={e("email")}
+          />
+          <p class="field-error" id={e("email")} data-error-for={F.email}></p>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="field-label" for={`${id}-phone`}>Phone <span class="optional">optional</span></label>
+          <input
+            class="input sm:max-w-xs"
+            id={`${id}-phone`}
+            name={F.phone}
+            type="tel"
+            inputmode="tel"
+            autocomplete="tel"
+            maxlength="30"
+            aria-describedby={`${id}-phone-hint ${e("phone")}`}
+          />
+          <p class="field-hint mt-1.5" id={`${id}-phone-hint`}>If you'd rather text. I'll reply by email either way.</p>
+          <p class="field-error" id={e("phone")} data-error-for={F.phone}></p>
+        </div>
+      </div>
+
+      <fieldset class="grid gap-3" aria-describedby={e("delivery")}>
+        <legend class="field-label">How will you get it to me?</legend>
+        <div class="grid gap-3 sm:grid-cols-2">
+          {
+            deliveryOptions.map((opt, i) => (
+              <label class="tile items-start">
+                <input type="radio" name={F.delivery} value={opt} required checked={i === 0} class="mt-0.5" />
+                <span>
+                  <span class="block font-semibold text-fg">{opt}</span>
+                  <span class="mt-0.5 block text-sm text-muted">{deliveryHints[opt]}</span>
+                </span>
+              </label>
+            ))
+          }
+        </div>
+        <p class="field-error" id={e("delivery")} data-error-for={F.delivery}></p>
+      </fieldset>
+
+      <div>
+        <div class="flex items-baseline justify-between gap-3">
+          <label class="field-label" for={`${id}-message`}>Message</label>
+          <span class="field-hint tabular-nums" aria-hidden="true"><span data-count>0</span> / 2000</span>
+        </div>
+        <textarea
+          class="input"
+          id={`${id}-message`}
+          name={F.message}
+          required
+          minlength="20"
+          maxlength="2000"
+          rows="6"
+          placeholder={messagePlaceholder}
+          aria-describedby={`${id}-message-hint ${e("message")}`}></textarea>
+        <p class="field-hint mt-1.5" id={`${id}-message-hint`}><slot name="message-hint">At least 20 characters.</slot></p>
+        <p class="field-error" id={e("message")} data-error-for={F.message}></p>
+      </div>
+
+      <slot name="extra" />
+
+      <div>
+        <label class="tile items-start">
+          <input type="checkbox" name={F.consent} value="yes" required class="mt-0.5" aria-describedby={e("consent")} />
+          <span class="text-sm leading-relaxed text-muted">
+            It's OK to contact me about this request by email (or phone, if I gave one). See the <a
+              href="/privacy"
+              class="text-cyan underline underline-offset-2">privacy policy</a
+            >.
+          </span>
+        </label>
+        <p class="field-error" id={e("consent")} data-error-for={F.consent}></p>
+      </div>
+
+      <!-- Honeypot: hidden from people and assistive tech; bots tend to fill it. -->
+      <div class="hp" aria-hidden="true">
+        <label for={`${id}-company`}>Company</label>
+        <input id={`${id}-company`} type="text" name={F.honeypot} tabindex="-1" autocomplete="off" />
+      </div>
+
+      <Turnstile action={kind} />
+
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <button type="submit" class="btn btn-primary btn-lg submit" data-submit>
+          <span class="spinner" aria-hidden="true"></span>
+          <span data-submit-label>{submitLabel}</span>
+          <Icon name="arrow" size={18} class="submit-arrow" />
+        </button>
+        <p class="flex items-center gap-2 text-sm text-dim">
+          <Icon name="shield" size={16} class="text-cyan" /> No spam, no mailing lists. Just a reply from me.
+        </p>
+      </div>
+      <noscript>
+        <p class="rounded-xl border border-line p-4 text-sm text-muted">
+          JavaScript is off, so the spam check can't run and the form may not go through. If it doesn't, please turn JavaScript on
+          for this site.
+        </p>
+      </noscript>
+    </div>
+  </form>
+
+  <div class="form-success" data-success hidden tabindex="-1" aria-labelledby={`${id}-success-title`}>
+    <div class="success-icon" aria-hidden="true"><Icon name="check" size={34} strokeWidth={2.5} /></div>
+    <h2 id={`${id}-success-title`} class="mt-6 text-3xl">Request sent!</h2>
+    <p class="lead mx-auto mt-3 max-w-md" data-success-message>
+      Got it! Your request is on my bench. I'll reply by email, usually within a day.
+    </p>
+    <ul class="solder-list mx-auto mt-6 max-w-sm text-left">
+      <li>Check your inbox (and spam folder) for my reply</li>
+      <li>I'll confirm the price and timing with you</li>
+      <li>Nothing happens until you say go</li>
+    </ul>
+    <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+      <button type="button" class="btn btn-ghost" data-again>Send another request</button>
+      <a href="/gallery" class="btn btn-primary">Browse the gallery</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  import "../../scripts/forms/controller";
+</script>
+
+<style>
+  .optional {
+    margin-left: 0.35rem;
+    font-weight: 400;
+    font-size: 0.82rem;
+    color: var(--color-dim);
+  }
+  .hp {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+  .form-status:empty {
+    display: none;
+  }
+  .form-status {
+    margin-bottom: 1.75rem;
+    padding: 0.95rem 1.1rem;
+    border-radius: 0.9rem;
+    font-weight: 500;
+    line-height: 1.5;
+    outline: none;
+  }
+  .form-status[data-tone="error"] {
+    color: #ffd9df;
+    background: rgb(255 138 154 / 0.1);
+    border: 1px solid rgb(255 138 154 / 0.5);
+  }
+  .form-status[data-tone="success"] {
+    color: #d4fff0;
+    background: rgb(61 255 176 / 0.08);
+    border: 1px solid rgb(61 255 176 / 0.45);
+  }
+  .form-status[data-tone="info"] {
+    color: var(--color-fg);
+    background: rgb(0 229 255 / 0.07);
+    border: 1px solid rgb(0 229 255 / 0.4);
+  }
+  .submit {
+    min-width: 13rem;
+  }
+  .spinner {
+    display: none;
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 50%;
+    border: 2px solid rgb(7 8 21 / 0.25);
+    border-top-color: var(--color-ink);
+  }
+  .submit[aria-busy="true"] {
+    cursor: progress;
+    opacity: 0.85;
+  }
+  .submit[aria-busy="true"] .spinner {
+    display: inline-block;
+    animation: spin 0.8s linear infinite;
+  }
+  .submit[aria-busy="true"] :global(.submit-arrow) {
+    display: none;
+  }
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  .form-success {
+    padding: 2.5rem 0.5rem;
+    text-align: center;
+    outline: none;
+  }
+  .success-icon {
+    display: grid;
+    place-items: center;
+    width: 4.5rem;
+    height: 4.5rem;
+    margin-inline: auto;
+    border-radius: 50%;
+    color: var(--color-ink);
+    background: radial-gradient(circle at 30% 30%, #9dffd8, var(--color-ok));
+    box-shadow:
+      0 0 0 8px rgb(61 255 176 / 0.12),
+      0 0 40px rgb(61 255 176 / 0.45);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .form-success:not([hidden]) .success-icon {
+      animation: pop 0.6s var(--ease-out-expo) both;
+    }
+  }
+  @keyframes pop {
+    from {
+      transform: scale(0.6);
+      opacity: 0;
+    }
+  }
+</style>

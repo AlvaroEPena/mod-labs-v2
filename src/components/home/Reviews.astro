@@ -1,0 +1,31 @@
+---
+/** Real reviews only (src/data/reviews.ts). Renders nothing while the list is empty. */
+import { reviews } from "../../data/reviews";
+import SectionHead from "../ui/SectionHead.astro";
+---
+
+{
+  reviews.length > 0 && (
+    <section class="section-y" aria-labelledby="reviews-title">
+      <div class="container-x">
+        <SectionHead id="reviews-title" eyebrow="Reviews" title="What customers say" highlight="customers" />
+        <ul class="reveal-stagger mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {reviews.map((r) => (
+            <li class="card p-6">
+              <figure>
+                <blockquote class="leading-relaxed text-fg">
+                  <p>{r.text}</p>
+                </blockquote>
+                <figcaption class="mt-4 text-sm text-muted">
+                  <span class="font-semibold text-fg">{r.name}</span>
+                  {r.service && <span> · {r.service}</span>}
+                  {r.source && <span> · {r.source}</span>}
+                </figcaption>
+              </figure>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )
+}

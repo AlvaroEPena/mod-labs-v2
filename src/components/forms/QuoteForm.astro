@@ -1,0 +1,145 @@
+---
+import LabForm from "./LabForm.astro";
+import Icon from "../ui/Icon.astro";
+import { quoteRequestTypes, buildRequestType, fieldNames as F, PHOTO_MAX_FILES } from "../../lib/forms/schema";
+---
+
+<LabForm
+  kind="quote"
+  submitLabel="Send quote request"
+  data={{ "build-map": JSON.stringify(buildRequestType) }}
+  messagePlaceholder="What's the device, what happened (or what you'd love to build), and anything you've already tried."
+>
+  <div slot="top">
+    <label class="field-label" for="quote-type">What do you need?</label>
+    <select class="input" id="quote-type" name={F.requestType} required aria-describedby="quote-requestType-error">
+      <option value="" selected disabled>Choose a request type…</option>
+      {quoteRequestTypes.map((t) => <option value={t}>{t}</option>)}
+    </select>
+    <p class="field-error" id="quote-requestType-error" data-error-for={F.requestType}></p>
+  </div>
+
+  <div slot="extra">
+    <p class="field-label" id="quote-photos-label">
+      Photos <span class="font-normal text-dim">optional, up to {PHOTO_MAX_FILES}</span>
+    </p>
+    <div class="dropzone" data-dropzone>
+      <input
+        id="quote-photos"
+        class="sr-only"
+        type="file"
+        name={F.photos}
+        accept="image/*"
+        multiple
+        aria-labelledby="quote-photos-label quote-photos-btn"
+        aria-describedby="quote-photos-hint quote-photos-error"
+      />
+      <label for="quote-photos" class="dz-inner" id="quote-photos-btn">
+        <span class="dz-icon" aria-hidden="true"><Icon name="camera" size={22} /></span>
+        <span>
+          <span class="block font-semibold text-fg">Add photos</span>
+          <span class="block text-sm text-muted" id="quote-photos-hint">
+            Damage, ports, the board, or inspiration. They're resized on your device before sending.
+          </span>
+        </span>
+      </label>
+    </div>
+    <ul class="thumbs" data-thumbs aria-label="Attached photos"></ul>
+    <p class="field-error" id="quote-photos-error" data-error-for={F.photos}></p>
+  </div>
+  <Fragment slot="message-hint">At least 20 characters. Photos help me quote accurately.</Fragment>
+</LabForm>
+
+<style>
+  .dropzone {
+    position: relative;
+  }
+  .dz-inner {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-height: 4.5rem;
+    padding: 1rem 1.1rem;
+    border-radius: 1rem;
+    border: 1.5px dashed rgb(0 229 255 / 0.4);
+    background: rgb(0 229 255 / 0.04);
+    cursor: pointer;
+    transition:
+      border-color 0.2s,
+      background-color 0.2s;
+  }
+  .dz-inner:hover,
+  .dropzone[data-drag] .dz-inner {
+    border-color: var(--color-cyan);
+    background: rgb(0 229 255 / 0.08);
+  }
+  .dropzone:has(input:focus-visible) .dz-inner {
+    outline: 2px solid var(--color-cyan);
+    outline-offset: 2px;
+  }
+  .dz-icon {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.8rem;
+    color: var(--color-cyan);
+    border: 1px solid rgb(0 229 255 / 0.4);
+  }
+  .thumbs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+    gap: 0.6rem;
+    margin-top: 0.75rem;
+  }
+  .thumbs:empty {
+    display: none;
+  }
+  .thumbs :global(li) {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 1;
+    border-radius: 0.8rem;
+    border: 1px solid var(--color-line);
+    background: var(--color-panel);
+  }
+  .thumbs :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .thumbs :global(.thumb-meta) {
+    position: absolute;
+    inset: auto 0 0 0;
+    padding: 0.3rem 0.45rem;
+    font-size: 0.7rem;
+    color: var(--color-fg);
+    background: linear-gradient(transparent, rgb(7 8 21 / 0.9));
+  }
+  .thumbs :global(.thumb-remove) {
+    position: absolute;
+    top: 0.3rem;
+    right: 0.3rem;
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.7rem;
+    color: var(--color-fg);
+    background: rgb(7 8 21 / 0.8);
+    border: 1px solid var(--color-line);
+    cursor: pointer;
+  }
+  .thumbs :global(.thumb-remove:hover) {
+    color: var(--color-bad);
+    border-color: var(--color-bad);
+  }
+  .thumbs :global(.thumb-busy) {
+    display: grid;
+    place-items: center;
+    height: 100%;
+    font-size: 0.75rem;
+    color: var(--color-muted);
+  }
+</style>

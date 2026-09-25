@@ -1,0 +1,33 @@
+---
+import Icon from "../ui/Icon.astro";
+---
+
+<div class="cta-bar grid md:hidden" role="region" aria-label="Quick actions">
+  <a href="/quote" class="btn btn-ghost"><Icon name="chat" size={18} /> Get a quote</a>
+  <a href="/book" class="btn btn-primary"><Icon name="bolt" size={18} /> Book</a>
+</div>
+
+<style>
+  .cta-bar {
+    position: fixed;
+    inset: auto 0 0 0;
+    z-index: 40;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+    padding: 0.65rem 1rem calc(0.65rem + env(safe-area-inset-bottom));
+    background: rgb(9 10 28 / 0.94);
+    border-top: 1px solid var(--color-line-soft);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    view-transition-name: cta-bar;
+  }
+  .cta-bar .btn {
+    min-height: 3rem;
+  }
+  /* reserve room so the bar never covers content or the footer */
+  @media (width < 48rem) {
+    :global(body.has-cta-bar) {
+      --cta-bar-h: calc(4.3rem + env(safe-area-inset-bottom));
+    }
+  }
+</style>

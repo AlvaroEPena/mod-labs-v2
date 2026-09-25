@@ -1,0 +1,71 @@
+---
+import Icon from "../ui/Icon.astro";
+import type { IconName } from "../ui/icons";
+
+const steps: { icon: IconName; title: string; body: string }[] = [
+  { icon: "chat", title: "Tell me what you need", body: "Book a mod or send a quote request. Photos help with repairs. No jargon required." },
+  { icon: "check", title: "Get a clear price", body: "I confirm the price, timing and any questions before you hand anything over. No surprises." },
+  { icon: "pin", title: "Drop off or mail in", body: "Seattle drop-offs are usually done same or next day. Mail-in? We'll sort out shipping together." },
+  { icon: "sparkle", title: "Pick up & play", body: "Your console comes back cleaned, tested and set up, with a walkthrough of how to use everything." },
+];
+---
+
+<ol class="steps reveal-stagger grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
+  {
+    steps.map((s, i) => (
+      <li class="step card p-6">
+        <div class="flex items-center justify-between">
+          <span class="step-icon">
+            <Icon name={s.icon} size={22} />
+          </span>
+          <span class="step-num" aria-hidden="true">
+            0{i + 1}
+          </span>
+        </div>
+        <h3 class="mt-5 text-xl">
+          <span class="sr-only">Step {i + 1}: </span>
+          {s.title}
+        </h3>
+        <p class="mt-2 leading-relaxed text-muted">{s.body}</p>
+      </li>
+    ))
+  }
+</ol>
+
+<style>
+  .steps {
+    position: relative;
+    counter-reset: step;
+  }
+  @media (width >= 64rem) {
+    .steps::before {
+      content: "";
+      position: absolute;
+      top: 3.05rem;
+      left: 3rem;
+      right: 3rem;
+      height: 2px;
+      background: repeating-linear-gradient(90deg, rgb(0 229 255 / 0.55) 0 10px, transparent 10px 18px);
+      z-index: -1;
+    }
+  }
+  .step-icon {
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.9rem;
+    color: var(--color-cyan);
+    background: radial-gradient(circle at 30% 20%, rgb(0 229 255 / 0.25), rgb(15 18 48) 70%);
+    border: 1px solid rgb(0 229 255 / 0.4);
+    box-shadow: 0 0 24px -6px rgb(0 229 255 / 0.55);
+  }
+  .step-num {
+    font-family: var(--font-display);
+    font-size: 2.2rem;
+    font-weight: 800;
+    line-height: 1;
+    color: transparent;
+    -webkit-text-stroke: 1px rgb(178 184 223 / 0.35);
+  }
+</style>

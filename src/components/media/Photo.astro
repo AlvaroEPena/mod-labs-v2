@@ -1,0 +1,47 @@
+---
+/**
+ * Every photo on the site goes through here: astro:assets <Picture> (AVIF + WebP, responsive
+ * widths, explicit width/height → no CLS) inside a frame that shows a blurred build-time LQIP
+ * until the real image has loaded (fade handled by the tiny inline script in the layout).
+ */
+import { Picture } from "astro:assets";
+import type { Photo as PhotoRecord } from "../../data/gallery";
+import { lqip } from "./lqip";
+
+interface Props {
+  photo: PhotoRecord;
+  /** the `sizes` attribute: how wide the image renders at each breakpoint */
+  sizes: string;
+  widths?: number[];
+  class?: string;
+  /** hero/LCP image only: eager + fetchpriority=high, no fade */
+  priority?: boolean;
+  /** crop to an aspect ratio, e.g. "4 / 5"; defaults to the photo's own ratio */
+  ratio?: string;
+  alt?: string;
+  imgClass?: string;
+}
+
+const { photo, sizes, widths = [400, 800], class: cls, priority = false, ratio, alt, imgClass } = Astro.props;
+const placeholder = await lqip(photo.file);
+const aspect = ratio ?? `${photo.width} / ${photo.height}`;
+const usable = widths.filter((w) => w <= photo.width);
+const finalWidths = usable.length ? usable : [photo.width];
+const loadingProps = priority ? { priority: true } : { loading: "lazy" as const, decoding: "async" as const };
+---
+
+<div class:list={["ph", cls, priority && "is-loaded"]} style={`--lqip:url(${placeholder});aspect-ratio:${aspect}`}>
+  <Picture
+    src={photo.image}
+    alt={alt ?? photo.alt}
+    widths={finalWidths}
+    sizes={sizes}
+    formats={["avif", "webp"]}
+    fallbackFormat="webp"
+    quality={priority ? 70 : 62}
+    width={photo.width}
+    height={photo.height}
+    class={imgClass}
+    {...loadingProps}
+  />
+</div>

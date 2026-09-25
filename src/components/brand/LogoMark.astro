@@ -1,0 +1,43 @@
+---
+/** The Mod Labs monogram: a chip whose die is a lab flask. Decorative unless `label` is set. */
+interface Props {
+  size?: number;
+  class?: string;
+  id?: string;
+  label?: string;
+}
+const { size = 36, class: cls, id = "mk", label } = Astro.props;
+const a11y = label ? { role: "img" as const, "aria-label": label } : { "aria-hidden": "true" as const };
+---
+
+<svg viewBox="0 0 64 64" width={size} height={size} class={cls} {...a11y} focusable="false">
+  <defs>
+    <linearGradient id={`${id}-e`} x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#00e5ff"></stop>
+      <stop offset="1" stop-color="#a855f7"></stop>
+    </linearGradient>
+    <linearGradient id={`${id}-l`} x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff3df2"></stop>
+      <stop offset="1" stop-color="#a855f7"></stop>
+    </linearGradient>
+  </defs>
+  <path
+    d="M4 23h7M4 32h7M4 41h7M53 23h7M53 32h7M53 41h7M23 60v-7M32 60v-7M41 60v-7M23 4v7M41 4v7"
+    stroke={`url(#${id}-e)`}
+    stroke-width="3.2"
+    stroke-linecap="round"
+    fill="none"></path>
+  <path d="M19 11h26l8 8v26l-8 8H19l-8-8V19z" fill="#0f1230" stroke={`url(#${id}-e)`} stroke-width="3.2" stroke-linejoin="round"></path>
+  <path class="mk-liquid" d="M25.2 42.6 29.4 34h5.2l4.2 8.6c.5 1.1-.3 2.4-1.5 2.4H26.7c-1.2 0-2-1.3-1.5-2.4z" fill={`url(#${id}-l)`}></path>
+  <path
+    d="M28.4 20.5v8.8l-6.3 13c-1.2 2.5.6 5.2 3.3 5.2h13.2c2.7 0 4.5-2.7 3.3-5.2l-6.3-13v-8.8M26.2 20.5h11.6"
+    fill="none"
+    stroke="#f2f5ff"
+    stroke-width="2.6"
+    stroke-linecap="round"
+    stroke-linejoin="round"></path>
+  <path d="M32 4v12.2" stroke="#00e5ff" stroke-width="3.2" stroke-linecap="round"></path>
+  <circle cx="32" cy="4.5" r="2.6" fill="#00e5ff"></circle>
+  <circle class="mk-bubble" cx="30.4" cy="39.6" r="1.5" fill="#fff"></circle>
+  <circle class="mk-bubble mk-bubble-2" cx="34.2" cy="36.6" r="1" fill="#fff" opacity=".8"></circle>
+</svg>

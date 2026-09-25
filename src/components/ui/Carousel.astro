@@ -1,0 +1,142 @@
+---
+/**
+ * Photo carousel: native horizontal scroll-snap (swipe works with zero JS), prev/next buttons and
+ * a counter enhanced by src/scripts/carousel.ts. Slides open in the lightbox.
+ */
+import { getImage } from "astro:assets";
+import Photo from "../media/Photo.astro";
+import Icon from "./Icon.astro";
+import type { Photo as PhotoRecord } from "../../data/gallery";
+
+interface Props {
+  photos: PhotoRecord[];
+  label: string;
+  group: string;
+}
+const { photos, label, group } = Astro.props;
+const slides = await Promise.all(
+  photos.map(async (p) => {
+    const scale = Math.min(1, 1600 / Math.max(p.width, p.height));
+    const width = Math.round(p.width * scale);
+    const height = Math.round(p.height * scale);
+    const large = await getImage({ src: p.image, width, height, format: "webp", quality: 72 });
+    return { photo: p, href: large.src, width, height };
+  }),
+);
+---
+
+<div class="carousel" data-carousel>
+  <div class="track" tabindex="0" role="region" aria-roledescription="carousel" aria-label={label}>
+    <ul class="slides" data-pswp-gallery={group}>
+      {
+        slides.map((s, i) => (
+          <li class="slide" aria-roledescription="slide" aria-label={`${i + 1} of ${slides.length}`}>
+            <a href={s.href} data-pswp-width={s.width} data-pswp-height={s.height} class="slide-link" aria-label={`Open photo: ${s.photo.alt}`}>
+              <Photo photo={s.photo} ratio="4 / 5" sizes="(min-width: 1024px) 560px, 88vw" widths={[400, 800]} />
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+  <div class="controls">
+    <button type="button" class="ctrl" data-prev aria-label="Previous photo">
+      <Icon name="arrow-left" size={20} />
+    </button>
+    <p class="count" aria-hidden="true"><span data-index>1</span> / {slides.length}</p>
+    <button type="button" class="ctrl" data-next aria-label="Next photo">
+      <Icon name="arrow" size={20} />
+    </button>
+  </div>
+</div>
+
+<script>
+  import "../../scripts/carousel";
+  import "../../scripts/lightbox";
+</script>
+
+<style>
+  .carousel {
+    position: relative;
+  }
+  .track {
+    position: relative;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    border-radius: 1.5rem;
+  }
+  .track::-webkit-scrollbar {
+    display: none;
+  }
+  .track:focus-visible {
+    outline-offset: 4px;
+  }
+  .slides {
+    display: flex;
+    gap: 0.75rem;
+  }
+  .slide {
+    flex: 0 0 88%;
+    scroll-snap-align: center;
+  }
+  @media (width >= 40rem) {
+    .slide {
+      flex-basis: 70%;
+    }
+  }
+  @media (width >= 64rem) {
+    .slide {
+      flex-basis: 100%;
+      scroll-snap-align: start;
+    }
+  }
+  .slide-link {
+    display: block;
+    overflow: hidden;
+    border-radius: 1.3rem;
+    border: 1px solid var(--color-line-soft);
+    cursor: zoom-in;
+  }
+  .controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-top: 1rem;
+    visibility: hidden;
+  }
+  :global(.js) .controls {
+    visibility: visible;
+  }
+  .ctrl {
+    display: grid;
+    place-items: center;
+    width: 2.875rem;
+    height: 2.875rem;
+    border-radius: 999px;
+    color: var(--color-fg);
+    background: rgb(20 26 68 / 0.7);
+    border: 1px solid rgb(125 242 255 / 0.3);
+    cursor: pointer;
+    transition:
+      border-color 0.2s,
+      opacity 0.2s;
+  }
+  .ctrl:hover {
+    border-color: var(--color-cyan);
+  }
+  .ctrl:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+  .count {
+    min-width: 4.5rem;
+    text-align: center;
+    font-family: var(--font-display);
+    font-weight: 600;
+    color: var(--color-muted);
+    font-variant-numeric: tabular-nums;
+  }
+</style>

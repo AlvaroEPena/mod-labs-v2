@@ -1,0 +1,81 @@
+---
+import Icon from "../ui/Icon.astro";
+import { socials, discordHandle } from "../layout/socials";
+---
+
+<ul class="reveal-stagger grid gap-4 md:grid-cols-3">
+  {
+    socials.map((s) =>
+      s.url ? (
+        <li>
+          <a href={s.url} target="_blank" rel="me noopener" class="card glow-edge social-card">
+            <span class="social-icon">
+              <Icon name={s.icon} size={24} />
+            </span>
+            <span>
+              <span class="block font-display text-lg font-bold text-fg">
+                {s.label} <span class="sr-only">(opens in a new tab)</span>
+              </span>
+              <span class="mt-1 block text-muted">{s.blurb}</span>
+            </span>
+          </a>
+        </li>
+      ) : (
+        <li>
+          <div class="card social-card is-soon">
+            <span class="social-icon">
+              <Icon name={s.icon} size={24} />
+            </span>
+            <span>
+              <span class="flex flex-wrap items-center gap-2 font-display text-lg font-bold text-fg">
+                {s.label}
+                <span class="soon">Coming soon</span>
+              </span>
+              <span class="mt-1 block text-muted">{s.key === "discord" && discordHandle ? `Add me: ${discordHandle}` : s.blurb}</span>
+            </span>
+          </div>
+        </li>
+      ),
+    )
+  }
+</ul>
+
+<style>
+  .social-card {
+    display: flex;
+    gap: 1rem;
+    height: 100%;
+    padding: 1.4rem;
+    text-decoration: none;
+  }
+  .social-icon {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.9rem;
+    color: var(--color-magenta);
+    background: rgb(255 61 242 / 0.08);
+    border: 1px solid rgb(255 61 242 / 0.35);
+  }
+  .is-soon {
+    border-style: dashed;
+  }
+  .is-soon .social-icon {
+    color: var(--color-muted);
+    background: transparent;
+    border-color: var(--color-line);
+  }
+  .soon {
+    padding: 0.15rem 0.5rem;
+    border-radius: 999px;
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-ink);
+    background: var(--color-purple-soft);
+  }
+</style>

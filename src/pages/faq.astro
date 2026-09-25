@@ -1,0 +1,43 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PageHero from "../components/ui/PageHero.astro";
+import FaqList from "../components/ui/FaqList.astro";
+import FinalCta from "../components/ui/FinalCta.astro";
+import Icon from "../components/ui/Icon.astro";
+import { faqs } from "../data/faq";
+
+const faqLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
+};
+---
+
+<BaseLayout
+  title="FAQ"
+  description="Answers about console modding with Mod Labs: safety, online play, turnaround time, mail-in, data, warranty and what to bring."
+  jsonLd={[faqLd]}
+>
+  <PageHero
+    eyebrow="FAQ"
+    title="Questions, answered honestly"
+    highlight="answered honestly"
+    intro="New to modding? Start here. If your question isn't covered, send me a message and I'll explain it in plain English."
+    compact
+  />
+  <section class="section-y pt-10 sm:pt-14" aria-label="Frequently asked questions">
+    <div class="container-x grid gap-10 lg:grid-cols-[1.6fr_1fr] lg:gap-16">
+      <div class="reveal">
+        <FaqList items={faqs} openFirst />
+      </div>
+      <aside class="card reveal h-fit p-7 lg:sticky lg:top-24" aria-labelledby="ask-title">
+        <Icon name="chat" size={28} class="text-cyan" />
+        <h2 id="ask-title" class="mt-4 text-2xl">Still wondering?</h2>
+        <p class="mt-2 leading-relaxed text-muted">Ask me anything about your console, a repair or a custom idea. No question is too basic.</p>
+        <a href="/quote" class="btn btn-primary mt-6 w-full">Ask a question</a>
+        <a href="/services" class="btn btn-ghost mt-3 w-full">See prices</a>
+      </aside>
+    </div>
+  </section>
+  <FinalCta />
+</BaseLayout>

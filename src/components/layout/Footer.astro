@@ -1,0 +1,118 @@
+---
+import Logo from "../brand/Logo.astro";
+import Icon from "../ui/Icon.astro";
+import { site } from "../../data/site";
+import { categories } from "../../data/gallery";
+import { liveSocials } from "./socials";
+
+const year = new Date().getFullYear();
+const cols = [
+  {
+    title: "Services",
+    links: [
+      { href: "/services", label: "Services & pricing" },
+      { href: "/builds", label: "Custom builds" },
+      { href: "/book", label: "Book a service" },
+      { href: "/quote", label: "Get a quote" },
+    ],
+  },
+  { title: "Gallery", links: categories.map((c) => ({ href: `/gallery/${c.slug}`, label: c.short })) },
+  {
+    title: "Mod Labs",
+    links: [
+      { href: "/about", label: "About me" },
+      { href: "/faq", label: "FAQ" },
+      { href: "/privacy", label: "Privacy" },
+      { href: "/terms", label: "Terms" },
+    ],
+  },
+];
+---
+
+<footer class="site-footer relative mt-auto overflow-hidden border-t border-line-soft">
+  <div class="footer-trace" aria-hidden="true"></div>
+  <div class="container-x grid gap-12 pt-16 pb-10 lg:grid-cols-[1.3fr_2fr]">
+    <div>
+      <a href="/" class="inline-flex min-h-11 items-center rounded-lg" aria-label="Mod Labs home">
+        <Logo id="ftr" size="md" />
+      </a>
+      <p class="mt-4 max-w-sm leading-relaxed text-muted">
+        One-person modding and repair lab in {site.location.city}. Clean installs, honest quotes, and a walkthrough
+        of everything when you pick up.
+      </p>
+      <p class="mt-4 flex items-center gap-2 text-sm text-dim">
+        <Icon name="pin" size={16} class="text-cyan" /> Local drop-off in {site.location.city}, {site.location.region} · Mail-in
+        available
+      </p>
+      {
+        liveSocials.length > 0 && (
+          <ul class="mt-5 flex gap-2" aria-label="Social links">
+            {liveSocials.map((s) => (
+              <li>
+                <a href={s.url} class="social-btn" rel="me noopener" target="_blank" aria-label={`${s.label} (opens in a new tab)`}>
+                  <Icon name={s.icon} size={20} />
+                </a>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </div>
+    <div class="grid grid-cols-2 gap-8 sm:grid-cols-3">
+      {
+        cols.map((c) => (
+          <nav aria-label={`Footer: ${c.title}`}>
+            <h2 class="mb-3 text-xs font-semibold tracking-[0.2em] text-cyan uppercase">{c.title}</h2>
+            <ul class="grid gap-0.5">
+              {c.links.map((l) => (
+                <li>
+                  <a href={l.href} class="footer-link">
+                    {l.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ))
+      }
+    </div>
+  </div>
+  <div class="container-x flex flex-col gap-2 border-t border-line-soft py-6 text-sm text-dim sm:flex-row sm:justify-between">
+    <p>© {year} {site.name}. Built and run by {site.owner} in {site.location.city}.</p>
+    <p>Not affiliated with Nintendo, Microsoft or Sony.</p>
+  </div>
+</footer>
+
+<style>
+  .footer-trace {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--color-cyan) 30%, var(--color-purple) 70%, transparent);
+    opacity: 0.6;
+  }
+  .footer-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    color: var(--color-muted);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .footer-link:hover {
+    color: var(--color-cyan);
+  }
+  .social-btn {
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 0.8rem;
+    border: 1px solid var(--color-line);
+    color: var(--color-muted);
+  }
+  .social-btn:hover {
+    color: var(--color-cyan);
+    border-color: var(--color-cyan);
+  }
+</style>

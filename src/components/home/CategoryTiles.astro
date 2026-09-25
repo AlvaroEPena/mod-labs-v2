@@ -1,0 +1,68 @@
+---
+import Photo from "../media/Photo.astro";
+import Icon from "../ui/Icon.astro";
+import { categoryCover } from "../media/picks";
+import { categories, photosInCategory } from "../../data/gallery";
+---
+
+<ul class="reveal-stagger grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
+  {
+    categories.map((c, i) => (
+      <li class:list={[i === 0 && "col-span-2 lg:col-span-1"]}>
+        <a href={`/gallery/${c.slug}`} class="cat-tile card glow-edge">
+          <Photo
+            photo={categoryCover(c.slug)}
+            ratio="3 / 4"
+            sizes="(min-width: 1024px) 230px, (min-width: 640px) 45vw, 50vw"
+            class:list={["cat-photo", i === 0 && "cat-wide"]}
+            alt=""
+          />
+          <span class="cat-shade" aria-hidden="true" />
+          <span class="cat-text">
+            <span class="block font-display text-lg leading-tight font-bold text-fg sm:text-xl">{c.short}</span>
+            <span class="mt-1 flex items-center gap-1 text-sm text-muted">
+              {photosInCategory(c.slug).length} photos <Icon name="arrow" size={14} class="text-cyan" />
+            </span>
+          </span>
+        </a>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .cat-tile {
+    position: relative;
+    display: block;
+    height: 100%;
+    overflow: hidden;
+    text-decoration: none;
+  }
+  .cat-tile :global(.cat-wide) {
+    aspect-ratio: 16 / 10 !important;
+  }
+  @media (width >= 64rem) {
+    .cat-tile :global(.cat-wide) {
+      aspect-ratio: 3 / 4 !important;
+    }
+  }
+  .cat-tile :global(.cat-photo img) {
+    transition: transform 0.9s var(--ease-out-expo);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .cat-tile:hover :global(.cat-photo img) {
+      transform: scale(1.06);
+    }
+  }
+  .cat-shade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgb(7 8 21 / 0) 35%, rgb(7 8 21 / 0.92));
+  }
+  .cat-text {
+    position: absolute;
+    left: 1rem;
+    right: 1rem;
+    bottom: 0.9rem;
+  }
+</style>

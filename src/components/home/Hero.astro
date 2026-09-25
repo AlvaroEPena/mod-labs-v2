@@ -1,0 +1,188 @@
+---
+import Photo from "../media/Photo.astro";
+import Icon from "../ui/Icon.astro";
+import CircuitArt from "./CircuitArt.astro";
+import { heroPhoto } from "../media/picks";
+import { services, formatPrice } from "../../data/services";
+import { builds } from "../../data/builds";
+
+const photo = heroPhoto();
+const gwii = builds.find((b) => b.slug === "gwii")!;
+const fromPrice = Math.min(...builds.map((b) => b.price));
+const strip = [
+  ...services.filter((s) => s.id === "switch-oled" || s.id === "xbox-360-rgh").map((s) => ({ label: s.name, value: formatPrice(s.price) })),
+  { label: "Custom builds", value: `$${fromPrice}+` },
+];
+---
+
+<section class="hero relative isolate overflow-hidden" aria-labelledby="hero-title">
+  <div class="pcb absolute inset-0 -z-10" aria-hidden="true"></div>
+  <div class="hero-glow -z-10" aria-hidden="true"></div>
+
+  <div class="container-x grid grid-cols-1 items-center gap-14 pt-10 pb-20 sm:pt-14 lg:grid-cols-[1.12fr_1fr] lg:gap-10 lg:pt-20 lg:pb-28">
+    <div class="hero-copy min-w-0">
+      <p class="chip chip-dot hero-in" style="--o:0">Seattle drop-off · Mail-in welcome</p>
+      <h1 id="hero-title" class="hero-in mt-6 text-[2.55rem] leading-[1.02] font-extrabold xs:text-5xl sm:text-6xl xl:text-[4.6rem]" style="--o:1">
+        Console modding,<br />
+        <span class="text-gradient">done right.</span>
+      </h1>
+      <p class="lead hero-in mt-6 max-w-xl" style="--o:2">
+        Switch modchips, Xbox 360 RGH, board-level repair and one-off handheld builds. Hand-soldered by me, Al, and
+        explained in plain English. First mod ever? Perfect, I'll walk you through it.
+      </p>
+      <div class="hero-in mt-8 flex flex-col gap-3 sm:flex-row" style="--o:3">
+        <a href="/book" class="btn btn-primary btn-lg">Book a service <Icon name="arrow" size={18} /></a>
+        <a href="/quote" class="btn btn-ghost btn-lg">Get a quote</a>
+      </div>
+      <ul class="hero-in mt-10 grid grid-cols-3 gap-2 sm:max-w-lg sm:gap-3" style="--o:4" aria-label="Popular prices">
+        {
+          strip.map((s) => (
+            <li class="strip-item">
+              <span class="block text-[0.7rem] tracking-wide text-dim uppercase sm:text-xs">{s.label}</span>
+              <span class="mt-1 block font-display text-lg font-bold text-fg sm:text-xl">{s.value}</span>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+
+    <div class="hero-visual relative mx-auto w-full max-w-[19rem] xs:max-w-[21rem] sm:max-w-[24rem] lg:max-w-[27rem]">
+      <CircuitArt />
+      <div class="hero-frame">
+        <Photo
+          photo={photo}
+          priority
+          ratio="4 / 5"
+          widths={[400, 640, 960]}
+          sizes="(min-width: 1024px) 432px, (min-width: 640px) 384px, 336px"
+          class="hero-photo"
+          alt="The GWii: a purple handheld Wii built by Mod Labs from a real Wii motherboard"
+        />
+        <div class="scanlines" aria-hidden="true"></div>
+      </div>
+      <p class="float-tag float-a"><Icon name="chip" size={16} class="text-cyan" /> Real Wii hardware</p>
+      <a href="/builds#gwii" class="float-card glass">
+        <span>
+          <span class="block text-xs tracking-[0.18em] text-cyan uppercase">Commission build</span>
+          <span class="mt-0.5 block font-display text-base font-bold text-fg">{gwii.name.replace(" Portable Handheld Wii", "")} handheld</span>
+        </span>
+        <span class="price-tag text-lg" style="--shimmer-delay:2.8s"><span class="cur">$</span>{gwii.price}</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero-glow {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(40rem 30rem at 78% 42%, rgb(168 85 247 / 0.24), transparent 65%),
+      radial-gradient(28rem 22rem at 70% 70%, rgb(0 229 255 / 0.12), transparent 70%);
+  }
+  .strip-item {
+    padding: 0.7rem 0.75rem;
+    border-radius: 0.9rem;
+    background: rgb(15 18 48 / 0.6);
+    border: 1px solid var(--color-line-soft);
+  }
+  .hero-frame {
+    position: relative;
+    z-index: 1;
+    padding: 5px;
+    border-radius: 2rem;
+    background: linear-gradient(150deg, rgb(0 229 255 / 0.85), rgb(168 85 247 / 0.55) 50%, rgb(255 61 242 / 0.7));
+    box-shadow:
+      0 0 70px -12px rgb(0 229 255 / 0.5),
+      0 50px 90px -40px rgb(168 85 247 / 0.9);
+  }
+  .hero-frame :global(.hero-photo) {
+    border-radius: calc(2rem - 5px);
+  }
+  .scanlines {
+    position: absolute;
+    inset: 5px;
+    border-radius: calc(2rem - 5px);
+    background:
+      linear-gradient(180deg, rgb(7 8 21 / 0) 55%, rgb(7 8 21 / 0.55)),
+      repeating-linear-gradient(180deg, rgb(255 255 255 / 0.035) 0 1px, transparent 1px 4px);
+    pointer-events: none;
+  }
+  .float-tag {
+    position: absolute;
+    z-index: 2;
+    top: 7%;
+    left: -8%;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.5rem 0.8rem;
+    border-radius: 0.8rem;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 0.85rem;
+    background: rgb(11 13 34 / 0.85);
+    border: 1px solid rgb(0 229 255 / 0.35);
+    box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.8);
+  }
+  .float-card {
+    position: absolute;
+    z-index: 2;
+    right: -6%;
+    bottom: 6%;
+    left: 12%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.8rem 0.9rem 0.8rem 1rem;
+    border-radius: 1.1rem;
+    text-decoration: none;
+    box-shadow: 0 20px 40px -18px rgb(0 0 0 / 0.9);
+    transition: border-color 0.2s;
+  }
+  .float-card:hover {
+    border-color: rgb(0 229 255 / 0.6);
+  }
+  @media (width < 23.4rem) {
+    .float-tag {
+      left: -3%;
+    }
+    .float-card {
+      right: -3%;
+      left: 6%;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .hero-in {
+      animation: hero-in 0.9s var(--ease-out-expo) both;
+      animation-delay: calc(0.05s + var(--o) * 0.08s);
+    }
+    .hero-frame {
+      animation: frame-on 1.1s var(--ease-out-expo) 0.1s both;
+    }
+    .float-a {
+      animation:
+        hero-in 0.8s var(--ease-out-expo) 1.1s both,
+        float-y 6s ease-in-out 2s infinite;
+    }
+    .float-card {
+      animation:
+        hero-in 0.8s var(--ease-out-expo) 1.3s both,
+        float-y 7s ease-in-out 2.5s infinite;
+    }
+  }
+  @keyframes hero-in {
+    from {
+      opacity: 0.01; /* >0 keeps text eligible as LCP from first paint */
+      transform: translateY(18px);
+    }
+  }
+  @keyframes frame-on {
+    from {
+      opacity: 0.01;
+      transform: scale(0.94);
+    }
+  }
+</style>

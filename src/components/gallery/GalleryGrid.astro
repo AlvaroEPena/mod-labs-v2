@@ -1,0 +1,130 @@
+---
+/**
+ * Masonry photo grid (CSS columns). Every tile is a real link to a 1600px WebP, so it works
+ * without JS; with JS, src/scripts/lightbox.ts opens PhotoSwipe (loaded on first interaction).
+ */
+import { getImage } from "astro:assets";
+import Photo from "../media/Photo.astro";
+import Icon from "../ui/Icon.astro";
+import type { Photo as PhotoRecord } from "../../data/gallery";
+
+interface Props {
+  photos: PhotoRecord[];
+  /** gallery group name (one lightbox per group) */
+  group: string;
+  /** tighter 2-up layout for narrow containers */
+  compact?: boolean;
+}
+const { photos, group, compact = false } = Astro.props;
+
+const LIGHTBOX_EDGE = 1600;
+const items = await Promise.all(
+  photos.map(async (p) => {
+    const scale = Math.min(1, LIGHTBOX_EDGE / Math.max(p.width, p.height));
+    const width = Math.round(p.width * scale);
+    const height = Math.round(p.height * scale);
+    const large = await getImage({ src: p.image, width, height, format: "webp", quality: 72 });
+    return { photo: p, href: large.src, width, height };
+  }),
+);
+---
+
+<ul class:list={["masonry", compact && "is-compact"]} data-pswp-gallery={group}>
+  {
+    items.map(({ photo, href, width, height }) => (
+      <li class="masonry-item">
+        <a href={href} class="gl-tile group" data-pswp-width={width} data-pswp-height={height} aria-label={`Open photo: ${photo.alt}`}>
+          <Photo photo={photo} sizes={compact ? "(min-width: 1024px) 300px, 50vw" : "(min-width: 1280px) 290px, (min-width: 1024px) 23vw, (min-width: 640px) 31vw, 50vw"} class="gl-photo" />
+          <span class="gl-zoom" aria-hidden="true">
+            <Icon name="eye" size={18} />
+          </span>
+        </a>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .masonry {
+    columns: 2;
+    column-gap: 0.6rem;
+  }
+  @media (width >= 40rem) {
+    .masonry {
+      columns: 3;
+      column-gap: 0.9rem;
+    }
+  }
+  @media (width >= 64rem) {
+    .masonry:not(.is-compact) {
+      columns: 4;
+    }
+  }
+  .masonry.is-compact {
+    columns: 2;
+  }
+  .masonry-item {
+    break-inside: avoid;
+    margin-bottom: 0.6rem;
+  }
+  @media (width >= 40rem) {
+    .masonry-item {
+      margin-bottom: 0.9rem;
+    }
+  }
+  .gl-tile {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    border-radius: 0.9rem;
+    border: 1px solid var(--color-line-soft);
+    background: var(--color-panel);
+    cursor: zoom-in;
+  }
+  .gl-tile :global(.gl-photo img) {
+    transition: transform 0.7s var(--ease-out-expo);
+  }
+  .gl-tile::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    box-shadow:
+      inset 0 0 0 1px rgb(0 229 255 / 0.8),
+      inset 0 0 30px rgb(0 229 255 / 0.25);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .gl-tile:hover::after,
+  .gl-tile:focus-visible::after {
+    opacity: 1;
+  }
+  .gl-zoom {
+    position: absolute;
+    right: 0.6rem;
+    bottom: 0.6rem;
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.7rem;
+    color: var(--color-fg);
+    background: rgb(7 8 21 / 0.7);
+    border: 1px solid rgb(0 229 255 / 0.4);
+    opacity: 0;
+    transform: translateY(6px);
+    transition:
+      opacity 0.25s,
+      transform 0.35s var(--ease-out-expo);
+  }
+  .gl-tile:hover .gl-zoom,
+  .gl-tile:focus-visible .gl-zoom {
+    opacity: 1;
+    transform: none;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .gl-tile:hover :global(.gl-photo img) {
+      transform: scale(1.05);
+    }
+  }
+</style>

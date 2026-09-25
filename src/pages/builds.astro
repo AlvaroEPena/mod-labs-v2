@@ -1,0 +1,120 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PageHero from "../components/ui/PageHero.astro";
+import Carousel from "../components/ui/Carousel.astro";
+import FinalCta from "../components/ui/FinalCta.astro";
+import Icon from "../components/ui/Icon.astro";
+import { builds } from "../data/builds";
+import { photosFor } from "../data/gallery";
+import { buildCover } from "../components/media/picks";
+
+/** carousel order: lead with the beauty shot, then the rest of the build log */
+const orderedPhotos = (slug: string, project: string) => {
+  const cover = buildCover(slug);
+  return [cover, ...photosFor(project).filter((p) => p.id !== cover.id)];
+};
+---
+
+<BaseLayout
+  title="Custom Builds: GWii & Wii Miicro"
+  description="Commission a hand-built console: the GWii portable handheld Wii ($900) or the ultra-compact Wii Miicro Deluxe ($450). Real Wii hardware, no emulation, built in Seattle."
+>
+  <PageHero
+    eyebrow="Custom build commissions"
+    title="One-off consoles, built by hand"
+    highlight="built by hand"
+    intro="Real Wii motherboards, trimmed, relocated and tuned into consoles you can't buy anywhere else. Every build is made to order and takes serious bench time, so the timeline is confirmed with your quote."
+  >
+    <ul class="mt-8 flex flex-wrap gap-2">
+      {
+        builds.map((b) => (
+          <li>
+            <a href={`#${b.slug}`} class="chip min-h-11 text-fg hover:border-cyan">
+              {b.name} · <span class="font-display font-bold text-cyan">${b.price}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </PageHero>
+
+  {
+    builds.map((b, bi) => (
+      <section id={b.slug} class:list={["section-y scroll-mt-16", bi % 2 === 1 && "border-y border-line-soft bg-ink-2/60"]} aria-labelledby={`${b.slug}-title`}>
+        <div class="container-x">
+          <div class="grid items-start gap-10 lg:grid-cols-2 lg:gap-14">
+            <div class:list={["reveal min-w-0", bi % 2 === 1 && "lg:order-2"]}>
+              <Carousel photos={orderedPhotos(b.slug, b.project)} label={`${b.name} photos`} group={`build-${b.slug}`} />
+            </div>
+            <div class="min-w-0 lg:sticky lg:top-24">
+              <p class="eyebrow">Commission · Made to order</p>
+              <h2 id={`${b.slug}-title`} class="mt-4 text-4xl sm:text-5xl">
+                {b.name}
+              </h2>
+              <p class="price-tag mt-5 text-4xl" style={`--shimmer-delay:${1 + bi}s`}>
+                <span class="sr-only">Price: </span>
+                <span class="cur">$</span>
+                {b.price}
+              </p>
+              <p class="mt-6 font-display text-xl font-semibold text-fg">{b.tagline}</p>
+              <p class="lead mt-3">{b.description}</p>
+              <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+                <a href={`/quote?build=${b.slug}`} class="btn btn-primary btn-lg">
+                  Request this build <Icon name="arrow" size={18} />
+                </a>
+                <a href="/quote" class="btn btn-ghost btn-lg">
+                  Ask a question
+                </a>
+              </div>
+              <p class="mt-4 flex items-center gap-2 text-sm text-dim">
+                <Icon name="clock" size={16} class="text-cyan" /> Hand-built to order. Timeline and details are confirmed with your quote.
+              </p>
+            </div>
+          </div>
+
+          <h3 class="reveal mt-16 text-2xl sm:text-3xl">What makes it special</h3>
+          <ul class="reveal-stagger mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {b.features.map((f) => (
+              <li class="card glow-edge p-6">
+                <p class="flex items-center gap-2.5 font-display text-lg font-bold text-fg">
+                  <Icon name="chip" size={20} class="text-cyan" /> {f.title}
+                </p>
+                <p class="mt-2 leading-relaxed text-muted">{f.detail}</p>
+              </li>
+            ))}
+          </ul>
+
+          <div class:list={["reveal-stagger mt-6 grid gap-4", b.notIncluded.length > 0 && "md:grid-cols-2"]}>
+            <div class="card p-6 sm:p-7">
+              <h3 class="flex items-center gap-2 text-xl">
+                <Icon name="check" size={20} class="text-ok" /> What's included
+              </h3>
+              <ul class="solder-list mt-4">
+                {b.included.map((i) => (
+                  <li>{i}</li>
+                ))}
+              </ul>
+            </div>
+            {b.notIncluded.length > 0 && (
+              <div class="card p-6 sm:p-7">
+                <h3 class="flex items-center gap-2 text-xl">
+                  <Icon name="x" size={20} class="text-bad" /> Not included
+                </h3>
+                <ul class="solder-list is-muted mt-4">
+                  {b.notIncluded.map((i) => (
+                    <li>{i}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+    ))
+  }
+
+  <FinalCta
+    title="Have your own build in mind?"
+    body="Portables, shrunken consoles, RGB shells: if you can describe it, I'll tell you honestly whether it's doable and what it would take."
+  />
+</BaseLayout>

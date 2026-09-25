@@ -1,0 +1,29 @@
+---
+/** Tiny inline stroke icon set (24×24, currentColor). Decorative by default. */
+import { iconPaths as paths, type IconName } from "./icons";
+
+interface Props {
+  name: IconName;
+  size?: number;
+  class?: string;
+  label?: string;
+  strokeWidth?: number;
+}
+const { name, size = 20, class: cls, label, strokeWidth = 2 } = Astro.props;
+const a11y = label ? { role: "img" as const, "aria-label": label } : { "aria-hidden": "true" as const };
+const filled = name === "play";
+---
+
+<svg
+  viewBox="0 0 24 24"
+  width={size}
+  height={size}
+  class={cls}
+  fill={filled ? "currentColor" : "none"}
+  stroke={filled ? "none" : "currentColor"}
+  stroke-width={strokeWidth}
+  stroke-linecap="round"
+  stroke-linejoin="round"
+  focusable="false"
+  {...a11y}><path d={paths[name]}></path></svg
+>

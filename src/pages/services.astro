@@ -1,0 +1,116 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PageHero from "../components/ui/PageHero.astro";
+import SectionHead from "../components/ui/SectionHead.astro";
+import ServiceCard from "../components/ui/ServiceCard.astro";
+import FinalCta from "../components/ui/FinalCta.astro";
+import Icon from "../components/ui/Icon.astro";
+import { services, quoteServices } from "../data/services";
+import { site } from "../data/site";
+---
+
+<BaseLayout
+  title="Services & Pricing"
+  description="Console modding prices in Seattle: Xbox 360 RGH $100, Switch OLED Kamikaze modchip $160, Switch V1/V2 $120, Switch Lite $140. PS4 PPPwn, repairs and custom shells by quote."
+>
+  <PageHero
+    eyebrow="Services & pricing"
+    title="Mods and repairs, priced upfront"
+    highlight="priced upfront"
+    intro="Every priced mod includes the install, a deep clean with fresh thermal paste, and full software setup, plus a walkthrough so you know exactly how to use it."
+  >
+    <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+      <a href="/book" class="btn btn-primary btn-lg">Book a service <Icon name="arrow" size={18} /></a>
+      <a href="/quote" class="btn btn-ghost btn-lg">Get a quote</a>
+    </div>
+  </PageHero>
+
+  <section class="section-y" aria-labelledby="mods-title">
+    <div class="container-x">
+      <SectionHead id="mods-title" eyebrow="Modchips & RGH" title="Priced mods" intro="One flat price per console. You'll know the total before anything gets opened up." />
+      <ul class="reveal-stagger mt-12 grid gap-5 md:grid-cols-2">
+        {
+          services.map((s, i) => (
+            <li>
+              <ServiceCard service={s} detailed index={i} />
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+
+  <section class="section-y border-y border-line-soft bg-ink-2/60" aria-labelledby="quote-title">
+    <div class="container-x">
+      <SectionHead
+        id="quote-title"
+        eyebrow="By quote"
+        title="Repairs, PS4 and custom work"
+        highlight="custom work"
+        intro="Every job here is a little different. Send a few photos and a description, and I'll reply with a clear price and timeline before any work starts."
+      />
+      <ul class="reveal-stagger mt-12 grid gap-5 md:grid-cols-3">
+        {
+          quoteServices.map((s, i) => (
+            <li>
+              <ServiceCard service={s} detailed index={i} />
+            </li>
+          ))
+        }
+      </ul>
+      <p class="reveal mt-8 text-muted">
+        Looking for a full custom console? Check out the <a href="/builds" class="font-semibold text-cyan underline-offset-4 hover:underline"
+          >GWii and Wii Miicro commission builds</a
+        >.
+      </p>
+    </div>
+  </section>
+
+  <section class="section-y" aria-labelledby="delivery-title">
+    <div class="container-x">
+      <SectionHead id="delivery-title" eyebrow="Getting it to me" title="Local drop-off or mail-in" highlight="mail-in" />
+      <div class="reveal-stagger mt-12 grid gap-5 md:grid-cols-2">
+        <div class="card glow-edge p-7 sm:p-9">
+          <span class="delivery-icon"><Icon name="pin" size={24} /></span>
+          <h3 class="mt-5 text-2xl">Local drop-off <span class="text-cyan">· Seattle</span></h3>
+          <p class="mt-3 leading-relaxed text-muted">{site.serviceArea.local}</p>
+          <ul class="solder-list mt-5">
+            <li>We pick a drop-off time that works for you</li>
+            <li>Most mods are finished the same or next day</li>
+            <li>Walkthrough of your setup at pickup</li>
+          </ul>
+        </div>
+        <div class="card glow-edge p-7 sm:p-9">
+          <span class="delivery-icon is-purple"><Icon name="truck" size={24} /></span>
+          <h3 class="mt-5 text-2xl">Mail-in <span class="text-purple-soft">· let's talk</span></h3>
+          <p class="mt-3 leading-relaxed text-muted">{site.serviceArea.mailIn}</p>
+          <ul class="solder-list mt-5">
+            <li>Send a request and choose "Mail-in"</li>
+            <li>We agree on packing, shipping and timing first</li>
+            <li>Don't ship anything until we've talked</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <FinalCta title="Know what you want? Let's do it." />
+</BaseLayout>
+
+<style>
+  .delivery-icon {
+    display: grid;
+    place-items: center;
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 1rem;
+    color: var(--color-cyan);
+    background: rgb(0 229 255 / 0.08);
+    border: 1px solid rgb(0 229 255 / 0.4);
+  }
+  .delivery-icon.is-purple {
+    color: var(--color-purple-soft);
+    background: rgb(168 85 247 / 0.1);
+    border-color: rgb(168 85 247 / 0.45);
+  }
+</style>

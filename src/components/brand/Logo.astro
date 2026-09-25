@@ -1,0 +1,28 @@
+---
+import LogoMark from "./LogoMark.astro";
+import Wordmark from "./Wordmark.astro";
+
+interface Props {
+  id?: string;
+  size?: "sm" | "md" | "lg";
+  class?: string;
+}
+const { id = "logo", size = "md", class: cls } = Astro.props;
+const dims = { sm: [30, 14], md: [38, 17], lg: [56, 26] }[size];
+---
+
+<span class:list={["logo inline-flex items-center gap-2.5", cls]}>
+  <LogoMark size={dims[0]} id={`${id}-m`} class="logo-mark" />
+  <Wordmark height={dims[1]} id={`${id}-w`} />
+</span>
+
+<style>
+  @media (prefers-reduced-motion: no-preference) {
+    .logo :global(.logo-mark) {
+      transition: transform 0.5s var(--ease-out-expo);
+    }
+    a:hover > .logo :global(.logo-mark) {
+      transform: rotate(-8deg) scale(1.06);
+    }
+  }
+</style>

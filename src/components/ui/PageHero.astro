@@ -1,0 +1,100 @@
+---
+/** Inner-page header: eyebrow, gradient-highlighted H1, intro, PCB texture and a trace accent. */
+interface Props {
+  eyebrow: string;
+  title: string;
+  highlight?: string;
+  intro?: string;
+  compact?: boolean;
+}
+const { eyebrow, title, highlight, intro, compact = false } = Astro.props;
+const parts = highlight && title.includes(highlight) ? title.split(highlight) : null;
+---
+
+<section class="page-hero relative isolate overflow-hidden border-b border-line-soft">
+  <div class="pcb absolute inset-0 -z-10" aria-hidden="true"></div>
+  <svg class="ph-trace -z-10" viewBox="0 0 600 200" aria-hidden="true" focusable="false" preserveAspectRatio="xMaxYMid slice">
+    <defs>
+      <linearGradient id="pht" x1="0" x2="1">
+        <stop offset="0" stop-color="#00e5ff" stop-opacity="0"></stop>
+        <stop offset=".4" stop-color="#00e5ff"></stop>
+        <stop offset="1" stop-color="#a855f7"></stop>
+      </linearGradient>
+    </defs>
+    <g fill="none" stroke="url(#pht)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M40 60H300L330 90H480L510 60H620" pathLength="1"></path>
+      <path d="M120 140H260L290 110H400L430 140H620" pathLength="1"></path>
+    </g>
+    <g fill="#070815" stroke="#7df2ff" stroke-width="2">
+      <circle cx="330" cy="90" r="4"></circle><circle cx="510" cy="60" r="4"></circle><circle cx="290" cy="110" r="4"></circle><circle
+        cx="430"
+        cy="140"
+        r="4"></circle>
+    </g>
+  </svg>
+  <div class:list={["container-x", compact ? "py-12 sm:py-16" : "py-14 sm:py-20 lg:py-24"]}>
+    <p class="eyebrow ph-in">{eyebrow}</p>
+    <h1 class="ph-in mt-4 max-w-4xl text-4xl sm:text-5xl lg:text-6xl" style="--o:1">
+      {
+        parts ? (
+          <>
+            {parts[0]}
+            <span class="text-gradient">{highlight}</span>
+            {parts[1]}
+          </>
+        ) : (
+          title
+        )
+      }
+    </h1>
+    {intro && <p class="lead ph-in mt-5 max-w-2xl" style="--o:2">{intro}</p>}
+    <div class="ph-in" style="--o:3"><slot /></div>
+  </div>
+</section>
+
+<style>
+  .page-hero {
+    background: radial-gradient(40rem 20rem at 90% 0%, rgb(168 85 247 / 0.18), transparent 70%);
+  }
+  .ph-trace {
+    position: absolute;
+    right: 0;
+    bottom: 1.5rem;
+    width: min(34rem, 42%);
+    height: 9rem;
+    opacity: 0.4;
+    pointer-events: none;
+  }
+  @media (width < 48rem) {
+    .ph-trace {
+      bottom: -2.5rem;
+      width: 80%;
+      opacity: 0.25;
+    }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .ph-trace path {
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+      animation: pht-draw 1.6s var(--ease-snap) 0.2s forwards;
+    }
+    .ph-trace path + path {
+      animation-delay: 0.45s;
+    }
+    .ph-in {
+      animation: ph-in 0.8s var(--ease-out-expo) both;
+      animation-delay: calc(var(--o, 0) * 0.07s);
+    }
+  }
+  @keyframes pht-draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  @keyframes ph-in {
+    from {
+      opacity: 0.01;
+      transform: translateY(14px);
+    }
+  }
+</style>

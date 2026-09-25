@@ -1,13 +1,154 @@
 ---
-// Placeholder, replaced by frontend-engineer.
-import "../styles/global.css";
+import BaseLayout from "../layouts/BaseLayout.astro";
+import Hero from "../components/home/Hero.astro";
+import Steps from "../components/home/Steps.astro";
+import BuildTeaser from "../components/home/BuildTeaser.astro";
+import CategoryTiles from "../components/home/CategoryTiles.astro";
+import TrustGrid from "../components/home/TrustGrid.astro";
+import Reviews from "../components/home/Reviews.astro";
+import SocialBand from "../components/home/SocialBand.astro";
+import SectionHead from "../components/ui/SectionHead.astro";
+import ServiceCard from "../components/ui/ServiceCard.astro";
+import FaqList from "../components/ui/FaqList.astro";
+import FinalCta from "../components/ui/FinalCta.astro";
+import Icon from "../components/ui/Icon.astro";
+import { localBusinessLd } from "../components/layout/seo";
+import { services, quoteServices } from "../data/services";
+import { builds } from "../data/builds";
+import { faqs } from "../data/faq";
 import { site } from "../data/site";
+
+const featured = services.filter((s) => s.featured);
+const homeFaqs = faqs.filter((f) => f.home);
+const siteUrl = (Astro.site?.toString() ?? site.url).replace(/\/$/, "");
 ---
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{site.name}</title>
-  </head>
-  <body class="bg-slate-950 text-white"><h1 class="p-8 text-3xl">{site.name}: scaffold OK</h1></body>
-</html>
+
+<BaseLayout description={site.description} jsonLd={[localBusinessLd(siteUrl)]}>
+  <Hero />
+
+  <!-- Pricing -->
+  <section class="section-y relative" aria-labelledby="pricing-title">
+    <div class="container-x">
+      <div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+        <SectionHead
+          id="pricing-title"
+          eyebrow="Pricing"
+          title="Straightforward prices. No surprises."
+          highlight="No surprises."
+          intro="Every priced mod includes the install, a deep clean with fresh thermal paste, and full software setup."
+        />
+        <a href="/services" class="link-arrow reveal shrink-0">All services <Icon name="arrow" size={18} /></a>
+      </div>
+      <ul class="reveal-stagger mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {
+          featured.map((s, i) => (
+            <li>
+              <ServiceCard service={s} index={i} />
+            </li>
+          ))
+        }
+      </ul>
+      <p class="reveal mt-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-muted">
+        <Icon name="wrench" size={18} class="text-purple-soft" />
+        Also by quote: {quoteServices.map((s) => s.name).join(", ")}.
+        <a href="/quote" class="font-semibold text-cyan underline-offset-4 hover:underline">Ask me about it</a>
+      </p>
+    </div>
+  </section>
+
+  <!-- How it works -->
+  <section class="section-y relative border-y border-line-soft bg-ink-2/60" aria-labelledby="how-title">
+    <div class="container-x">
+      <SectionHead
+        id="how-title"
+        eyebrow="How it works"
+        title="Four steps from stock to modded"
+        highlight="modded"
+        intro="Never done this before? That's most people. Here's exactly what happens."
+      />
+      <div class="mt-12">
+        <Steps />
+      </div>
+    </div>
+  </section>
+
+  <!-- Featured builds -->
+  <section class="section-y" aria-labelledby="builds-title">
+    <div class="container-x">
+      <div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+        <SectionHead
+          id="builds-title"
+          eyebrow="Custom builds"
+          title="Real Wii hardware, rebuilt from scratch"
+          highlight="rebuilt from scratch"
+          intro="Commission a hand-built console: a genuine Wii board, trimmed, relocated and tuned. No emulation."
+        />
+        <a href="/builds" class="link-arrow reveal shrink-0">Explore builds <Icon name="arrow" size={18} /></a>
+      </div>
+      <div class="reveal-stagger mt-12 grid gap-6 lg:grid-cols-2">
+        {builds.map((b, i) => <BuildTeaser build={b} index={i} />)}
+      </div>
+    </div>
+  </section>
+
+  <!-- Gallery teaser -->
+  <section class="section-y relative border-y border-line-soft bg-ink-2/60" aria-labelledby="work-title">
+    <div class="container-x">
+      <div class="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+        <SectionHead
+          id="work-title"
+          eyebrow="The work"
+          title="See what comes off my bench"
+          highlight="my bench"
+          intro="Real photos of real jobs, from microscope shots of solder points to finished consoles."
+        />
+        <a href="/gallery" class="link-arrow reveal shrink-0">Full gallery <Icon name="arrow" size={18} /></a>
+      </div>
+      <div class="mt-12">
+        <CategoryTiles />
+      </div>
+    </div>
+  </section>
+
+  <!-- Trust -->
+  <section class="section-y" aria-labelledby="trust-title">
+    <div class="container-x">
+      <SectionHead
+        id="trust-title"
+        eyebrow="Why Mod Labs"
+        title="Treated like it's staying in my own collection"
+        highlight="my own collection"
+      />
+      <div class="mt-12">
+        <TrustGrid />
+      </div>
+    </div>
+  </section>
+
+  <Reviews />
+
+  <!-- FAQ teaser -->
+  <section class="section-y border-t border-line-soft" aria-labelledby="faq-title">
+    <div class="container-x grid gap-10 lg:grid-cols-[1fr_1.4fr] lg:gap-16">
+      <div>
+        <SectionHead id="faq-title" eyebrow="FAQ" title="Questions? Good." highlight="Good." intro="The ones I hear most. Anything else, just ask." />
+        <a href="/faq" class="link-arrow reveal mt-6">All questions <Icon name="arrow" size={18} /></a>
+      </div>
+      <div class="reveal">
+        <FaqList items={homeFaqs} />
+      </div>
+    </div>
+  </section>
+
+  <!-- Socials -->
+  <section class="section-y pt-0 pb-0" aria-labelledby="social-title">
+    <div class="container-x">
+      <SectionHead id="social-title" eyebrow="Follow along" title="Follow along with the builds" highlight="the builds" />
+      <div class="mt-10">
+        <SocialBand />
+      </div>
+    </div>
+  </section>
+
+  <FinalCta />
+</BaseLayout>

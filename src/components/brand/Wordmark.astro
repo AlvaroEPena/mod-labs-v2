@@ -1,0 +1,26 @@
+---
+/** "MOD LABS" drawn as chamfered monoline traces (original letterforms, no font needed). */
+interface Props {
+  height?: number;
+  class?: string;
+  id?: string;
+}
+const { height = 18, class: cls, id = "wm" } = Astro.props;
+const width = Math.round((height * 194) / 32);
+---
+
+<svg viewBox="-2 -2 194 32" width={width} height={height} class={cls} aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id={`${id}-g`} x1="90" y1="0" x2="190" y2="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#00e5ff"></stop>
+      <stop offset="1" stop-color="#a855f7"></stop>
+    </linearGradient>
+  </defs>
+  <g fill="none" stroke-width="3.6" stroke-linejoin="miter" stroke-linecap="square">
+    <path stroke="#f2f5ff" d="M0 28V0l10 12L20 0v28M32 0h10l5 5v18l-5 5H32l-5-5V5zM54 0h13l7 7v14l-7 7H54z"></path>
+    <path
+      stroke={`url(#${id}-g)`}
+      d="M90 0v28h18M115 28V8l8-8h4l8 8v20M115 17h20M142 0h14l4 4v6l-3 3 5 4v7l-4 4h-16zM142 13h15M189 0h-14l-5 5v5l4 4h11l4 4v5l-5 5h-14"
+    ></path>
+  </g>
+</svg>

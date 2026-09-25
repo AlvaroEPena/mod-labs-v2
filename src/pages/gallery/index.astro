@@ -1,0 +1,22 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import PageHero from "../../components/ui/PageHero.astro";
+import GalleryView from "../../components/gallery/GalleryView.astro";
+import FinalCta from "../../components/ui/FinalCta.astro";
+import { photos } from "../../data/gallery";
+---
+
+<BaseLayout
+  title="Gallery"
+  description="Real photos from the Mod Labs bench: Switch modchip installs, Xbox 360 RGH, PS4 PPPwn, custom handheld Wii builds and board-level repairs."
+>
+  <PageHero
+    eyebrow="Gallery"
+    title="Straight off the bench"
+    highlight="off the bench"
+    intro={`${photos.length} photos of real jobs: microscope close-ups, clean wire routing and finished builds. Tap any photo to zoom in.`}
+    compact
+  />
+  <GalleryView />
+  <FinalCta title="Want yours on this page?" />
+</BaseLayout>

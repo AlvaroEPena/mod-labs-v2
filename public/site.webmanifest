@@ -1,0 +1,11 @@
+{
+  "name": "Mod Labs",
+  "short_name": "Mod Labs",
+  "icons": [
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ],
+  "theme_color": "#070815",
+  "background_color": "#070815",
+  "display": "browser"
+}

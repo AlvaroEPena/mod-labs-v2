@@ -1,0 +1,35 @@
+---
+/**
+ * Cloudflare Turnstile (explicit render). The script is only included on pages that render a form.
+ * The controller mounts the widget into [data-turnstile] (dark theme) and resets it after failures.
+ */
+interface Props {
+  action: string;
+}
+const { action } = Astro.props;
+const siteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY ?? "";
+---
+
+{
+  siteKey ? (
+    <div class="ts">
+      <div data-turnstile data-sitekey={siteKey} data-action={action} />
+      <p class="field-error" data-error-for="cf-turnstile-response" />
+    </div>
+    <script is:inline>
+      window.mlTurnstileReady = function () {
+        document.dispatchEvent(new Event("ml:turnstile"));
+      };
+    </script>
+    <script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=mlTurnstileReady" async defer />
+  ) : (
+    <p class="text-sm text-dim">Spam check isn't configured (PUBLIC_TURNSTILE_SITE_KEY missing).</p>
+  )
+}
+
+<style>
+  .ts {
+    /* reserve the widget's height so nothing jumps when it appears */
+    min-height: 65px;
+  }
+</style>

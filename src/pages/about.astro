@@ -1,0 +1,116 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PageHero from "../components/ui/PageHero.astro";
+import SectionHead from "../components/ui/SectionHead.astro";
+import FinalCta from "../components/ui/FinalCta.astro";
+import Photo from "../components/media/Photo.astro";
+import Icon from "../components/ui/Icon.astro";
+import { photoByFile } from "../components/media/picks";
+import { site } from "../data/site";
+
+const bench = photoByFile("switch/switch-misc-02.jpg");
+const board = photoByFile("custom/gwii-14.jpg");
+---
+
+<BaseLayout
+  title="About Al"
+  description="Meet Al, the hardware modder and electronics tech behind Mod Labs in Seattle: 9+ years of repair, micro-soldering and custom builds, with local drop-off and mail-in."
+>
+  <PageHero
+    eyebrow="About"
+    title="Hi, I'm Al. This is my lab."
+    highlight="my lab."
+    intro="Mod Labs is a one-person, mod-first shop in Seattle, with room for repair work when a board needs help beyond the usual install."
+  />
+
+  <section class="section-y" aria-labelledby="me-title">
+    <div class="container-x grid items-start gap-12 lg:grid-cols-[1fr_1.1fr] lg:gap-16">
+      <div class="reveal relative mx-auto w-full max-w-md lg:sticky lg:top-24">
+        <div class="about-frame">
+          <Photo photo={bench} ratio="4 / 5" sizes="(min-width: 1024px) 440px, 90vw" widths={[400, 800]} class="rounded-[1.4rem]" alt="Al's workbench: a digital microscope showing a Switch board mid-install" />
+        </div>
+        <div class="about-inset">
+          <Photo photo={board} ratio="1 / 1" sizes="160px" widths={[400]} class="rounded-2xl" alt="A trimmed Wii motherboard with relocated chips, part of a GWii build" />
+        </div>
+      </div>
+
+      <div>
+        <SectionHead id="me-title" eyebrow="Who am I?" title="A lifelong tinkerer with a soldering iron" highlight="soldering iron" />
+        <div class="prose-lab reveal mt-6 text-[1.05rem]">
+          <p>
+            I'm Al, a hardware modder, electronics tech and lifelong tinkerer based in {site.location.city}. I've spent over nine
+            years repairing, modifying and bringing hardware back to life, from game consoles and PCs to custom electronics and even
+            cars.
+          </p>
+          <p>
+            My background blends computer science, IT support and deep hands-on repair work. I grew up learning mechanical and
+            electrical troubleshooting from my dad, a senior mechanic for buses.
+          </p>
+          <p>
+            Over the years I've built strong skills in soldering, PCB rework, component-level diagnostics, wiring and system-level
+            troubleshooting. Whether it's a simple fix or a full custom mod, I focus on doing the job right, with transparency and
+            craftsmanship you can trust. <strong>If it has wires, chips or moving parts, I can probably fix it, improve it or make it cooler.</strong>
+          </p>
+        </div>
+
+        <div class="reveal-stagger mt-12 grid gap-5 sm:grid-cols-2">
+          <div class="card p-6">
+            <Icon name="hand" size={26} class="text-cyan" />
+            <h2 class="mt-4 text-xl">How I work</h2>
+            <p class="mt-2 leading-relaxed text-muted">
+              Every build is treated like it's staying in my own collection: clean flux habits, careful torque on screws, strain relief
+              on flex cables, and a full test before it goes back to you. Everything is personalized and noob-friendly. Questions are
+              always welcome, and I'll keep you posted on progress.
+            </p>
+          </div>
+          <div class="card p-6">
+            <Icon name="shield" size={26} class="text-purple-soft" />
+            <h2 class="mt-4 text-xl">Devices & data</h2>
+            <p class="mt-2 leading-relaxed text-muted">
+              Your device may hold personal data. Back up anything important before dropping off or shipping, just in case. Storage
+              isn't wiped for typical mod installs unless you ask. If a device turns out to be unrepairable, I'll contact you with next
+              steps.
+            </p>
+          </div>
+          <div class="card p-6">
+            <Icon name="pin" size={26} class="text-cyan" />
+            <h2 class="mt-4 text-xl">Local drop-off</h2>
+            <p class="mt-2 leading-relaxed text-muted">{site.serviceArea.local}</p>
+          </div>
+          <div class="card p-6">
+            <Icon name="truck" size={26} class="text-purple-soft" />
+            <h2 class="mt-4 text-xl">Mail-in</h2>
+            <p class="mt-2 leading-relaxed text-muted">{site.serviceArea.mailIn}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <FinalCta title="Got a project in mind?" body="Tell me about it. Mods, repairs or something that's never been built before, I'm happy to talk it through." />
+</BaseLayout>
+
+<style>
+  .about-frame {
+    padding: 4px;
+    border-radius: 1.6rem;
+    background: linear-gradient(150deg, rgb(0 229 255 / 0.8), rgb(168 85 247 / 0.5) 55%, rgb(255 61 242 / 0.6));
+    box-shadow: 0 40px 80px -40px rgb(168 85 247 / 0.9);
+  }
+  .about-inset {
+    position: absolute;
+    right: -0.75rem;
+    bottom: -1.5rem;
+    width: 38%;
+    padding: 3px;
+    border-radius: 1.1rem;
+    background: var(--color-ink);
+    border: 1px solid rgb(0 229 255 / 0.5);
+    box-shadow: 0 20px 40px -10px rgb(0 0 0 / 0.9);
+  }
+  @media (width >= 48rem) {
+    .about-inset {
+      right: -2rem;
+    }
+  }
+</style>

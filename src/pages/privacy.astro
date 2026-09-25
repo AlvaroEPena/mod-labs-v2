@@ -1,0 +1,60 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PageHero from "../components/ui/PageHero.astro";
+---
+
+<BaseLayout title="Privacy" description="How Mod Labs collects, uses and keeps information when you book a service, request a quote or send a device in.">
+  <PageHero eyebrow="Legal" title="Privacy" intro="The plain-language version of how I handle your information." compact />
+  <section class="section-y pt-10 sm:pt-14">
+    <div class="container-x">
+      <div class="prose-lab">
+        <p><strong>Last updated:</strong> September 2026</p>
+
+        <h2>What I collect</h2>
+        <p>
+          When you use the booking or quote forms, I collect what you enter: your name, email, phone number (optional), how you'll get
+          the device to me, the services or request type you pick, your message and any photos you attach. That's it. There are no
+          accounts on this site.
+        </p>
+
+        <h2>How the forms work</h2>
+        <p>
+          Form submissions are processed on Cloudflare, which hosts this site. To block spam, the forms use
+          <strong>Cloudflare Turnstile</strong>, which may check basic browser and device signals to tell people from bots. Your request
+          is then emailed to me through <strong>Resend</strong>, an email delivery service, along with any photos you attached. Photos
+          are resized in your browser before they're sent, which also drops their location data.
+        </p>
+
+        <h2>Why I use it</h2>
+        <p>
+          Only to reply to your request, give you a quote, schedule the work and coordinate drop-off or shipping. I don't sell your
+          personal information, and I don't use it for advertising.
+        </p>
+
+        <h2>How long I keep it</h2>
+        <p>
+          Requests are kept as long as needed for the job and for reasonable business records, unless the law requires longer. You can
+          ask me to delete your information at any time.
+        </p>
+
+        <h2>Cookies & analytics</h2>
+        <p>
+          This site doesn't use advertising or tracking cookies. Cloudflare may process technical data (like IP addresses) to deliver
+          the site securely and prevent abuse.
+        </p>
+
+        <h2>Devices & data on hardware</h2>
+        <p>
+          Consoles and other devices may contain your accounts, saves and personal files. Please back up anything important before
+          handing a device over. Typical mod installs don't require wiping storage, and I don't go through your data.
+        </p>
+
+        <h2>Questions or requests</h2>
+        <p>
+          To ask about or delete your information, send a message through the <a href="/quote">quote form</a> and pick "General
+          question".
+        </p>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

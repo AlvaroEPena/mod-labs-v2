@@ -1,0 +1,22 @@
+---
+import type { GetStaticPaths } from "astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import PageHero from "../../components/ui/PageHero.astro";
+import GalleryView from "../../components/gallery/GalleryView.astro";
+import FinalCta from "../../components/ui/FinalCta.astro";
+import { categories, photosInCategory, type Category } from "../../data/gallery";
+
+export const getStaticPaths = (() => categories.map((c) => ({ params: { category: c.slug }, props: { cat: c } }))) satisfies GetStaticPaths;
+
+interface Props {
+  cat: Category;
+}
+const { cat } = Astro.props;
+const count = photosInCategory(cat.slug).length;
+---
+
+<BaseLayout title={`${cat.title} Gallery`} description={`${cat.blurb} ${count} photos from Mod Labs in Seattle.`}>
+  <PageHero eyebrow={`Gallery · ${cat.short}`} title={cat.title} intro={cat.blurb} compact />
+  <GalleryView category={cat.slug} />
+  <FinalCta />
+</BaseLayout>

@@ -1,0 +1,127 @@
+---
+/**
+ * Hero circuit traces that "power on": each trace draws outward from the photo frame
+ * (stroke-dashoffset on pathLength=1), pads light up, then a few current pulses keep flowing.
+ * Glow is a wide low-opacity duplicate stroke (no filters, so animations stay cheap).
+ * Fully drawn and static under prefers-reduced-motion.
+ */
+const traces = [
+  // left (short: they end in vias before reaching the headline)
+  "M150 130H112L82 100H34",
+  "M150 210H96L66 240H22",
+  "M150 380H100L68 412V470L44 494H14",
+  // right
+  "M450 120H502L532 90H660",
+  "M450 290H522L552 320H660",
+  "M450 420H492L522 450V500L546 524H660",
+  // top / bottom
+  "M236 80V52L258 30V6",
+  "M364 80V42L344 22V4",
+  "M300 455V490L278 512V580",
+];
+const pads = [
+  [150, 130], [150, 210], [150, 380], [450, 120], [450, 290], [450, 420], [236, 80], [364, 80], [300, 455],
+];
+const vias = [
+  [34, 100], [22, 240], [14, 494], [532, 90], [552, 320], [522, 450], [258, 6], [344, 4], [278, 512],
+];
+const pulses = [3, 4, 5, 8];
+---
+
+<svg class="circuit" viewBox="0 0 600 535" aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <linearGradient id="ca-g" x1="0" y1="0" x2="600" y2="535" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#00e5ff"></stop>
+      <stop offset=".6" stop-color="#a855f7"></stop>
+      <stop offset="1" stop-color="#ff3df2"></stop>
+    </linearGradient>
+  </defs>
+  <g class="ca-glow" fill="none" stroke="url(#ca-g)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" opacity=".16">
+    {traces.map((d, i) => <path d={d} pathLength="1" style={`--i:${i}`} />)}
+  </g>
+  <g class="ca-traces" fill="none" stroke="url(#ca-g)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    {traces.map((d, i) => <path d={d} pathLength="1" style={`--i:${i}`} />)}
+  </g>
+  <g class="ca-pulses" fill="none" stroke="#e8fdff" stroke-width="3" stroke-linecap="round">
+    {pulses.map((t, i) => <path d={traces[t]} pathLength="1" style={`--p:${i}`} />)}
+  </g>
+  <g class="ca-vias">
+    {vias.map(([x, y], i) => <circle cx={x} cy={y} r="4.5" fill="#070815" stroke="#7df2ff" stroke-width="2" style={`--i:${i}`} />)}
+  </g>
+  <g class="ca-pads">
+    {pads.map(([x, y], i) => <rect x={x - 7} y={y - 7} width="14" height="14" rx="3" fill="#0f1230" stroke="#00e5ff" stroke-width="2.4" style={`--i:${i}`} />)}
+  </g>
+</svg>
+
+<style>
+  .circuit {
+    /* frame (x150–450, y80–455 in SVG units) maps exactly onto the photo frame box */
+    position: absolute;
+    left: -50%;
+    top: -21.33%;
+    width: 200%;
+    height: 142.67%;
+    overflow: visible;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .ca-pulses {
+    display: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .ca-traces path,
+    .ca-glow path {
+      stroke-dasharray: 1;
+      stroke-dashoffset: 1;
+      animation: ca-draw 1.4s var(--ease-snap) forwards;
+      animation-delay: calc(0.25s + var(--i) * 0.09s);
+    }
+    .ca-vias circle,
+    .ca-pads rect {
+      opacity: 0;
+      animation: ca-on 0.5s ease forwards;
+      animation-delay: calc(0.9s + var(--i) * 0.09s);
+    }
+    .ca-pads rect {
+      animation-delay: calc(0.2s + var(--i) * 0.09s);
+    }
+    .ca-pulses {
+      display: inline;
+    }
+    .ca-pulses path {
+      stroke-dasharray: 0.06 1;
+      stroke-dashoffset: 0.06;
+      opacity: 0;
+      animation: ca-flow 3.6s linear infinite;
+      animation-delay: calc(2.4s + var(--p) * 0.9s);
+    }
+  }
+
+  @keyframes ca-draw {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  @keyframes ca-on {
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes ca-flow {
+    0% {
+      stroke-dashoffset: 0.06;
+      opacity: 0;
+    }
+    8% {
+      opacity: 1;
+    }
+    70% {
+      opacity: 1;
+    }
+    100% {
+      stroke-dashoffset: -1;
+      opacity: 0;
+    }
+  }
+</style>

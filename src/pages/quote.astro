@@ -1,0 +1,43 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PageHero from "../components/ui/PageHero.astro";
+import QuoteForm from "../components/forms/QuoteForm.astro";
+import FormAside from "../components/forms/FormAside.astro";
+import Icon from "../components/ui/Icon.astro";
+---
+
+<BaseLayout
+  title="Request a Quote"
+  description="Request a quote from Mod Labs in Seattle: electronics and controller repair, PS4 PPPwn installs, custom shells and RGB, or a GWii / Wii Miicro commission build."
+  ctaBar={false}
+>
+  <PageHero
+    eyebrow="Get a quote"
+    title="Tell me what you've got"
+    highlight="what you've got"
+    intro="Repairs, PS4 work, custom shells, commission builds or just a question. Add a few photos and I'll come back with a clear price before any work starts."
+    compact
+  />
+  <section class="section-y pt-10 sm:pt-12">
+    <div class="container-x grid items-start gap-8 lg:grid-cols-[1.6fr_1fr] lg:gap-12">
+      <div class="card p-5 sm:p-8">
+        <QuoteForm />
+      </div>
+      <div class="grid gap-5 lg:sticky lg:top-24">
+        <FormAside
+          title="How quotes work"
+          steps={[
+            { icon: "camera", text: "Describe the job and add photos if you can. Close-ups of damage help a lot." },
+            { icon: "chat", text: "I reply by email with a price and timeline, usually within a day." },
+            { icon: "check", text: "Nothing happens until you say go. The quote is free." },
+          ]}
+        />
+        <div class="card p-6 sm:p-7">
+          <h2 class="flex items-center gap-2 text-xl"><Icon name="bolt" size={20} class="text-cyan" /> Want a priced mod?</h2>
+          <p class="mt-2 leading-relaxed text-muted">Xbox 360 RGH and Switch modchips have fixed prices, so you can book them directly.</p>
+          <a href="/book" class="btn btn-ghost mt-5 w-full">Book a service</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

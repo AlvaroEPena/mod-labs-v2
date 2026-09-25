@@ -1,0 +1,85 @@
+---
+import Icon from "./Icon.astro";
+import type { Service } from "../../data/services";
+
+interface Props {
+  service: Service;
+  /** show the full "what's included" list */
+  detailed?: boolean;
+  index?: number;
+  headingLevel?: "h2" | "h3";
+}
+const { service, detailed = false, index = 0, headingLevel: H = "h3" } = Astro.props;
+const platformLabel = { xbox: "Xbox 360", switch: "Nintendo Switch", playstation: "PlayStation", other: "Any device" }[service.platform];
+const accent = { xbox: "#3dffb0", switch: "#ff5a6e", playstation: "#5aa8ff", other: "#c89bff" }[service.platform];
+const priced = service.price !== null;
+const href = priced ? `/book?service=${service.id}` : "/quote";
+---
+
+<article class="card glow-edge flex h-full flex-col p-6 sm:p-7" style={`--accent:${accent}`}>
+  <div class="flex items-start justify-between gap-4">
+    <p class="platform"><span class="dot" aria-hidden="true"></span>{platformLabel}</p>
+    {
+      priced ? (
+        <p class="price-tag text-3xl" style={`--shimmer-delay:${1.2 + index * 0.7}s`}>
+          <span class="sr-only">Price: </span>
+          <span class="cur">$</span>
+          {service.price}
+        </p>
+      ) : (
+        <p class="quote-tag">By quote</p>
+      )
+    }
+  </div>
+  <H class="mt-5 text-2xl">{service.name}</H>
+  <p class="mt-2 leading-relaxed text-muted">{service.summary}</p>
+  {
+    detailed && (
+      <>
+        <p class="mt-6 text-xs font-semibold tracking-[0.18em] text-dim uppercase">What's included</p>
+        <ul class="solder-list mt-3">
+          {service.includes.map((i) => (
+            <li>{i}</li>
+          ))}
+        </ul>
+      </>
+    )
+  }
+  <div class="mt-auto pt-6">
+    <a href={href} class="link-arrow">
+      {priced ? "Book this mod" : "Get a quote"}
+      <span class="sr-only">: {service.name}</span>
+      <Icon name="arrow" size={18} />
+    </a>
+  </div>
+</article>
+
+<style>
+  .platform {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+  .dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 2px;
+    background: var(--accent);
+    box-shadow: 0 0 10px var(--accent);
+  }
+  .quote-tag {
+    padding: 0.35rem 0.7rem;
+    border-radius: 0.6rem;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--color-purple-soft);
+    border: 1px dashed rgb(200 155 255 / 0.5);
+  }
+</style>

@@ -1,0 +1,43 @@
+---
+import Icon from "../ui/Icon.astro";
+import type { IconName } from "../ui/icons";
+
+const points: { icon: IconName; title: string; body: string }[] = [
+  { icon: "microscope", title: "Microscope-level work", body: "Precision soldering under magnification, with strain relief and Kapton where it counts." },
+  { icon: "thermo", title: "Clean + fresh paste", body: "Every mod includes a deep clean and new thermal paste, so your console runs cooler than when it came in." },
+  { icon: "shield", title: "Tested before pickup", body: "Every console is fully tested before it goes home. If I spot prior damage, you hear it from me first." },
+  { icon: "chat", title: "Noob-friendly", body: "Ask anything. I keep you updated and walk you through your setup when you pick up." },
+  { icon: "clock", title: "Fast local turnaround", body: "Seattle drop-offs are usually done the same or next day." },
+  { icon: "wrench", title: "9+ years hands-on", body: "Consoles, PCs and custom electronics: I've been repairing and modding hardware for over nine years." },
+];
+---
+
+<ul class="reveal-stagger grid gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">
+  {
+    points.map((p) => (
+      <li class="flex gap-4">
+        <span class="trust-icon">
+          <Icon name={p.icon} size={22} />
+        </span>
+        <span>
+          <span class="block font-display text-lg font-bold text-fg">{p.title}</span>
+          <span class="mt-1 block leading-relaxed text-muted">{p.body}</span>
+        </span>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .trust-icon {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 2.9rem;
+    height: 2.9rem;
+    border-radius: 0.85rem;
+    color: var(--color-purple-soft);
+    background: rgb(168 85 247 / 0.1);
+    border: 1px solid rgb(168 85 247 / 0.35);
+  }
+</style>
