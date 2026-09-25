@@ -131,9 +131,10 @@ const strip = [
   .float-card {
     position: absolute;
     z-index: 2;
-    right: -6%;
+    /* equal insets keep the card centred on the photo frame */
+    right: 6%;
     bottom: 6%;
-    left: 12%;
+    left: 6%;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -152,8 +153,8 @@ const strip = [
       left: -3%;
     }
     .float-card {
-      right: -3%;
-      left: 6%;
+      right: 3%;
+      left: 3%;
     }
   }
 

@@ -28,7 +28,8 @@ export function resolvePick<P extends PickablePhoto>(list: readonly P[], pick: P
 const pick = (p: PhotoPick): Photo => resolvePick(photos, p);
 
 // Ids resolved from the pre-migration file names (e.g. custom/gwii-01.jpg → 332).
-const HERO: PhotoPick = { id: 332, project: "gwii" };
+/** GWii running New Super Mario Bros. Wii: a game on screen sells "real hardware" at a glance. */
+const HERO: PhotoPick = { id: 340, project: "gwii" };
 
 const CATEGORY_COVERS: Record<CategorySlug, PhotoPick> = {
   switch: { id: 52, category: "switch" }, // switch-oled-kamikaze-01

@@ -1,7 +1,8 @@
 ---
 /**
  * Hero circuit traces that "power on": each trace draws outward from the photo frame
- * (stroke-dashoffset on pathLength=1), pads light up, then a few current pulses keep flowing.
+ * (stroke-dashoffset on pathLength=1), pads light up, then a current pulse keeps flowing along every
+ * trace, staggered by PULSE_STAGGER_S so they never fire in sync.
  * Glow is a wide low-opacity duplicate stroke (no filters, so animations stay cheap).
  * Fully drawn and static under prefers-reduced-motion.
  */
@@ -25,7 +26,8 @@ const pads = [
 const vias = [
   [34, 100], [22, 240], [14, 494], [532, 90], [552, 320], [522, 450], [258, 6], [344, 4], [278, 512],
 ];
-const pulses = [3, 4, 5, 8];
+/** Seconds between consecutive traces' pulses; with 9 traces this spreads them across the cycle. */
+const PULSE_STAGGER_S = 0.4;
 ---
 
 <svg class="circuit" viewBox="0 0 600 535" aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMid meet">
@@ -43,7 +45,7 @@ const pulses = [3, 4, 5, 8];
     {traces.map((d, i) => <path d={d} pathLength="1" style={`--i:${i}`} />)}
   </g>
   <g class="ca-pulses" fill="none" stroke="#e8fdff" stroke-width="3" stroke-linecap="round">
-    {pulses.map((t, i) => <path d={traces[t]} pathLength="1" style={`--p:${i}`} />)}
+    {traces.map((d, i) => <path d={d} pathLength="1" style={`--p:${i}; --stagger:${PULSE_STAGGER_S}s`} />)}
   </g>
   <g class="ca-vias">
     {vias.map(([x, y], i) => <circle cx={x} cy={y} r="4.5" fill="#070815" stroke="#7df2ff" stroke-width="2" style={`--i:${i}`} />)}
@@ -94,7 +96,7 @@ const pulses = [3, 4, 5, 8];
       stroke-dashoffset: 0.06;
       opacity: 0;
       animation: ca-flow 3.6s linear infinite;
-      animation-delay: calc(2.4s + var(--p) * 0.9s);
+      animation-delay: calc(2.4s + var(--p) * var(--stagger));
     }
   }
 

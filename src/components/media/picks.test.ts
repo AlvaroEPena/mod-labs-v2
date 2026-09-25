@@ -42,7 +42,7 @@ describe("site picks (current data)", () => {
   }
 
   it("resolve to the photos chosen before the id migration (or a sensible fallback)", () => {
-    expectPick(heroPhoto(), 332, { project: "gwii" });
+    expectPick(heroPhoto(), 340, { project: "gwii" });
     expectPick(buildCover("gwii"), 341, { project: "gwii" });
     expectPick(buildCover("wii-miicro"), 402, { project: "wii-miicro" });
     expectPick(categoryCover("switch"), 52, { category: "switch" });
