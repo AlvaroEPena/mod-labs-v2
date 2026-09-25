@@ -1,0 +1,51 @@
+{
+  "name": "mod-labs",
+  "type": "module",
+  "version": "0.0.1",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "dev:full": "astro build && wrangler dev --port 8787",
+    "build": "astro build",
+    "preview": "wrangler dev --port 8787",
+    "photos": "node scripts/export-photos.mjs",
+    "typecheck": "astro check && tsc -p worker/tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "check": "npm run typecheck && npm run lint && npm test",
+    "deploy": "astro build && wrangler deploy"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "astro": "^7.3.5",
+    "photoswipe": "^5.4.4",
+    "tailwindcss": "^4.3.3",
+    "zod": "^4.6.5"
+  },
+  "allowScripts": {
+    "esbuild": true,
+    "workerd": true
+  },
+  "private": true,
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@axe-core/playwright": "^4.13.0",
+    "@cloudflare/workers-types": "^5.20260925.1",
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^24.13.6",
+    "eslint": "^10.11.0",
+    "eslint-plugin-astro": "^3.2.1",
+    "prettier": "^3.9.9",
+    "prettier-plugin-astro": "^1.1.0",
+    "sharp": "^0.35.4",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.70.1",
+    "vitest": "~4.1.11",
+    "wrangler": "^4.139.0"
+  }
+}

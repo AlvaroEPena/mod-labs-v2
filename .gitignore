@@ -1,0 +1,25 @@
+# build output
+dist/
+.astro/
+.wrangler/
+
+# dependencies
+node_modules/
+
+# env / secrets
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+
+# tests
+test-results/
+playwright-report/
+coverage/
+
+# logs & OS
+npm-debug.log*
+.DS_Store
+.idea/

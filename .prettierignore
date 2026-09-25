@@ -1,0 +1,7 @@
+dist
+.astro
+.wrangler
+node_modules
+src/data/photos.generated.json
+scripts/photo-sources.json
+package-lock.json
