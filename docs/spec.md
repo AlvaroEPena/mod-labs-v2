@@ -141,3 +141,38 @@ Custom domain; Instagram feed embed; calendar booking; payments/deposits; CMS.
 | backend-engineer | `worker/**` (incl. `worker/**/*.test.ts`), `wrangler.jsonc`, `.dev.vars.example`, `public/_headers` | everything else; no `npm install` (use `fetch` for Resend) |
 | orchestrator | `src/data/**`, `src/lib/forms/**`, `docs/**`, `tests/unit/**`, `playwright.config.ts`, `CLAUDE.md` | |
 API env: `EMAIL_MODE` = `log` (dev/tests: console only, returns success) | `send` (prod, default).
+
+## 15. Local photo admin (added 2026-09-24, owner request)
+Owner chose **local-only** (never deployed) with: move, delete, reorder, upload photos.
+Not in scope: editing text/prices, online access.
+
+**Data model change**
+- `src/data/photos.json` becomes the hand/admin-edited **source of truth**: an ordered array of
+  `{ id, file, project, width, height }`. Array order = display order within a project, and the first
+  photo of a project is its cover. Category is derived from `project` (via `projects` in gallery.ts).
+- Files move to stable, id-based names: `src/assets/gallery/photos/p0001.jpg` (4-digit, never reused).
+  Moving a photo between projects/categories is then a data-only edit, with no file renames.
+- `scripts/export-photos.mjs` + `photo-sources.json` + `docs/gallery-curation.json` are retired as a
+  pipeline (a one-time migration script converts the current state; curation JSON is kept as history).
+- Presentation picks (`src/components/media/picks.ts`) reference photos by **id** and fall back
+  gracefully (first photo of the project/category) if a picked photo is moved or deleted. They never throw.
+
+**Admin app** (`admin/`, outside `src/`, never built or deployed)
+- `npm run admin` starts a small Node server (no framework) bound to **127.0.0.1** only and prints the URL.
+- Security (local, but still): a random per-run token is required on every API call (embedded in the page);
+  Host must be `127.0.0.1:<port>`/`localhost:<port>` (DNS-rebinding guard); state-changing requests
+  require a same-origin `Origin`; JSON body limits; upload size/type limits; paths are never taken from the client.
+- UI: grouped by category → project, with thumbnails (generated with sharp, cached under
+  `node_modules/.cache/mod-labs-admin/`). The shared operations are:
+  - **Reorder:** drag and drop, plus keyboard/button alternatives (up/down, move to top).
+  - **Move** to another project (a select grouped by category).
+  - **Delete**, with confirmation. The file goes to a gitignored `.admin-trash/` and can be restored
+    from the trash view.
+  - **Upload** (multi-file) into a chosen project: rotate, resize to ≤2048px, strip ALL metadata (GPS),
+    save as JPEG q82. Unsupported formats (e.g. HEIC if sharp can't decode) get a clear error.
+- Every change is written atomically (temp file + rename) with stable pretty JSON. Astro dev
+  hot-reloads if it's running. The UI reminds the owner to `npm run deploy` to publish, and
+  shows uncommitted changes (`git status` of the gallery paths).
+- Processing logic is shared with the migration (`scripts/lib/process-photo.mjs`). Pure list operations
+  (`admin/lib/photos.ts`: move/reorder/delete/restore/add, plus validation like unique ids and known
+  projects) are unit tested. Server handlers are tested for the token/Host/Origin guards.
