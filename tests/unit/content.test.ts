@@ -43,8 +43,8 @@ describe("owner-confirmed details", () => {
     }
   });
 
-  it("lists \"Ask about games\" on every Switch service (owner request)", () => {
-    for (const s of services.filter((x) => x.platform === "switch")) expect(s.includes, s.id).toContain("Ask about games");
+  it("lists \"Ask about games\" on every Switch and Xbox 360 service (owner request)", () => {
+    for (const s of services.filter((x) => x.platform === "switch" || x.platform === "xbox")) expect(s.includes, s.id).toContain("Ask about games");
   });
 
   it("tells Switch customers to bring a genuine 256GB+ microSD card", () => {

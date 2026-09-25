@@ -28,6 +28,7 @@ export const services: Service[] = [
       "Deep clean + fresh thermal paste",
       "Software setup: Aurora dashboard + homebrew essentials",
       "Walkthrough of how to use everything",
+      "Ask about games",
     ],
     featured: true,
   },

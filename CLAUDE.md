@@ -33,5 +33,5 @@ Vitest 4.1 · Playwright 1.63 + axe · TypeScript 6 strict.
 - Use `astro:assets` `<Picture>`/`<Image>` for every photo; only the hero image gets `priority`.
 - Motion: transform/opacity only; wrap in `prefers-reduced-motion: no-preference`; scroll-driven effects behind `@supports (animation-timeline: view())`.
 - Astro 7: invalid/unclosed HTML fails the build. Keep the Worker in `worker/` (not `src/`).
-- Owner decision (2026-09-25): Switch services list the line "Ask about games". Beyond that, never advertise game libraries/preloaded games. Never invent reviews.
+- Owner decision (2026-09-25): Switch and Xbox 360 services list the line "Ask about games". Beyond that, never advertise game libraries/preloaded games. Never invent reviews.
 - Secrets only in `.dev.vars` (local) / `wrangler secret` (prod). Public values use `PUBLIC_*`.
