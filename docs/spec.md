@@ -133,3 +133,11 @@ Custom domain; Instagram feed embed; calendar booking; payments/deposits; CMS.
 
 ## 13. Changelog
 - 2026-09-24: draft from brief + curation.
+
+## 14. Build-phase ownership (2026-09-24)
+| Owner | May edit | Read-only |
+|---|---|---|
+| frontend-engineer | `src/pages/**`, `src/components/**`, `src/layouts/**`, `src/styles/**`, `src/scripts/**`, `src/assets/brand/**`, `public/**` (except `public/_headers`, `public/media/**`), `astro.config.mjs`, `package.json` deps (only agent allowed to `npm install`), component unit tests `src/**/*.test.ts` | `src/data/**`, `src/lib/forms/schema.ts`, `src/assets/gallery/**`, `worker/**`, `wrangler.jsonc` |
+| backend-engineer | `worker/**` (incl. `worker/**/*.test.ts`), `wrangler.jsonc`, `.dev.vars.example`, `public/_headers` | everything else; no `npm install` (use `fetch` for Resend) |
+| orchestrator | `src/data/**`, `src/lib/forms/**`, `docs/**`, `tests/unit/**`, `playwright.config.ts`, `CLAUDE.md` | |
+API env: `EMAIL_MODE` = `log` (dev/tests: console only, returns success) | `send` (prod, default).

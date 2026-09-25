@@ -14,7 +14,7 @@ export default defineConfig({
   ],
   webServer: {
     // Built site + Worker API with Turnstile test keys and no Resend key (emails are logged, not sent)
-    command: `npm run build && npx wrangler dev --port ${PORT} --var RESEND_API_KEY: --var TURNSTILE_SECRET_KEY:1x0000000000000000000000000000000AA`,
+    command: `npm run build && npx wrangler dev --port ${PORT} --var EMAIL_MODE:log --var TURNSTILE_SECRET_KEY:1x0000000000000000000000000000000AA`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 600_000,

@@ -5,3 +5,5 @@ TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
 RESEND_API_KEY=
 # Inbox that receives booking/quote requests (must be the Resend account email until a domain is verified)
 LEAD_EMAIL_TO=
+# "log" = print emails to the console instead of sending (local dev / tests). Production uses "send".
+EMAIL_MODE=log
