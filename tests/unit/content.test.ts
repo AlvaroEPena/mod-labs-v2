@@ -13,7 +13,7 @@ describe("content integrity", () => {
   });
 
   it("has every exported photo resolvable and categorized", () => {
-    expect(photos.length).toBe(188);
+    expect(photos.length).toBe(187);
     const cats = new Set(categories.map((c) => c.slug));
     for (const p of photos) expect(cats.has(p.category)).toBe(true);
   });

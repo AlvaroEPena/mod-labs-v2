@@ -891,15 +891,6 @@
   "height": 2048
  },
  {
-  "id": 57,
-  "category": "playstation",
-  "project": "playstation-misc",
-  "order": 13,
-  "file": "playstation/playstation-misc-04.jpg",
-  "width": 1536,
-  "height": 2048
- },
- {
   "id": 332,
   "category": "custom",
   "project": "gwii",
@@ -1478,63 +1469,63 @@
  {
   "id": 207,
   "category": "custom",
-  "project": "clear-rgb-xbox",
+  "project": "halo-xbox",
   "order": 64,
-  "file": "custom/clear-rgb-xbox-01.jpg",
+  "file": "custom/halo-xbox-07.jpg",
   "width": 1536,
   "height": 2048
  },
  {
   "id": 208,
   "category": "custom",
-  "project": "clear-rgb-xbox",
+  "project": "halo-xbox",
   "order": 65,
-  "file": "custom/clear-rgb-xbox-02.jpg",
+  "file": "custom/halo-xbox-08.jpg",
   "width": 1536,
   "height": 2048
  },
  {
   "id": 209,
   "category": "custom",
-  "project": "clear-rgb-xbox",
+  "project": "halo-xbox",
   "order": 66,
-  "file": "custom/clear-rgb-xbox-03.jpg",
+  "file": "custom/halo-xbox-09.jpg",
   "width": 1536,
   "height": 2048
  },
  {
   "id": 210,
   "category": "custom",
-  "project": "clear-rgb-xbox",
+  "project": "halo-xbox",
   "order": 67,
-  "file": "custom/clear-rgb-xbox-04.jpg",
+  "file": "custom/halo-xbox-10.jpg",
   "width": 1536,
   "height": 2048
  },
  {
   "id": 134,
   "category": "custom",
-  "project": "clear-rgb-xbox",
+  "project": "halo-xbox",
   "order": 68,
-  "file": "custom/clear-rgb-xbox-05.jpg",
+  "file": "custom/halo-xbox-11.jpg",
   "width": 1536,
   "height": 2048
  },
  {
   "id": 135,
   "category": "custom",
-  "project": "clear-rgb-xbox",
+  "project": "halo-xbox",
   "order": 69,
-  "file": "custom/clear-rgb-xbox-06.jpg",
+  "file": "custom/halo-xbox-12.jpg",
   "width": 1536,
   "height": 2048
  },
  {
   "id": 141,
   "category": "custom",
-  "project": "clear-rgb-xbox",
+  "project": "halo-xbox",
   "order": 70,
-  "file": "custom/clear-rgb-xbox-07.jpg",
+  "file": "custom/halo-xbox-13.jpg",
   "width": 1536,
   "height": 2048
  },
