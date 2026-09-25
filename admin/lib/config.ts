@@ -1,4 +1,5 @@
 /** Admin paths and limits. Every file path the server touches is derived here, never from a request. */
+import { existsSync } from "node:fs";
 import path from "node:path";
 
 export const DEFAULT_PORT = 4400;
@@ -34,20 +35,39 @@ export function pathsFor(root: string): AdminPaths {
   };
 }
 
+/** Value of `--name value` or `--name=value`, if given. */
+function readFlag(argv: readonly string[], name: string): string | undefined {
+  const index = argv.findIndex((a) => a === `--${name}` || a.startsWith(`--${name}=`));
+  if (index === -1) return undefined;
+  return argv[index].includes("=") ? argv[index].slice(name.length + 3) : argv[index + 1];
+}
+
 /** `--port 4401`, `--port=4401` or ADMIN_PORT=4401; defaults to 4400. */
 export function resolvePort(argv: readonly string[], env: Record<string, string | undefined>): number {
-  const flagIndex = argv.findIndex((a) => a === "--port" || a.startsWith("--port="));
-  const flag =
-    flagIndex === -1
-      ? undefined
-      : argv[flagIndex].includes("=")
-        ? argv[flagIndex].split("=")[1]
-        : argv[flagIndex + 1];
-  const raw = flag ?? env.ADMIN_PORT;
+  const raw = readFlag(argv, "port") ?? env.ADMIN_PORT;
   if (raw === undefined || raw === "") return DEFAULT_PORT;
   const port = Number(raw);
   if (!Number.isInteger(port) || port < 1024 || port > 65535) {
     throw new Error(`Invalid port "${raw}". Use a number between 1024 and 65535.`);
   }
   return port;
+}
+
+/**
+ * TESTING OPTION: `--root <dir>` or ADMIN_ROOT=<dir> points the admin at a copy of the data
+ * (<dir>/src/data/photos.json, <dir>/src/assets/gallery/photos/, <dir>/.admin-trash/) instead of
+ * this site folder, so tests never touch the real photos. Defaults to the site folder.
+ */
+export function resolveRoot(
+  argv: readonly string[],
+  env: Record<string, string | undefined>,
+  siteRoot: string,
+): string {
+  const raw = readFlag(argv, "root") ?? env.ADMIN_ROOT;
+  if (raw === undefined || raw === "") return siteRoot;
+  const root = path.resolve(raw);
+  if (!existsSync(pathsFor(root).photosJson)) {
+    throw new Error(`--root "${raw}" has no src/data/photos.json. Copy the data there first.`);
+  }
+  return root;
 }

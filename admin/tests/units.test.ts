@@ -1,11 +1,13 @@
-/** Small pure helpers: security checks, port parsing, git output, body limits, UI ordering. */
+/** Small pure helpers: security checks, port/root parsing, git output, body limits, HEIC sniffing. */
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { looksLikeHeic } from "../../scripts/lib/process-photo.mjs";
-import { DEFAULT_PORT, resolvePort } from "../lib/config.ts";
+import { DEFAULT_PORT, resolvePort, resolveRoot } from "../lib/config.ts";
 import { countChangedFiles } from "../lib/git-status.ts";
 import { HttpError, readBodyLimited } from "../lib/http.ts";
 import { isAllowedHost, isAllowedOrigin, isValidToken } from "../lib/security.ts";
-import { moveBy, moveTo, placeNextTo, sameOrder } from "../public/order.js";
 
 describe("security checks", () => {
   it("allows only 127.0.0.1 / localhost on our port as Host", () => {
@@ -48,6 +50,26 @@ describe("resolvePort", () => {
   });
 });
 
+describe("resolveRoot (testing option)", () => {
+  it("defaults to the site folder and accepts --root, --root= and ADMIN_ROOT", () => {
+    const copy = fs.mkdtempSync(path.join(os.tmpdir(), "mod-labs-root-"));
+    fs.mkdirSync(path.join(copy, "src", "data"), { recursive: true });
+    fs.writeFileSync(path.join(copy, "src", "data", "photos.json"), "[]\n");
+    try {
+      expect(resolveRoot([], {}, "/site")).toBe("/site");
+      expect(resolveRoot(["--root", copy], {}, "/site")).toBe(path.resolve(copy));
+      expect(resolveRoot([`--root=${copy}`], {}, "/site")).toBe(path.resolve(copy));
+      expect(resolveRoot([], { ADMIN_ROOT: copy }, "/site")).toBe(path.resolve(copy));
+    } finally {
+      fs.rmSync(copy, { recursive: true, force: true });
+    }
+  });
+
+  it("refuses a folder without the photo data", () => {
+    expect(() => resolveRoot(["--root", os.tmpdir()], {}, "/site")).toThrow(/has no src\/data\/photos.json/);
+  });
+});
+
 describe("countChangedFiles", () => {
   it("counts porcelain lines", () => {
     expect(countChangedFiles("")).toBe(0);
@@ -79,29 +101,5 @@ describe("looksLikeHeic", () => {
     const heic = new Uint8Array([0, 0, 0, 24, ...new TextEncoder().encode("ftypheic"), 0, 0, 0, 0]);
     expect(looksLikeHeic(heic)).toBe(true);
     expect(looksLikeHeic(new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0, 0, 0, 0, 0, 0, 0, 0]))).toBe(false);
-  });
-});
-
-describe("UI ordering helpers", () => {
-  const ids = [1, 2, 3, 4];
-  it("moves by a step, clamped at the ends", () => {
-    expect(moveBy(ids, 3, -1)).toEqual([1, 3, 2, 4]);
-    expect(moveBy(ids, 1, -1)).toEqual(ids);
-    expect(moveBy(ids, 4, 1)).toEqual(ids);
-  });
-
-  it("moves to the cover spot or the end", () => {
-    expect(moveTo(ids, 3, 0)).toEqual([3, 1, 2, 4]);
-    expect(moveTo(ids, 1, ids.length)).toEqual([2, 3, 4, 1]);
-    expect(moveTo(ids, 9, 0)).toEqual(ids);
-  });
-
-  it("places a dragged photo before or after the drop target", () => {
-    expect(placeNextTo(ids, 1, 3, false)).toEqual([2, 1, 3, 4]);
-    expect(placeNextTo(ids, 1, 3, true)).toEqual([2, 3, 1, 4]);
-    expect(placeNextTo(ids, 4, 1, false)).toEqual([4, 1, 2, 3]);
-    expect(placeNextTo(ids, 2, 2, true)).toEqual(ids);
-    expect(sameOrder(ids, [1, 2, 3, 4])).toBe(true);
-    expect(sameOrder(ids, [1, 2, 4, 3])).toBe(false);
   });
 });

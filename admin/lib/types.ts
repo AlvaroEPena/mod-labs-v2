@@ -37,9 +37,12 @@ export type AdminState = {
   limits: UploadLimits;
 };
 
-export type ReorderBody = { project: string; ids: number[] };
-export type MoveBody = { id: number; project: string };
-export type IdBody = { id: number };
+/** POST /api/move: put photos (any projects) into `project`, before `beforeId` or at the end (null). */
+export type MoveBody = { ids: number[]; project: string; beforeId: number | null };
+/** POST /api/arrange: exact contents + order of some projects (undo of a move or drag). */
+export type ArrangeBody = { layout: Record<string, number[]> };
+/** POST /api/delete and /api/restore. */
+export type IdsBody = { ids: number[] };
 
 export type UploadResult = { state: AdminState; photo: AdminPhoto };
 

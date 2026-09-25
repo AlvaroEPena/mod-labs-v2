@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { builds } from "../../src/data/builds";
 import { faqs } from "../../src/data/faq";
 import { categories, photos, photosFor, projects } from "../../src/data/gallery";
+import photoRecords from "../../src/data/photos.json";
 import { services } from "../../src/data/services";
 import { bookSchema, quoteSchema, buildRequestType } from "../../src/lib/forms/schema";
 
@@ -13,15 +14,19 @@ describe("content integrity", () => {
     expect(Object.fromEntries(builds.map((b) => [b.slug, b.price]))).toEqual({ gwii: 900, "wii-miicro": 450 });
   });
 
-  it("has every exported photo resolvable and categorized", () => {
-    expect(photos.length).toBe(187);
+  // The owner edits photos with `npm run admin`, so assert invariants, not a fixed count.
+  it("resolves every photo in photos.json and categorizes it", () => {
+    expect(photos.length).toBe(photoRecords.length);
+    expect(photos.length).toBeGreaterThan(0);
     const cats = new Set(categories.map((c) => c.slug));
     for (const p of photos) expect(cats.has(p.category)).toBe(true);
   });
 
-  it("gives every project at least one photo and every build a project", () => {
-    for (const p of projects) expect(photosFor(p.slug).length, p.slug).toBeGreaterThan(0);
-    for (const b of builds) expect(projects.some((p) => p.slug === b.project)).toBe(true);
+  it("gives every build a project with at least one photo (projects may be emptied; they're hidden)", () => {
+    for (const b of builds) {
+      expect(projects.some((p) => p.slug === b.project)).toBe(true);
+      expect(photosFor(b.project).length, b.project).toBeGreaterThan(0);
+    }
   });
 
   it("never mentions game libraries or preloaded games in customer-facing copy", () => {

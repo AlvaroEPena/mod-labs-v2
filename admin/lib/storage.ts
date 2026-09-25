@@ -104,8 +104,17 @@ export function createStorage(paths: AdminPaths, knownProjects: readonly string[
     await renameWithRetry(galleryFile(id), trashFile(id));
   }
 
+  /** Tolerates a file that never left the gallery folder (an interrupted delete). */
   async function moveFromTrash(id: number): Promise<void> {
-    await renameWithRetry(trashFile(id), galleryFile(id));
+    try {
+      await renameWithRetry(trashFile(id), galleryFile(id));
+    } catch (err) {
+      const stillInGallery = await fs.access(galleryFile(id)).then(
+        () => true,
+        () => false,
+      );
+      if (errorCode(err) !== "ENOENT" || !stillInGallery) throw err;
+    }
   }
 
   async function writeNewPhoto(id: number, data: Uint8Array): Promise<void> {

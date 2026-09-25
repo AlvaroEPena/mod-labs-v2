@@ -67,10 +67,15 @@
           </div>
         </section>
 
-        <p class="hint how-to" id="reorder-help">
-          Drag a photo to reorder it, or use its arrow buttons. With the grip button focused, the arrow keys
-          move it too. The first photo of each project is its cover on the site.
-        </p>
+        <div class="how-to">
+          <p class="hint" id="card-help">
+            <strong>Drag</strong> a photo to reorder it, or into another project.
+            <strong>Click</strong> photos (or press Space) to select several, then move or delete them
+            together. Shift-click selects a range. With a photo focused, the arrow keys move it; Esc clears
+            the selection.
+          </p>
+          <p class="hint">The first photo of each project is its cover on the site.</p>
+        </div>
         <nav class="jump" id="jump" aria-label="Jump to a category"></nav>
         <div id="gallery" aria-busy="true"><p class="loading">Loading photos…</p></div>
       </div>
@@ -78,16 +83,37 @@
       <div id="trash-view" hidden>
         <h2 class="view-title">Trash</h2>
         <p class="hint">
-          Deleted photos wait here. Restore puts a photo back where it was. They are never published.
+          Deleted photos wait here. Restore puts a photo back where it was. Click photos to restore several at
+          once. They are never published.
         </p>
         <div id="trash"></div>
       </div>
     </main>
 
+    <div class="selection-bar" id="selection-bar" role="region" aria-label="Selected photos" hidden>
+      <div class="wrap selection-inner">
+        <p data-count>0 photos selected</p>
+        <div class="selection-actions">
+          <button type="button" class="btn" data-bulk="move">Move…</button>
+          <button type="button" class="btn danger" data-bulk="delete">Delete</button>
+          <button type="button" class="btn ghost" data-bulk="clear">Clear</button>
+        </div>
+      </div>
+    </div>
+    <div class="selection-bar" id="trash-bar" role="region" aria-label="Selected deleted photos" hidden>
+      <div class="wrap selection-inner">
+        <p data-count>0 photos selected</p>
+        <div class="selection-actions">
+          <button type="button" class="btn primary" data-bulk="restore">Restore</button>
+          <button type="button" class="btn ghost" data-bulk="clear">Clear</button>
+        </div>
+      </div>
+    </div>
+
     <div class="toast-region wrap" aria-live="polite" role="status" id="status"></div>
 
     <dialog id="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-text">
-      <img class="dialog-thumb" id="confirm-thumb" alt="" />
+      <div class="dialog-thumbs" id="confirm-thumbs"></div>
       <h2 id="confirm-title">Delete this photo?</h2>
       <p id="confirm-text">It goes to the Trash, and you can restore it from there.</p>
       <div class="dialog-actions">
@@ -97,16 +123,16 @@
     </dialog>
 
     <dialog id="move-dialog" aria-labelledby="move-title">
-      <img class="dialog-thumb" id="move-thumb" alt="" />
+      <div class="dialog-thumbs" id="move-thumbs"></div>
       <h2 id="move-title">Move photo</h2>
       <div class="field">
-        <label for="move-project">Move it to</label>
+        <label for="move-project">Move to</label>
         <select id="move-project"></select>
       </div>
-      <p class="hint">It goes to the end of that project.</p>
+      <p class="hint">They go to the end of that project, in their current order.</p>
       <div class="dialog-actions">
         <button type="button" class="btn ghost" data-close="cancel">Cancel</button>
-        <button type="button" class="btn primary" data-close="confirm">Move photo</button>
+        <button type="button" class="btn primary" data-close="confirm">Move</button>
       </div>
     </dialog>
   </body>

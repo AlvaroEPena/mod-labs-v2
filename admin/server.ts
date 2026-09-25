@@ -6,14 +6,16 @@ import http from "node:http";
 import path from "node:path";
 import { Readable } from "node:stream";
 import { createApp } from "./app.ts";
-import { HOSTNAME, pathsFor, resolvePort } from "./lib/config.ts";
+import { HOSTNAME, pathsFor, resolvePort, resolveRoot } from "./lib/config.ts";
 import { gitPendingChanges } from "./lib/git-status.ts";
 import { createToken } from "./lib/security.ts";
 import { createStorage } from "./lib/storage.ts";
 import { projectSlugs } from "./handlers.ts";
 
-const root = path.resolve(import.meta.dirname, "..");
-const port = resolvePort(process.argv.slice(2), process.env);
+const siteRoot = path.resolve(import.meta.dirname, "..");
+const argv = process.argv.slice(2);
+const port = resolvePort(argv, process.env);
+const root = resolveRoot(argv, process.env, siteRoot);
 const paths = pathsFor(root);
 
 const handle = createApp({
@@ -64,6 +66,7 @@ server.on("error", (err: NodeJS.ErrnoException) => {
 server.listen(port, HOSTNAME, () => {
   console.log(`\n  Mod Labs photo admin is running (this computer only).\n`);
   console.log(`  Open:  http://${HOSTNAME}:${port}/\n`);
+  if (root !== siteRoot) console.log(`  TEST MODE: using the data in ${root}, not the real site photos.\n`);
   console.log(`  Preview the site at the same time: npm run dev (http://localhost:4321/gallery)`);
   console.log(`  Publish your changes: npm run deploy`);
   console.log(`  Stop: press Ctrl+C\n`);

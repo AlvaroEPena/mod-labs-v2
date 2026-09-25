@@ -122,23 +122,26 @@ describe("guards", () => {
   });
 
   it("rejects changes without a same-origin Origin (403) and leaves the data alone", async () => {
-    const body = { project: "gwii", ids: [12, 11, 10] };
-    expect((await post("/api/reorder", body, { origin: null })).status).toBe(403);
-    expect((await post("/api/reorder", body, { origin: "http://evil.example" })).status).toBe(403);
+    const body = { ids: [12], project: "gwii", beforeId: 10 };
+    expect((await post("/api/move", body, { origin: null })).status).toBe(403);
+    expect((await post("/api/move", body, { origin: "http://evil.example" })).status).toBe(403);
     expect(await readList()).toEqual(initial);
   });
 
   it("refuses other methods, unknown routes, bad JSON and bad input", async () => {
     expect((await send("/api/state", { method: "PUT" })).status).toBe(405);
     expect((await send("/api/nope")).status).toBe(404);
+    expect((await send("/api/reorder", { json: {} })).status).toBe(404); // replaced by /api/arrange
     expect((await send("/../src/data/photos.json", { token: null })).status).toBe(404);
-    expect((await send("/api/reorder", { body: "{}" })).status).toBe(415);
-    expect((await send("/api/delete", { json: undefined, body: "x", method: "POST" })).status).toBe(415);
-    expect((await post("/api/delete", { id: "10" })).status).toBe(400);
-    expect((await post("/api/delete", { id: 1.5 })).status).toBe(400);
-    expect((await post("/api/move", { id: 10, project: "../../etc" })).status).toBe(400);
-    expect((await post("/api/delete", { id: 999 })).status).toBe(404);
-    expect((await post("/api/reorder", { project: "gwii", ids: "x".repeat(70_000) })).status).toBe(413);
+    expect((await send("/api/move", { body: "{}" })).status).toBe(415);
+    expect((await post("/api/delete", { ids: ["10"] })).status).toBe(400);
+    expect((await post("/api/delete", { ids: [1.5] })).status).toBe(400);
+    expect((await post("/api/delete", { ids: [] })).status).toBe(400);
+    expect((await post("/api/delete", { ids: [10, 10] })).status).toBe(400);
+    expect((await post("/api/move", { ids: [10], project: "../../etc" })).status).toBe(400);
+    expect((await post("/api/arrange", { layout: { "../x": [10] } })).status).toBe(400);
+    expect((await post("/api/delete", { ids: "x".repeat(70_000) })).status).toBe(413);
+    expect(await readList()).toEqual(initial);
   });
 });
 
@@ -151,40 +154,58 @@ describe("operations", () => {
     expect(state.pending).toEqual({ count: 0 });
   });
 
-  it("reorders a project and refuses a stale order with 409", async () => {
-    const res = await post("/api/reorder", { project: "gwii", ids: [12, 10, 11] });
-    expect(res.status).toBe(200);
-    expect(idsOf(await readList(), "gwii")).toEqual([12, 10, 11]);
-    expect((await post("/api/reorder", { project: "gwii", ids: [10, 11] })).status).toBe(409);
-  });
-
-  it("keeps the file canonical: moving a photo out and back, then reordering, gives identical bytes", async () => {
+  it("moves several photos across projects in one write, then undoes it with arrange", async () => {
     const before = await fs.readFile(paths.photosJson, "utf8");
-    await post("/api/move", { id: 10, project: "gboy" });
-    await post("/api/move", { id: 10, project: "gwii" });
-    expect((await post("/api/reorder", { project: "gwii", ids: [10, 11, 12] })).status).toBe(200);
+    const res = await post("/api/move", { ids: [20, 11], project: "halo-xbox", beforeId: null });
+    expect(res.status).toBe(200);
+    const list = await readList();
+    expect(idsOf(list, "halo-xbox")).toEqual([11, 20]); // current relative order
+    expect(idsOf(list, "gwii")).toEqual([10, 12]);
+    expect(idsOf(list, "gboy")).toEqual([]);
+
+    const undo = await post("/api/arrange", { layout: { gwii: [10, 11, 12], gboy: [20], "halo-xbox": [] } });
+    expect(undo.status).toBe(200);
     expect(await fs.readFile(paths.photosJson, "utf8")).toBe(before);
   });
 
-  it("moves a photo to the end of another project", async () => {
-    await post("/api/move", { id: 10, project: "gboy" });
-    const list = await readList();
-    expect(idsOf(list, "gboy")).toEqual([20, 10]);
-    expect(idsOf(list, "gwii")).toEqual([11, 12]);
+  it("places photos before a drop target, and refuses stale targets and layouts with 409", async () => {
+    expect((await post("/api/move", { ids: [12], project: "gwii", beforeId: 10 })).status).toBe(200);
+    expect(idsOf(await readList(), "gwii")).toEqual([12, 10, 11]);
+    expect((await post("/api/move", { ids: [10], project: "gboy", beforeId: 11 })).status).toBe(409);
+    expect((await post("/api/arrange", { layout: { gwii: [10, 11] } })).status).toBe(409);
   });
 
-  it("deletes to the trash and restores to the same spot, byte-for-byte", async () => {
+  it("is all-or-nothing: one unknown id changes nothing", async () => {
+    expect((await post("/api/move", { ids: [10, 999], project: "gboy", beforeId: null })).status).toBe(404);
+    expect((await post("/api/delete", { ids: [10, 999] })).status).toBe(404);
+    expect(await readList()).toEqual(initial);
+    expect(await fs.readdir(paths.photosDir)).toHaveLength(4);
+  });
+
+  it("deletes a batch to the trash and restores it byte-for-byte", async () => {
     const before = await fs.readFile(paths.photosJson, "utf8");
-    const deleted = (await (await post("/api/delete", { id: 11 })).json()) as AdminState;
-    expect(deleted.trash.map((t) => t.id)).toEqual([11]);
-    await expect(fs.access(path.join(paths.trashDir, "p0011.jpg"))).resolves.toBeUndefined();
-    await expect(fs.access(path.join(paths.photosDir, "p0011.jpg"))).rejects.toThrow();
+    const deleted = (await (await post("/api/delete", { ids: [11, 20, 10] })).json()) as AdminState;
+    expect(deleted.photos.map((p) => p.id)).toEqual([12]);
+    expect(deleted.trash.map((t) => t.id).sort()).toEqual([10, 11, 20]);
+    for (const f of ["p0010.jpg", "p0011.jpg", "p0020.jpg"]) {
+      await expect(fs.access(path.join(paths.trashDir, f))).resolves.toBeUndefined();
+    }
     expect((await send("/api/thumb/11")).status).toBe(200); // trash view thumbnails
 
-    expect((await post("/api/restore", { id: 11 })).status).toBe(200);
+    expect((await post("/api/restore", { ids: [10, 11, 20] })).status).toBe(200);
     expect(await fs.readFile(paths.photosJson, "utf8")).toBe(before);
-    await expect(fs.access(path.join(paths.photosDir, "p0011.jpg"))).resolves.toBeUndefined();
-    expect((await post("/api/restore", { id: 11 })).status).toBe(404);
+    expect(JSON.parse(await fs.readFile(paths.trashManifest, "utf8"))).toEqual([]);
+    expect((await post("/api/restore", { ids: [11] })).status).toBe(404);
+  });
+
+  it("restores part of a batch, and reads trash entries written by the previous version", async () => {
+    await post("/api/delete", { ids: [10, 11] });
+    const manifest = JSON.parse(await fs.readFile(paths.trashManifest, "utf8"));
+    expect(Object.keys(manifest[0]).sort()).toEqual(["afterId", "deletedAt", "index", "record"]);
+    expect((await post("/api/restore", { ids: [11] })).status).toBe(200);
+    expect(idsOf(await readList(), "gwii")).toEqual([11, 12]);
+    expect((await post("/api/restore", { ids: [10] })).status).toBe(200);
+    expect(idsOf(await readList(), "gwii")).toEqual([10, 11, 12]);
   });
 });
 
@@ -197,7 +218,7 @@ describe("upload", () => {
       .toBuffer();
     expect(await hasMetadata(withGps)).toBe(true);
 
-    await post("/api/delete", { id: 20 }); // highest id is now only in the trash
+    await post("/api/delete", { ids: [20] }); // highest id is now only in the trash
     const res = await send("/api/upload", {
       body: uploadForm(new Blob([withGps], { type: "image/jpeg" }), "IMG_0001.JPG"),
     });

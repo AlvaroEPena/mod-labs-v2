@@ -462,51 +462,137 @@ select:hover {
   border-radius: var(--radius);
   background: var(--panel);
   overflow: hidden;
+  cursor: grab;
+  /* the whole card is draggable: no text selection, no iOS long-press callout */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 .card:hover {
   border-color: rgb(0 229 255 / 0.45);
 }
-.card.is-dragging {
-  opacity: 0.4;
+.card.is-selected {
+  border-color: var(--cyan);
+  box-shadow:
+    0 0 0 2px var(--cyan),
+    0 0 22px rgb(0 229 255 / 0.25);
+  background: linear-gradient(180deg, rgb(0 229 255 / 0.12), var(--panel) 45%);
 }
-.card.drop-before::before,
-.card.drop-after::after {
-  content: "";
-  position: absolute;
-  top: 6px;
-  bottom: 6px;
-  width: 4px;
-  border-radius: 4px;
-  background: var(--cyan);
-  box-shadow: 0 0 12px var(--cyan);
-  z-index: 1;
-}
-.card.drop-before::before {
-  left: 2px;
-}
-.card.drop-after::after {
-  right: 2px;
+.card.is-drag-source {
+  display: none;
 }
 .card.is-flash {
-  animation: flash 1.2s ease-out;
+  animation: flash 1.4s ease-out;
 }
 @keyframes flash {
   from {
-    box-shadow: 0 0 0 3px var(--cyan);
+    box-shadow:
+      0 0 0 3px var(--magenta),
+      0 0 26px rgb(255 61 242 / 0.5);
   }
   to {
     box-shadow: 0 0 0 3px transparent;
   }
 }
+/* The photo is a button: click/Space selects, arrows move, drag reorders. */
 .thumb {
+  position: relative;
+  display: block;
+  width: 100%;
   aspect-ratio: 4 / 3;
+  padding: 0;
+  border: 0;
   background: var(--ink-2);
-  cursor: grab;
+  cursor: inherit;
 }
 .thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  pointer-events: none;
+  -webkit-user-drag: none;
+}
+.thumb:focus-visible {
+  outline-offset: -3px;
+}
+.check {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid rgb(255 255 255 / 0.85);
+  background: rgb(7 8 21 / 0.55);
+  color: transparent;
+  opacity: 0.75;
+  transition: opacity 0.15s;
+}
+.check svg {
+  width: 16px;
+  height: 16px;
+}
+.card:hover .check,
+.thumb:focus-visible .check {
+  opacity: 1;
+}
+.card.is-selected .check {
+  opacity: 1;
+  background: var(--cyan);
+  border-color: var(--cyan);
+  color: var(--ink);
+}
+body.is-sorting,
+body.is-sorting * {
+  cursor: grabbing !important;
+}
+.drag-ghost {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 50;
+  pointer-events: none;
+  margin: 0;
+  border-color: var(--cyan);
+  box-shadow:
+    0 18px 50px rgb(0 0 0 / 0.6),
+    0 0 26px rgb(0 229 255 / 0.35);
+  opacity: 0.95;
+  will-change: transform;
+}
+.drag-ghost > * {
+  transform: rotate(-1.5deg) scale(1.02);
+}
+.ghost-count {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 34px;
+  padding: 0.2rem 0.55rem;
+  border-radius: 0 var(--radius) 0 12px;
+  background: var(--magenta);
+  color: #fff;
+  font-weight: 800;
+  text-align: center;
+}
+.drop-placeholder {
+  border: 2px dashed var(--cyan);
+  border-radius: var(--radius);
+  background: rgb(0 229 255 / 0.08);
+  box-shadow: inset 0 0 24px rgb(0 229 255 / 0.15);
+}
+.empty-slot {
+  grid-column: 1 / -1;
+  padding: 1.1rem;
+  border: 1.5px dashed var(--line);
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.grid:has(.drop-placeholder) .empty-slot {
+  display: none;
 }
 .card-meta {
   display: flex;
@@ -555,9 +641,6 @@ select:hover {
   opacity: 0.35;
   cursor: not-allowed;
 }
-.icon-btn.grip {
-  cursor: grab;
-}
 .icon-btn svg {
   width: 18px;
   height: 18px;
@@ -597,6 +680,43 @@ select:hover {
 .trash-meta strong {
   color: var(--fg);
   font-weight: 600;
+}
+
+/* ---------- selection bar ---------- */
+.selection-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  padding: 0.7rem 0 calc(0.7rem + env(safe-area-inset-bottom));
+  background: rgb(15 18 48 / 0.94);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--cyan);
+  box-shadow: 0 -10px 40px rgb(0 0 0 / 0.5);
+}
+.selection-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem 1rem;
+}
+.selection-inner p {
+  margin: 0;
+  font-weight: 700;
+  color: var(--cyan-soft);
+}
+.selection-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+body.has-selection main {
+  padding-bottom: 96px;
+}
+body.has-selection .toast-region {
+  bottom: 88px;
 }
 
 /* ---------- toasts & dialogs ---------- */
@@ -660,13 +780,30 @@ dialog .field {
 dialog select {
   width: 100%;
 }
-.dialog-thumb {
-  width: 100%;
-  max-height: 200px;
-  object-fit: contain;
+.dialog-thumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+.dialog-thumbs img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
   border-radius: var(--radius-sm);
   background: var(--ink-2);
-  margin-bottom: 1rem;
+}
+.dialog-thumbs.is-single img {
+  width: 100%;
+  height: auto;
+  max-height: 200px;
+  object-fit: contain;
+}
+.dialog-thumbs .more {
+  font-weight: 700;
+  color: var(--muted);
+  padding: 0 0.4rem;
 }
 .dialog-actions {
   display: flex;

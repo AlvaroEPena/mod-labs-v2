@@ -1,62 +1,53 @@
 // @ts-check
 /**
- * Photo admin UI controller: loads state, wires every action (reorder, move, delete/undo,
- * restore, upload) and keeps focus and screen-reader announcements sensible after each change.
+ * Photo admin UI controller: loads state, renders it, and wires input (click, keyboard, drag,
+ * selection bars, views) to the actions. Focus and highlights follow the photo being worked on.
  * @typedef {import("../lib/types.ts").AdminState} AdminState
- * @typedef {{ id: number, action: string }} FocusTarget
+ * @typedef {import("./actions.js").FocusTarget} FocusTarget
  */
-import { ApiRequestError, getState, post, thumbUrl } from "./api.js";
-import { moveBy, moveTo, placeNextTo, sameOrder } from "./order.js";
-import { fillProjectSelect, h, projectTitles, renderBanner, renderGallery, renderTrash } from "./render.js";
-import { setupDragAndDrop } from "./dnd.js";
+import { createActions } from "./actions.js";
+import { getState } from "./api.js";
+import { chooseProject, confirmDelete } from "./dialogs.js";
+import { h } from "./dom.js";
+import { moveBy, moveTo } from "./order.js";
+import { fillProjectSelect, renderBanner, renderGallery } from "./render.js";
+import { createSelection } from "./select.js";
+import { syncSelection } from "./selection-ui.js";
+import { setupSortable } from "./sortable.js";
+import { announce } from "./toast.js";
+import { renderTrash } from "./trash.js";
 import { setupUpload } from "./upload.js";
 
 const byId = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 const galleryEl = byId("gallery");
 const trashEl = byId("trash");
-const statusEl = byId("status");
+const galleryBar = byId("selection-bar");
+const trashBar = byId("trash-bar");
+const prefersReducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /** @type {AdminState | undefined} */
 let state;
-let isBusy = false;
+/** @type {"gallery" | "trash"} */
+let view = "gallery";
 
-/* ---------- announcements ---------- */
+const selection = createSelection(syncSelections);
+const trashSelection = createSelection(syncSelections);
 
-let toastTimer = 0;
-/**
- * Show (and announce) a short message, optionally with one action button such as Undo.
- * @param {string} message
- * @param {boolean} [isError]
- * @param {{ label: string, run: () => void }} [action]
- */
-function announce(message, isError = false, action) {
-  clearTimeout(toastTimer);
-  const button = action && h("button", { type: "button", class: "btn small" }, action.label);
-  button?.addEventListener("click", () => {
-    statusEl.replaceChildren();
-    action?.run();
-  });
-  statusEl.replaceChildren(
-    h("div", { class: `toast${isError ? " is-error" : ""}` }, h("p", {}, message), button),
-  );
-  toastTimer = window.setTimeout(() => statusEl.replaceChildren(), action || isError ? 12000 : 5000);
+function syncSelections() {
+  syncSelection(galleryEl, selection, galleryBar, view === "gallery");
+  syncSelection(trashEl, trashSelection, trashBar, view === "trash");
 }
 
-/* ---------- state & rendering ---------- */
-
-const uploads = setupUpload({
-  getState: () => state,
-  onUploaded: (next, id) => applyState(next, { id, action: "grip" }, false),
-  announce,
-});
-
 /**
+ * Render a new state. With `focus`, highlight that photo and (optionally) keep keyboard focus on
+ * it, scrolled smoothly into view, so it's easy to follow while it moves.
  * @param {AdminState} next
- * @param {FocusTarget} [focus] control to focus afterwards (falls back to the card's grip)
- * @param {boolean} [moveFocus] false = only highlight the card (e.g. while uploading)
+ * @param {FocusTarget} [focus]
  */
-function applyState(next, focus, moveFocus = true) {
+function applyState(next, focus) {
   state = next;
+  selection.prune(next.photos.map((p) => p.id));
+  trashSelection.prune(next.trash.map((t) => t.id));
   renderGallery(galleryEl, byId("jump"), next);
   renderTrash(trashEl, next);
   renderBanner(byId("banner"), next.pending);
@@ -64,40 +55,14 @@ function applyState(next, focus, moveFocus = true) {
   fillProjectSelect(/** @type {HTMLSelectElement} */ (byId("upload-project")), next, {
     placeholder: "Choose a project…",
   });
+  syncSelections();
   if (!focus) return;
-  const card = document.querySelector(`.card[data-id="${focus.id}"]`);
+  const card = galleryEl.querySelector(`.card[data-id="${focus.id}"]`);
   if (!(card instanceof HTMLElement)) return;
   card.classList.add("is-flash");
-  if (!moveFocus) return;
-  const wanted = card.querySelector(`[data-action="${focus.action}"]`);
-  const target =
-    wanted instanceof HTMLButtonElement && !wanted.disabled
-      ? wanted
-      : card.querySelector('[data-action="grip"]');
-  if (target instanceof HTMLElement) target.focus();
-  card.scrollIntoView({ block: "nearest" });
-}
-
-/**
- * Run one change against the server, then re-render. One change at a time.
- * @param {() => Promise<AdminState>} task
- * @param {string} message
- * @param {FocusTarget} [focus]
- * @param {{ label: string, run: () => void }} [action]
- */
-async function change(task, message, focus, action) {
-  if (isBusy) return;
-  isBusy = true;
-  try {
-    applyState(await task(), focus);
-    announce(message, false, action);
-  } catch (err) {
-    announce(err instanceof Error ? err.message : "That didn't work.", true);
-    // stale page (another tab, a restart): reload so what's shown matches the disk again
-    if (err instanceof ApiRequestError && [404, 409].includes(err.status)) await load();
-  } finally {
-    isBusy = false;
-  }
+  if (!focus.moveFocus) return;
+  card.querySelector("button")?.focus({ preventScroll: true }); // the first button is the photo handle
+  card.scrollIntoView({ block: "nearest", behavior: prefersReducedMotion() ? "auto" : "smooth" });
 }
 
 async function load() {
@@ -113,133 +78,166 @@ async function load() {
   }
 }
 
+const actions = createActions({ getState: () => state, applyState, onReloadNeeded: load });
+const uploads = setupUpload({
+  getState: () => state,
+  onUploaded: (next, id) => applyState(next, { id, moveFocus: false }),
+  announce: (message, isError) => announce(message, { isError }),
+});
+
 /* ---------- helpers ---------- */
 
-const photoOf = (/** @type {number} */ id) => state?.photos.find((p) => p.id === id);
+const idOf = (/** @type {Element} */ el) => Number(el.closest(".card")?.getAttribute("data-id"));
 const idsIn = (/** @type {string} */ project) =>
   (state?.photos ?? []).filter((p) => p.project === project).map((p) => p.id);
-const titleOf = (/** @type {string} */ project) =>
-  (state ? projectTitles(state).get(project) : undefined) ?? project;
+const projectOf = (/** @type {number} */ id) => state?.photos.find((p) => p.id === id)?.project ?? "";
+const displayOrder = () => (state?.photos ?? []).map((p) => p.id);
 
 /**
+ * Click or Space on a photo: toggle it, or with Shift select the range from the last one clicked.
  * @param {number} id
- * @param {(ids: number[]) => number[]} reorderFn
- * @param {string} focusAction
+ * @param {boolean} isRange
  */
-function reorder(id, reorderFn, focusAction) {
-  const photo = photoOf(id);
-  if (!photo) return;
-  const before = idsIn(photo.project);
-  const after = reorderFn(before);
-  if (sameOrder(before, after)) return;
-  const position = after.indexOf(id) + 1;
-  const message =
-    position === 1
-      ? `Photo is now the cover of ${titleOf(photo.project)}.`
-      : `Moved to position ${position} of ${after.length}.`;
-  change(() => post("reorder", { project: photo.project, ids: after }), message, { id, action: focusAction });
+function select(id, isRange) {
+  if (isRange) selection.extendTo(idsIn(projectOf(id)), id);
+  else selection.toggle(id);
 }
 
-/**
- * Open a confirm-style dialog; resolves true when the confirm button was used.
- * @param {HTMLDialogElement} dialog
- * @returns {Promise<boolean>}
- */
-function ask(dialog) {
-  return new Promise((resolve) => {
-    dialog.returnValue = "";
-    dialog.addEventListener("close", () => resolve(dialog.returnValue === "confirm"), { once: true });
-    dialog.showModal();
-  });
-}
-for (const dialog of document.querySelectorAll("dialog")) {
-  dialog.addEventListener("click", (e) => {
-    const button = e.target instanceof Element ? e.target.closest("[data-close]") : null;
-    if (button) dialog.close(button.getAttribute("data-close") ?? "");
-  });
+/** @param {readonly number[]} ids */
+async function moveWithDialog(ids) {
+  if (!state || ids.length === 0) return;
+  const project = await chooseProject(state, ids);
+  if (!project) return;
+  selection.clear();
+  await actions.move(ids, project, null);
 }
 
-/** @param {number} id */
-async function deletePhoto(id) {
-  const photo = photoOf(id);
-  if (!photo) return;
-  /** @type {HTMLImageElement} */ (byId("confirm-thumb")).src = thumbUrl(id);
-  if (!(await ask(/** @type {HTMLDialogElement} */ (byId("confirm-dialog"))))) return;
-  const siblings = idsIn(photo.project);
-  const neighbour = siblings[siblings.indexOf(id) + 1] ?? siblings[siblings.indexOf(id) - 1];
-  await change(
-    () => post("delete", { id }),
-    `Photo moved to the trash from ${titleOf(photo.project)}.`,
-    neighbour ? { id: neighbour, action: "delete" } : undefined,
-    {
-      label: "Undo",
-      run: () => change(() => post("restore", { id }), "Photo restored.", { id, action: "delete" }),
-    },
-  );
+/** @param {readonly number[]} ids */
+async function deleteWithConfirm(ids) {
+  if (ids.length === 0 || !(await confirmDelete(ids))) return;
+  selection.clear();
+  await actions.remove(ids);
 }
 
-/** @param {number} id */
-async function movePhoto(id) {
-  const photo = photoOf(id);
-  if (!photo || !state) return;
-  const select = /** @type {HTMLSelectElement} */ (byId("move-project"));
-  fillProjectSelect(select, state, { selected: photo.project });
-  /** @type {HTMLImageElement} */ (byId("move-thumb")).src = thumbUrl(id);
-  const dialog = /** @type {HTMLDialogElement} */ (byId("move-dialog"));
-  // Only allow confirming once a different project is chosen.
-  const confirmButton = /** @type {HTMLButtonElement} */ (dialog.querySelector('[data-close="confirm"]'));
-  const syncConfirm = () => (confirmButton.disabled = select.value === photo.project);
-  select.onchange = syncConfirm;
-  syncConfirm();
-  const confirmed = ask(dialog);
-  select.focus();
-  if (!(await confirmed) || select.value === photo.project) return;
-  const project = select.value;
-  await change(() => post("move", { id, project }), `Photo moved to ${titleOf(project)} (at the end).`, {
-    id,
-    action: "move",
-  });
-}
-
-/* ---------- gallery events ---------- */
+/* ---------- gallery: clicks, keyboard, drag ---------- */
 
 galleryEl.addEventListener("click", (e) => {
-  const button = e.target instanceof Element ? e.target.closest("button[data-action]") : null;
+  const target = e.target instanceof Element ? e.target : null;
+  const handle = target?.closest('[data-role="handle"]');
+  if (handle) return select(idOf(handle), e.shiftKey);
+  const button = target?.closest("button[data-action]");
   if (!(button instanceof HTMLButtonElement)) return;
-  const action = button.dataset.action;
-  if (action === "upload-here") return uploads.chooseProject(button.dataset.project ?? "");
-  const id = Number(button.closest(".card")?.getAttribute("data-id"));
-  if (!id) return;
-  if (action === "earlier") reorder(id, (ids) => moveBy(ids, id, -1), "earlier");
-  else if (action === "later") reorder(id, (ids) => moveBy(ids, id, 1), "later");
-  else if (action === "cover") reorder(id, (ids) => moveTo(ids, id, 0), "grip");
-  else if (action === "move") movePhoto(id);
-  else if (action === "delete") deletePhoto(id);
+  const { action, project = "" } = button.dataset;
+  if (action === "upload-here") return uploads.chooseProject(project);
+  if (action === "select-all") return selection.setMany(idsIn(project), button.dataset.mode !== "deselect");
+  const id = idOf(button);
+  if (action === "earlier") actions.step(id, (order) => moveBy(order, id, -1));
+  else if (action === "later") actions.step(id, (order) => moveBy(order, id, 1));
+  else if (action === "cover") actions.step(id, (order) => moveTo(order, id, 0));
+  else if (action === "move") moveWithDialog([id]);
+  else if (action === "delete") deleteWithConfirm([id]);
 });
 
-/** Keyboard reordering on the grip button: arrows move one place, Home/End jump to first/last. */
-const KEY_MOVES = /** @type {Record<string, (ids: number[], id: number) => number[]>} */ ({
-  ArrowLeft: (ids, id) => moveBy(ids, id, -1),
-  ArrowUp: (ids, id) => moveBy(ids, id, -1),
-  ArrowRight: (ids, id) => moveBy(ids, id, 1),
-  ArrowDown: (ids, id) => moveBy(ids, id, 1),
-  Home: (ids, id) => moveTo(ids, id, 0),
-  End: (ids, id) => moveTo(ids, id, ids.length),
+/** With a photo focused: arrows move it one place, Home/End to first/last. */
+const KEY_MOVES = /** @type {Record<string, (order: number[], id: number) => number[]>} */ ({
+  ArrowLeft: (order, id) => moveBy(order, id, -1),
+  ArrowUp: (order, id) => moveBy(order, id, -1),
+  ArrowRight: (order, id) => moveBy(order, id, 1),
+  ArrowDown: (order, id) => moveBy(order, id, 1),
+  Home: (order, id) => moveTo(order, id, 0),
+  End: (order, id) => moveTo(order, id, order.length),
 });
 galleryEl.addEventListener("keydown", (e) => {
-  const grip = e.target instanceof Element ? e.target.closest('[data-action="grip"]') : null;
-  const move = KEY_MOVES[e.key];
-  if (!grip || !move) return;
+  const handle = e.target instanceof Element ? e.target.closest('[data-role="handle"]') : null;
+  if (!handle) return;
+  const id = idOf(handle);
+  if (e.key === " ") {
+    e.preventDefault(); // handled here (with Shift support) instead of the button's own click
+    return select(id, e.shiftKey);
+  }
+  const reorder = KEY_MOVES[e.key];
+  if (!reorder) return;
   e.preventDefault();
-  const id = Number(grip.closest(".card")?.getAttribute("data-id"));
-  reorder(id, (ids) => move(ids, id), "grip");
+  actions.step(id, (order) => reorder(order, id));
 });
 
-/* ---------- drag and drop (within a project) ---------- */
+setupSortable(galleryEl, {
+  // Dragging a selected photo takes the whole selection along.
+  dragIds: (id) => (selection.has(id) ? selection.inOrder(displayOrder()) : [id]),
+  onDrop: ({ ids, project, beforeId }) => {
+    selection.clear();
+    actions.move(ids, project, beforeId);
+  },
+  onCancel: () => announce("Drag cancelled. Nothing changed."),
+});
 
-setupDragAndDrop(galleryEl, (id, targetId, after) =>
-  reorder(id, (ids) => placeNextTo(ids, id, targetId, after), "grip"),
-);
+/* ---------- selection bars, Esc ---------- */
+
+galleryBar.addEventListener("click", (e) => {
+  const kind =
+    e.target instanceof Element ? e.target.closest("[data-bulk]")?.getAttribute("data-bulk") : null;
+  const ids = selection.inOrder(displayOrder());
+  if (kind === "move") moveWithDialog(ids);
+  else if (kind === "delete") deleteWithConfirm(ids);
+  else if (kind === "clear") selection.clear();
+});
+trashBar.addEventListener("click", (e) => {
+  const kind =
+    e.target instanceof Element ? e.target.closest("[data-bulk]")?.getAttribute("data-bulk") : null;
+  const ids = trashSelection.inOrder((state?.trash ?? []).map((t) => t.id));
+  if (kind === "restore" && ids.length) {
+    trashSelection.clear();
+    actions.restore(ids);
+  } else if (kind === "clear") trashSelection.clear();
+});
+
+window.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape" || document.querySelector("dialog[open]")) return;
+  (view === "gallery" ? selection : trashSelection).clear();
+});
+
+/* ---------- trash & views ---------- */
+
+trashEl.addEventListener("click", (e) => {
+  const target = e.target instanceof Element ? e.target : null;
+  const handle = target?.closest('[data-role="handle"]');
+  const trashOrder = (state?.trash ?? []).map((t) => t.id);
+  if (handle) {
+    const id = idOf(handle);
+    return e.shiftKey ? trashSelection.extendTo(trashOrder, id) : trashSelection.toggle(id);
+  }
+  const button = target?.closest('button[data-action="restore"]');
+  if (!button) return;
+  const id = idOf(button);
+  trashSelection.prune(trashOrder.filter((x) => x !== id));
+  actions.restore([id]).then(() => {
+    const next = trashEl.querySelector('button[data-action="restore"]');
+    if (next instanceof HTMLElement) next.focus();
+    else byId("main").focus();
+  });
+});
+trashEl.addEventListener("keydown", (e) => {
+  const handle = e.target instanceof Element ? e.target.closest('[data-role="handle"]') : null;
+  if (!handle || e.key !== " ") return;
+  e.preventDefault();
+  const id = idOf(handle);
+  if (e.shiftKey)
+    trashSelection.extendTo(
+      (state?.trash ?? []).map((t) => t.id),
+      id,
+    );
+  else trashSelection.toggle(id);
+});
+
+for (const tab of document.querySelectorAll(".view-tab")) {
+  tab.addEventListener("click", () => {
+    view = tab.getAttribute("data-view") === "trash" ? "trash" : "gallery";
+    for (const t of document.querySelectorAll(".view-tab")) t.setAttribute("aria-pressed", String(t === tab));
+    byId("gallery-view").hidden = view !== "gallery";
+    byId("trash-view").hidden = view !== "trash";
+    syncSelections();
+  });
+}
 
 // A photo file dropped anywhere but the upload box would make the browser open it and leave the admin.
 for (const type of ["dragover", "drop"]) {
@@ -250,28 +248,5 @@ for (const type of ["dragover", "drop"]) {
 window.addEventListener("beforeunload", (e) => {
   if (uploads.isBusy()) e.preventDefault();
 });
-
-/* ---------- trash & views ---------- */
-
-trashEl.addEventListener("click", (e) => {
-  const button = e.target instanceof Element ? e.target.closest('button[data-action="restore"]') : null;
-  const id = Number(button?.closest(".card")?.getAttribute("data-id"));
-  const item = state?.trash.find((t) => t.id === id);
-  if (!item) return;
-  change(() => post("restore", { id }), `Photo restored to ${titleOf(item.project)}.`).then(() => {
-    const next = trashEl.querySelector('button[data-action="restore"]');
-    if (next instanceof HTMLElement) next.focus();
-    else byId("main").focus();
-  });
-});
-
-for (const tab of document.querySelectorAll(".view-tab")) {
-  tab.addEventListener("click", () => {
-    const view = tab.getAttribute("data-view");
-    for (const t of document.querySelectorAll(".view-tab")) t.setAttribute("aria-pressed", String(t === tab));
-    byId("gallery-view").hidden = view !== "gallery";
-    byId("trash-view").hidden = view !== "trash";
-  });
-}
 
 load();

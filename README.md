@@ -53,12 +53,23 @@ never uploaded with the site, needs no account, and costs nothing.
 1. In this folder, run `npm run admin` and open the address it prints (http://127.0.0.1:4400).
    Leave the terminal open while you work; press Ctrl+C there to stop it.
 2. Make your changes. Each one is saved straight away:
-   - **Reorder:** drag a photo onto a new spot in the same project, or use its arrow buttons.
-     The ★ button makes a photo the project's **cover** (the first photo is the one the site shows first).
-     Keyboard: focus a photo's grip button (⠿) and use the arrow keys, Home or End.
-   - **Move…** puts a photo in another project (it lands at the end of that project).
-   - **Delete** asks first, then moves the photo to the **Trash**. Nothing is lost: use **Undo**
-     right after, or open the Trash tab later and press **Restore** (it goes back where it was).
+   - **Drag to reorder:** grab a photo anywhere on its card and drop it where you want it. A dashed
+     gap shows where it will land and the other photos slide out of the way. You can drop it into a
+     **different project** too; hold it near the top or bottom of the window and the page scrolls.
+     Press **Esc** while dragging to cancel. On a touch screen, press and hold a photo, then drag.
+     After a drop you'll see "Saved" with an **Undo** button.
+   - **Select several:** click photos (a ✓ appears), or press Space on a focused photo.
+     **Shift-click** selects everything between two photos in a project, and **Select all** selects
+     a whole project. Selections can span projects. A bar appears at the bottom:
+     "N selected · Move… · Delete · Clear" (Esc also clears it). Dragging a selected photo drags the
+     whole selection.
+   - **Move…** puts photos in another project (they land at the end, in their current order).
+   - **Delete** asks once (however many photos), then moves them to the **Trash**. Nothing is
+     lost: one **Undo** right after brings them all back, or open the Trash tab later, select photos
+     and press **Restore** (each goes back where it was).
+   - **Arrows and cover:** each card's ‹ › buttons move it one place and ★ makes it the project's
+     **cover** (the first photo is the one the site shows first). With a photo focused, the arrow
+     keys, Home and End move it too; it stays highlighted and in view as it moves.
    - **Add photos:** choose the project, pick or drag in one or more photos, then press Upload.
      Each photo is turned upright, resized to at most 2048 px and saved as a JPEG with **all hidden
      data removed** (including GPS location). iPhone HEIC photos can't be read: set the iPhone to
@@ -76,6 +87,9 @@ Good to know:
 - If a photo picked for the home page, the builds page or the about page is moved or deleted, the
   site shows the first photo of that project or category instead. Nothing breaks.
 - To use another port: `npm run admin -- --port 4401`.
+- For testing (developers): `npm run admin -- --port 4455 --root <folder>` (or `ADMIN_ROOT=<folder>`)
+  runs the admin on a **copy** of the data: `<folder>/src/data/photos.json`,
+  `<folder>/src/assets/gallery/photos/` and `<folder>/.admin-trash/`. The real photos are untouched.
 
 ## Environment variables
 | Name | Where | Purpose |

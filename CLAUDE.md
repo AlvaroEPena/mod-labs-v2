@@ -20,7 +20,8 @@ Vitest 4.1 · Playwright 1.63 + axe · TypeScript 6 strict.
 - `npm run check` — typecheck (astro check + worker tsc + admin tsc) + lint + unit tests (incl. `admin/`)
 - `npm run build` — production build to `dist/`
 - `npm run test:e2e` — Playwright e2e + axe (builds and serves on 8788 via wrangler)
-- `npm run admin` — local photo admin on http://127.0.0.1:4400 (`--port N` / `ADMIN_PORT`); spec §15
+- `npm run admin` — local photo admin on http://127.0.0.1:4400 (`--port N` / `ADMIN_PORT`); spec §15.
+  **Testing: never point it at the real data** — copy `src/data/photos.json`, `src/assets/gallery/`, `.admin-trash/` to a temp dir and use `--root <dir>` (or `ADMIN_ROOT`) on another port (e.g. 4455).
 - `npm run deploy` — build + `wrangler deploy` (**only with the user's explicit OK**)
 
 ## Conventions

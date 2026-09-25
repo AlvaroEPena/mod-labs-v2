@@ -196,3 +196,24 @@ Not in scope: editing text/prices, online access.
 - *"Unpublished changes"* is the number of changed files under the gallery paths since the last **git commit**
   (git can't know what was deployed). The banner always shows the `npm run deploy` hint.
 - *Picks:* the about page's two photos also moved from file names to ids (254, 351).
+
+**Update (2026-09-24, owner feedback after first use): multi-select + real drag and drop**
+- *Multi-select:* every card's photo is a toggle button (`aria-pressed`; click or Space selects, Shift = range
+  within a project), plus "Select all" per project. Selections span projects. A sticky bar shows
+  "N selected · Move… · Delete · Clear"; Esc clears. The Trash has the same selection with "Restore N".
+- *Batch API (replaces the single-photo endpoints and `/api/reorder`; each is one atomic photos.json write,
+  every id validated first, all or nothing, 409 on stale input):*
+  - `POST /api/move {ids, project, beforeId|null}`: photos (any projects) land in `project` before `beforeId`
+    or at its end, keeping their current relative order. Used by the Move dialog, drag and drop and keyboard moves.
+  - `POST /api/arrange {layout: {project: ids[]}}`: exact contents and order of some projects (Undo of a move/drag).
+  - `POST /api/delete {ids}` / `POST /api/restore {ids}`: one confirmation and one Undo per batch; a batch
+    restore rebuilds the exact previous order. The trash manifest format is unchanged (older entries still restore).
+- *Drag and drop:* HTML5 DnD was replaced by a Pointer Events sortable (`admin/public/sortable.js`) that works
+  from anywhere on a card (mouse/pen after 6px; touch after a 280ms hold, so swipes still scroll), with a
+  floating ghost (count badge for several), a placeholder gap, FLIP animations, edge auto-scroll, Esc to cancel,
+  and drops into other projects. Dragging a selected card drags the selection. The page re-renders the predicted
+  order immediately (`public/order.js` mirrors the server's `movePhotos`), then shows "Saved" with Undo.
+  Arrow buttons stay as the single-pointer alternative to dragging (WCAG 2.5.7).
+- *Keyboard:* with a photo focused, arrows/Home/End move it. Changes are queued, so fast repeated presses all
+  count, and focus stays on the same photo, scrolled smoothly into view and briefly highlighted.
+- *Testing option:* `--root <dir>` / `ADMIN_ROOT` points the admin at a copy of the data (never test on the real photos).

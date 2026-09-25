@@ -6,7 +6,7 @@
  * @typedef {{ file: File, row: HTMLLIElement, bar: HTMLProgressElement, msg: HTMLElement, status: "waiting" | "uploading" | "done" | "error" }} QueueItem
  */
 import { uploadPhoto } from "./api.js";
-import { h } from "./render.js";
+import { h } from "./dom.js";
 
 const byId = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 

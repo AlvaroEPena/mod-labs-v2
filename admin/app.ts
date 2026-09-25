@@ -2,9 +2,11 @@
  * Request routing and guards for the photo admin. Works on standard Request/Response objects so
  * it can be tested without opening a port; `server.ts` adapts it to node:http.
  */
+import { readdirSync } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { createHandlers, parseId, parseIdBody, parseMoveBody, parseReorderBody } from "./handlers.ts";
+import { createHandlers } from "./handlers.ts";
+import { parseArrangeBody, parseId, parseIdsBody, parseMoveBody } from "./lib/parse.ts";
 import { MAX_JSON_BYTES, MAX_UPLOAD_BODY_BYTES, type AdminPaths } from "./lib/config.ts";
 import { errorResponse, HttpError, json, readFormData, readJson } from "./lib/http.ts";
 import { PhotoListError } from "./lib/photos.ts";
@@ -30,18 +32,25 @@ export type AppOptions = {
   logError?: (err: unknown) => void;
 };
 
-/** The only static files served. Request paths are looked up here, never joined onto the disk path. */
-const STATIC_FILES: Record<string, { file: string; type: string }> = {
-  "/": { file: "index.html", type: "text/html; charset=utf-8" },
-  "/styles.css": { file: "styles.css", type: "text/css; charset=utf-8" },
-  "/app.js": { file: "app.js", type: "text/javascript; charset=utf-8" },
-  "/api.js": { file: "api.js", type: "text/javascript; charset=utf-8" },
-  "/render.js": { file: "render.js", type: "text/javascript; charset=utf-8" },
-  "/order.js": { file: "order.js", type: "text/javascript; charset=utf-8" },
-  "/upload.js": { file: "upload.js", type: "text/javascript; charset=utf-8" },
-  "/dnd.js": { file: "dnd.js", type: "text/javascript; charset=utf-8" },
-  "/favicon.svg": { file: "favicon.svg", type: "image/svg+xml" },
+const CONTENT_TYPES: Record<string, string> = {
+  ".html": "text/html; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".svg": "image/svg+xml",
 };
+
+/**
+ * The only static files served: those in admin/public with an allowed extension, listed once at
+ * startup. Requests are looked up in this map by exact name, never joined onto a disk path.
+ */
+function listStaticFiles(publicDir: string): Map<string, { file: string; type: string }> {
+  const files = new Map<string, { file: string; type: string }>();
+  for (const name of readdirSync(publicDir)) {
+    const type = CONTENT_TYPES[path.extname(name)];
+    if (type) files.set(name === "index.html" ? "/" : `/${name}`, { file: name, type });
+  }
+  return files;
+}
 
 const TOKEN_PLACEHOLDER = "__ADMIN_TOKEN__";
 const THUMB_ROUTE = /^\/api\/thumb\/(\d{1,7})$/;
@@ -50,9 +59,10 @@ const STATUS_FOR_LIST_ERROR = { not_found: 404, stale: 409, invalid: 400 } as co
 export function createApp(options: AppOptions): (request: Request) => Promise<Response> {
   const { port, token, storage, paths, pending, publicDir } = options;
   const handlers = createHandlers({ storage, paths, pending });
+  const staticFiles = listStaticFiles(publicDir);
 
   async function serveStatic(pathname: string): Promise<Response> {
-    const entry = STATIC_FILES[pathname];
+    const entry = staticFiles.get(pathname);
     if (!entry) return errorResponse(404, "not_found", "Not found.");
     const body = await fs.readFile(path.join(publicDir, entry.file), "utf8");
     const text = pathname === "/" ? body.replace(TOKEN_PLACEHOLDER, token) : body;
@@ -75,14 +85,14 @@ export function createApp(options: AppOptions): (request: Request) => Promise<Re
     }
 
     switch (pathname) {
-      case "/api/reorder":
-        return json(await handlers.reorder(parseReorderBody(await readJson(request, MAX_JSON_BYTES))));
       case "/api/move":
         return json(await handlers.move(parseMoveBody(await readJson(request, MAX_JSON_BYTES))));
+      case "/api/arrange":
+        return json(await handlers.arrange(parseArrangeBody(await readJson(request, MAX_JSON_BYTES))));
       case "/api/delete":
-        return json(await handlers.remove(parseIdBody(await readJson(request, MAX_JSON_BYTES))));
+        return json(await handlers.remove(parseIdsBody(await readJson(request, MAX_JSON_BYTES))));
       case "/api/restore":
-        return json(await handlers.restore(parseIdBody(await readJson(request, MAX_JSON_BYTES))));
+        return json(await handlers.restore(parseIdsBody(await readJson(request, MAX_JSON_BYTES))));
       case "/api/upload":
         return json(await handlers.upload(await readFormData(request, MAX_UPLOAD_BODY_BYTES)));
       default:

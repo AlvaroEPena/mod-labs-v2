@@ -3,20 +3,29 @@
  * fresh AdminState so the UI simply re-renders from what's on disk.
  */
 import { categories, projects } from "../src/data/projects.ts";
-import { isPhotoId, photoFileForId, type PhotoRecord } from "../src/lib/gallery/records.ts";
+import { photoFileForId, type PhotoRecord } from "../src/lib/gallery/records.ts";
 import { looksLikeHeic, processPhoto, UnsupportedPhotoError } from "../scripts/lib/process-photo.mjs";
 import { ACCEPTED_UPLOAD_TYPES, MAX_UPLOAD_BYTES, type AdminPaths } from "./lib/config.ts";
 import { HttpError } from "./lib/http.ts";
-import { addPhoto, movePhoto, nextPhotoId, removePhoto, reorderProject, restorePhoto } from "./lib/photos.ts";
+import { parseProject } from "./lib/parse.ts";
+import {
+  addPhoto,
+  arrangeProjects,
+  movePhotos,
+  nextPhotoId,
+  removePhotos,
+  restorePhotos,
+} from "./lib/photos.ts";
 import type { Storage } from "./lib/storage.ts";
 import { thumbnail } from "./lib/thumbs.ts";
 import type {
   AdminPhoto,
   AdminState,
-  IdBody,
+  ArrangeBody,
+  IdsBody,
   MoveBody,
   PendingChanges,
-  ReorderBody,
+  TrashEntry,
   UploadResult,
 } from "./lib/types.ts";
 
@@ -25,33 +34,12 @@ export const projectSlugs = projects.map((p) => p.slug);
 
 const withCategory = (r: PhotoRecord): AdminPhoto => ({ ...r, category: categoryOf.get(r.project) ?? "" });
 
-/* ---------- input parsing (the only way request data reaches the operations) ---------- */
-
-const badRequest = (message: string) => new HttpError(400, "invalid", message);
-const asObject = (body: unknown) => {
-  if (typeof body !== "object" || body === null || Array.isArray(body))
-    throw badRequest("Expected a JSON object.");
-  return body as Record<string, unknown>;
-};
-export function parseId(value: unknown): number {
-  if (!isPhotoId(value)) throw badRequest("That isn't a valid photo id.");
-  return value;
+/** Run file moves one by one, attempting all of them, then report the first failure (if any). */
+async function moveAll(ids: readonly number[], moveOne: (id: number) => Promise<void>): Promise<void> {
+  const results = await Promise.allSettled(ids.map((id) => moveOne(id)));
+  const failed = results.find((r) => r.status === "rejected");
+  if (failed) throw failed.reason;
 }
-export function parseProject(value: unknown): string {
-  if (typeof value !== "string" || !categoryOf.has(value))
-    throw badRequest("Pick one of the gallery projects.");
-  return value;
-}
-export const parseIdBody = (body: unknown): IdBody => ({ id: parseId(asObject(body).id) });
-export const parseMoveBody = (body: unknown): MoveBody => {
-  const o = asObject(body);
-  return { id: parseId(o.id), project: parseProject(o.project) };
-};
-export const parseReorderBody = (body: unknown): ReorderBody => {
-  const o = asObject(body);
-  if (!Array.isArray(o.ids) || o.ids.length > 10_000) throw badRequest("Expected the list of photo ids.");
-  return { project: parseProject(o.project), ids: o.ids.map(parseId) };
-};
 
 /* ---------- operations ---------- */
 
@@ -80,44 +68,70 @@ export function createHandlers({ storage, paths, pending }: HandlerDeps) {
     return getState();
   };
 
-  const reorder = (body: ReorderBody) =>
+  /** Move photos into a project (dialog, drag and drop, keyboard). One photos.json write. */
+  const move = ({ ids, project, beforeId }: MoveBody) =>
     change(async () => {
-      await storage.writePhotos(reorderProject(await storage.readPhotos(), body.project, body.ids));
+      await storage.writePhotos(movePhotos(await storage.readPhotos(), ids, project, beforeId));
     });
 
-  const move = (body: MoveBody) =>
+  /** Set exact project contents/order (undo of a move or drag). One photos.json write. */
+  const arrange = ({ layout }: ArrangeBody) =>
     change(async () => {
-      await storage.writePhotos(movePhoto(await storage.readPhotos(), body.id, body.project));
+      await storage.writePhotos(arrangeProjects(await storage.readPhotos(), layout));
     });
 
-  const remove = ({ id }: IdBody) =>
+  /**
+   * Delete photos to the trash. photos.json is written first (so it never points at a missing
+   * file), then the files move, then the trash list is saved, even if a file move failed, so
+   * every removed photo stays restorable.
+   */
+  const remove = ({ ids }: IdsBody) =>
     change(async () => {
-      const { list, removed, placement } = removePhoto(await storage.readPhotos(), id);
+      const { list, removals } = removePhotos(await storage.readPhotos(), ids);
       await storage.writePhotos(list);
-      await storage.moveToTrash(id);
-      const trash = await storage.readTrash();
-      const entry = { record: removed, deletedAt: new Date().toISOString(), ...placement };
-      await storage.writeTrash([...trash.filter((t) => t.record.id !== id), entry]);
+      const deletedAt = new Date().toISOString();
+      const entries: TrashEntry[] = removals.map(({ record, placement }) => ({
+        record,
+        deletedAt,
+        ...placement,
+      }));
+      try {
+        await moveAll(ids, storage.moveToTrash);
+      } finally {
+        const trash = await storage.readTrash();
+        await storage.writeTrash([...trash.filter((t) => !ids.includes(t.record.id)), ...entries]);
+      }
     });
 
-  const restore = ({ id }: IdBody) =>
+  /** Restore photos from the trash, each back where it was. Files first, then photos.json. */
+  const restore = ({ ids }: IdsBody) =>
     change(async () => {
       const trash = await storage.readTrash();
-      const entry = trash.find((t) => t.record.id === id);
-      if (!entry)
-        throw new HttpError(404, "not_found", "That photo isn't in the trash any more. Reload the page.");
-      // The project may have been removed from the site since it was deleted; fall back to the first one.
-      const project = categoryOf.has(entry.record.project) ? entry.record.project : projectSlugs[0];
-      const list = restorePhoto(await storage.readPhotos(), { ...entry.record, project }, entry);
-      await storage.moveFromTrash(id);
+      const missing = ids.filter((id) => !trash.some((t) => t.record.id === id));
+      if (missing.length)
+        throw new HttpError(
+          404,
+          "not_found",
+          "Some of those photos aren't in the trash any more. Reload the page.",
+        );
+      // Oldest deletion first: restorePhotos undoes them in reverse, which rebuilds the order exactly.
+      const entries = trash.filter((t) => ids.includes(t.record.id));
+      const removals = entries.map(({ record, afterId, index }) => ({
+        // The project may have been removed from the site since; fall back to the first one.
+        record: { ...record, project: categoryOf.has(record.project) ? record.project : projectSlugs[0] },
+        placement: { afterId, index },
+      }));
+      const list = restorePhotos(await storage.readPhotos(), removals);
+      await moveAll(ids, storage.moveFromTrash);
       await storage.writePhotos(list);
-      await storage.writeTrash(trash.filter((t) => t.record.id !== id));
+      await storage.writeTrash(trash.filter((t) => !ids.includes(t.record.id)));
     });
 
   async function upload(form: FormData): Promise<UploadResult> {
     const project = parseProject(form.get("project"));
     const file = form.get("file");
-    if (!(file instanceof File) || file.size === 0) throw badRequest("Choose a photo to upload.");
+    if (!(file instanceof File) || file.size === 0)
+      throw new HttpError(400, "invalid", "Choose a photo to upload.");
     if (file.size > MAX_UPLOAD_BYTES) {
       throw new HttpError(
         413,
@@ -164,5 +178,5 @@ export function createHandlers({ storage, paths, pending }: HandlerDeps) {
     throw new HttpError(404, "not_found", "No such photo.");
   }
 
-  return { getState, reorder, move, remove, restore, upload, thumb };
+  return { getState, move, arrange, remove, restore, upload, thumb };
 }

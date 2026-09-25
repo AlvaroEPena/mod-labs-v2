@@ -54,7 +54,7 @@ async function call(path, init = {}) {
 export const getState = () => call("/api/state");
 
 /**
- * @param {"reorder" | "move" | "delete" | "restore"} action
+ * @param {"move" | "arrange" | "delete" | "restore"} action
  * @param {object} body
  * @returns {Promise<AdminState>}
  */
