@@ -51,6 +51,11 @@ describe("site picks (current data)", () => {
     expectPick(categoryCover("custom"), 208, { category: "custom" });
     expectPick(categoryCover("repairs"), 41, { category: "repairs" });
     expectPick(videoPoster("halo-xbox"), 19, { project: "halo-xbox" });
+  });
+
+  it("lets a video pick its own poster (posterId override), falling back gracefully", () => {
+    expectPick(videoPoster("halo-xbox", 18), 18, { project: "halo-xbox" });
+    expect(videoPoster("halo-xbox", 999999).project).toBe("halo-xbox");
     expectPick(aboutPhotos().bench, 254, { project: "switch-misc" });
     expectPick(aboutPhotos().board, 351, { project: "gwii" });
   });

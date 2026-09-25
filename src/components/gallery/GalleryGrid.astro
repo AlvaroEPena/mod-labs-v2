@@ -12,10 +12,8 @@ interface Props {
   photos: PhotoRecord[];
   /** gallery group name (one lightbox per group) */
   group: string;
-  /** tighter 2-up layout for narrow containers */
-  compact?: boolean;
 }
-const { photos, group, compact = false } = Astro.props;
+const { photos, group } = Astro.props;
 
 const LIGHTBOX_EDGE = 1600;
 const items = await Promise.all(
@@ -29,12 +27,12 @@ const items = await Promise.all(
 );
 ---
 
-<ul class:list={["masonry", compact && "is-compact"]} data-pswp-gallery={group}>
+<ul class="masonry" data-pswp-gallery={group}>
   {
     items.map(({ photo, href, width, height }) => (
       <li class="masonry-item">
         <a href={href} class="gl-tile group" data-pswp-width={width} data-pswp-height={height} aria-label={`Open photo: ${photo.alt}`}>
-          <Photo photo={photo} sizes={compact ? "(min-width: 1024px) 300px, 50vw" : "(min-width: 1280px) 290px, (min-width: 1024px) 23vw, (min-width: 640px) 31vw, 50vw"} class="gl-photo" />
+          <Photo photo={photo} sizes="(min-width: 1280px) 290px, (min-width: 1024px) 23vw, (min-width: 640px) 31vw, 50vw" class="gl-photo" />
           <span class="gl-zoom" aria-hidden="true">
             <Icon name="eye" size={18} />
           </span>
@@ -56,12 +54,9 @@ const items = await Promise.all(
     }
   }
   @media (width >= 64rem) {
-    .masonry:not(.is-compact) {
+    .masonry {
       columns: 4;
     }
-  }
-  .masonry.is-compact {
-    columns: 2;
   }
   .masonry-item {
     break-inside: avoid;

@@ -26,12 +26,16 @@ const tabs = [
   })),
 ];
 const catTitle = (slug: CategorySlug) => categories.find((c) => c.slug === slug)?.short ?? slug;
-const posterFor = async (slug: string) => {
-  const src = videoPoster(slug);
-  return (await getImage({ src: src.image, width: 720, format: "webp", quality: 70 })).src;
-};
-const posters = Object.fromEntries(
-  await Promise.all(visibleProjects.filter((p) => p.video).map(async (p) => [p.slug, await posterFor(p.slug)] as const)),
+/** Poster URL per video src (build-time WebP, 720px is plenty for a ~18rem card). */
+const posters = new Map(
+  await Promise.all(
+    visibleProjects.flatMap((p) =>
+      (p.videos ?? []).map(async (v) => {
+        const { image } = videoPoster(p.slug, v.posterId);
+        return [v.src, (await getImage({ src: image, width: 720, format: "webp", quality: 70 })).src] as const;
+      }),
+    ),
+  ),
 );
 ---
 
@@ -74,7 +78,6 @@ const posters = Object.fromEntries(
       visibleProjects.map((p) => {
         const list = photosFor(p.slug);
         const build = p.build ? builds.find((b) => b.slug === p.build) : undefined;
-        const poster = posters[p.slug];
         return (
           <section id={p.slug} class="project scroll-mt-28" aria-labelledby={`${p.slug}-title`}>
             <div class="reveal mb-7 grid gap-5 lg:grid-cols-[1fr_auto] lg:items-end">
@@ -98,31 +101,33 @@ const posters = Object.fromEntries(
                 </div>
               )}
             </div>
-            {p.video ? (
-              <div class="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:gap-6">
-                <figure class="video-card reveal min-w-0 justify-self-center w-full max-w-sm lg:max-w-none">
-                  <video
-                    class="video"
-                    controls
-                    preload="none"
-                    playsinline
-                    poster={poster}
-                    width="1080"
-                    height="1920"
-                    aria-label={p.video.title}
-                  >
-                    <source src={p.video.src} type="video/mp4" />
-                    <a href={p.video.src}>Download the video</a>
-                  </video>
-                  <figcaption class="flex items-center gap-2 px-4 py-3 text-sm text-muted">
-                    <Icon name="play" size={14} class="text-magenta" /> {p.video.title}
-                  </figcaption>
-                </figure>
-                <GalleryGrid photos={list} group={p.slug} compact />
-              </div>
-            ) : (
-              <GalleryGrid photos={list} group={p.slug} />
-            )}
+            {p.videos?.length ? (
+              <ul class="video-row" aria-label={`${p.title} videos`}>
+                {p.videos.map((v) => (
+                  <li class="video-item">
+                    <figure class="video-card reveal">
+                      <video
+                        class="video"
+                        controls
+                        preload="none"
+                        playsinline
+                        poster={posters.get(v.src)}
+                        width="1080"
+                        height="1920"
+                        aria-label={v.title}
+                      >
+                        <source src={v.src} type="video/mp4" />
+                        <a href={v.src}>Download the video</a>
+                      </video>
+                      <figcaption class="flex items-center gap-2 px-4 py-3 text-sm text-muted">
+                        <Icon name="play" size={14} class="text-magenta" /> {v.title}
+                      </figcaption>
+                    </figure>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            <GalleryGrid photos={list} group={p.slug} />
           </section>
         );
       })
@@ -218,8 +223,25 @@ const posters = Object.fromEntries(
     color: var(--color-cyan);
     border-color: rgb(0 229 255 / 0.6);
   }
+  /* Videos get their own row above the photos so the photo grid keeps its full column count. */
+  .video-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  @media (width >= 40rem) {
+    .video-row {
+      justify-content: flex-start;
+      gap: 1.25rem;
+    }
+  }
+  .video-item {
+    flex: 0 1 18rem;
+    min-width: 0;
+  }
   .video-card {
-    align-self: start;
     overflow: hidden;
     border-radius: 1.1rem;
     background: var(--color-panel);

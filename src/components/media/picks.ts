@@ -53,9 +53,12 @@ const VIDEO_POSTERS: Record<string, PhotoPick> = {
 export const heroPhoto = () => pick(HERO);
 export const categoryCover = (slug: CategorySlug) => pick(CATEGORY_COVERS[slug]);
 export const buildCover = (slug: string) => pick(BUILD_COVERS[slug] ?? HERO);
-/** Id 0 never exists, so projects without a hand-picked poster get their cover photo. */
-export const videoPoster = (projectSlug: string) =>
-  pick(VIDEO_POSTERS[projectSlug] ?? { id: 0, project: projectSlug });
+/**
+ * Poster for a project video: the video's own posterId, else the project's hand-picked poster, else
+ * the project cover (id 0 never exists, so pick() falls back to the cover).
+ */
+export const videoPoster = (projectSlug: string, posterId?: number) =>
+  pick(posterId ? { id: posterId, project: projectSlug } : (VIDEO_POSTERS[projectSlug] ?? { id: 0, project: projectSlug }));
 
 /** About page: the bench shot and a board close-up. */
 export const aboutPhotos = () => ({
