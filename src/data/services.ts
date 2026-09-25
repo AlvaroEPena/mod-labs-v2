@@ -42,6 +42,7 @@ export const services: Service[] = [
       "Kamikaze install (direct DAT0 point)",
       "Deep clean + fresh thermal paste",
       "Software setup: emuMMC partition + homebrew",
+      "Ask about games",
     ],
     featured: true,
   },
@@ -51,7 +52,7 @@ export const services: Service[] = [
     platform: "switch",
     price: 120,
     summary: "The standard modchip path for classic Switch models.",
-    includes: ["Modchip", "Deep clean + fresh thermal paste", "Software setup: emuMMC partition + homebrew"],
+    includes: ["Modchip", "Deep clean + fresh thermal paste", "Software setup: emuMMC partition + homebrew", "Ask about games"],
     featured: true,
   },
   {
@@ -60,7 +61,7 @@ export const services: Service[] = [
     platform: "switch",
     price: 140,
     summary: "Modchip install for the portable form factor.",
-    includes: ["Modchip", "Deep clean + fresh thermal paste", "Software setup: emuMMC partition + homebrew"],
+    includes: ["Modchip", "Deep clean + fresh thermal paste", "Software setup: emuMMC partition + homebrew", "Ask about games"],
     featured: true,
   },
 ];
