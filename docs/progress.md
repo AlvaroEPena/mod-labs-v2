@@ -62,3 +62,9 @@
 - Price badges centred (flex: none), home strip "Switch $120+" derived from data, FAQ microSD advice (256GB+, reputable seller), builds include USB-C PD brick / no cable (7ce850b).
 - Workspace: mandatory engineering-standards.md for all agents (e69db38).
 - Local photo admin (`npm run admin`, 127.0.0.1:4400): reorder/move/delete→trash/restore/upload. photos.json source of truth, id-based files, id-based picks with fallbacks. check: 155 unit tests; build OK; e2e 257 pass (agent run). Committed.
+
+### 2026-09-25 — custom domain
+- modlabs.store bought on Namecheap, nameservers → Cloudflare (alexandra/mark.ns.cloudflare.com), attached to Worker `seattle` as custom domain (also declared in wrangler.jsonc routes).
+- www.modlabs.store: proxied DNS record + Redirect Rule "Redirect from WWW to root" (301, query string preserved). Verified 301 www/gallery → modlabs.store/gallery.
+- PUBLIC_SITE_URL → https://modlabs.store (canonical, sitemap, robots, OG, JSON-LD).
+- Owner TODO: add modlabs.store to Turnstile widget hostnames; later: Resend domain verification + EMAIL_FROM, Cloudflare Email Routing for @modlabs.store.

@@ -26,5 +26,9 @@
       "simple": { "limit": 5, "period": 60 }
     }
   ],
+  // Custom domain, kept in code so every deploy re-asserts it. www.modlabs.store is a proxied DNS record
+  // + a zone Redirect Rule (www → root, 301, query string kept), configured in the dashboard.
+  // The seattle.modlabs.workers.dev URL stays enabled as a fallback.
+  "routes": [{ "pattern": "modlabs.store", "custom_domain": true }],
   "observability": { "enabled": true }
 }

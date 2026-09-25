@@ -6,7 +6,7 @@ export const site = {
   location: { city: "Seattle", region: "WA", country: "US" },
   description:
     "Seattle console modding and electronics repair: Xbox 360 RGH, Nintendo Switch modchips (OLED Kamikaze, V1/V2, Lite), custom handheld Wii builds and board-level repair.",
-  url: import.meta.env.PUBLIC_SITE_URL ?? "https://mod-labs.workers.dev",
+  url: import.meta.env.PUBLIC_SITE_URL ?? "http://localhost:4321",
   serviceArea: {
     local: "Local drop-off in the Seattle area. Fast turnaround, often same or next day.",
     mailIn: "Mail-in available. Reach out and we'll work out shipping and details together.",

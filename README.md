@@ -103,7 +103,10 @@ Good to know:
 | `EMAIL_MODE` | Worker var | `send` in production (set in `wrangler.jsonc`), `log` locally |
 
 ## How this site is deployed (current setup)
-- **Live URL:** https://seattle.modlabs.workers.dev (Cloudflare Worker `seattle`, account subdomain `modlabs`).
+- **Live URL:** https://modlabs.store (domain from Namecheap, nameservers on Cloudflare).
+  `www.modlabs.store` 301-redirects to it (proxied DNS record + zone Redirect Rule "Redirect from WWW to root").
+  Fallback: https://seattle.modlabs.workers.dev (Cloudflare Worker `seattle`, account subdomain `modlabs`).
+  The custom domain is declared in `wrangler.jsonc` → `routes`. The Turnstile widget must list `modlabs.store`.
 - **Automatic deploys:** the Worker is connected to GitHub (`AlvaroEPena/mod-labs-v2`, branch `main`)
   through Cloudflare Workers Builds, so **every `git push` rebuilds and redeploys the site** in a few minutes.
   Build command: `npm run build` (its `prebuild` step blocks the build if the public values are missing or
