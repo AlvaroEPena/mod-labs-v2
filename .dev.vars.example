@@ -1,9 +1,13 @@
-# Worker secrets for local `wrangler dev` (copy to .dev.vars). In production use: npx wrangler secret put <NAME>
-# Cloudflare's official always-pass TEST secret:
+# Worker secrets/vars for local `wrangler dev` (copy to .dev.vars; values here override wrangler.jsonc "vars").
+# In production use: npx wrangler secret put <NAME>
+# Cloudflare's official always-pass TEST secret (use 2x0000000000000000000000000000000AA to test failures):
 TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
-# From https://resend.com/api-keys — leave empty in dev to log emails instead of sending
+# From https://resend.com/api-keys — only needed when EMAIL_MODE=send
 RESEND_API_KEY=
 # Inbox that receives booking/quote requests (must be the Resend account email until a domain is verified)
 LEAD_EMAIL_TO=
-# "log" = print emails to the console instead of sending (local dev / tests). Production uses "send".
+# "log" = print a summary of each email to the console and return success (local dev / tests).
+# "send" (production default from wrangler.jsonc) = deliver via Resend; missing key/inbox → 503 not_configured.
 EMAIL_MODE=log
+# Optional sender override once a domain is verified in Resend (default: Mod Labs <onboarding@resend.dev>)
+# EMAIL_FROM=Mod Labs <leads@example.com>

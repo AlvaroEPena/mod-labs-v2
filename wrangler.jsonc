@@ -3,6 +3,7 @@
   "name": "mod-labs",
   "main": "./worker/index.ts",
   "compatibility_date": "2026-09-24",
+  // nodejs_compat provides a global Buffer (fast base64 for photo attachments)
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "directory": "./dist/",
@@ -10,5 +11,20 @@
     "not_found_handling": "404-page",
     "run_worker_first": ["/api/*"]
   },
+  // Non-secret config. Secrets (TURNSTILE_SECRET_KEY, RESEND_API_KEY, LEAD_EMAIL_TO) go in
+  // .dev.vars locally and `npx wrangler secret put <NAME>` in production.
+  // Optional: EMAIL_FROM (e.g. "Mod Labs <leads@yourdomain.com>") once a domain is verified in Resend.
+  "vars": {
+    "EMAIL_MODE": "send"
+  },
+  // Workers Rate Limiting binding: 5 form submissions / 60 s per client IP (per Cloudflare location).
+  // The Worker falls back to a best-effort in-memory limiter if the binding is missing.
+  "ratelimits": [
+    {
+      "name": "FORM_RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 5, "period": 60 }
+    }
+  ],
   "observability": { "enabled": true }
 }

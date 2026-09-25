@@ -76,7 +76,7 @@ Shared field schema (validated client-side; provider validates server-side):
 | Form | Fields |
 |---|---|
 | book | name (2–80), email, phone?, delivery ∈ {Local drop-off (Seattle), Mail-in (let's talk)}, services[] ≥1 of the 4 priced services, message (20–2000), consent=true, honeypot |
-| quote | name, email, phone?, request_type ∈ {Electronic repair, Custom build commission: GWii ($900), Custom build commission: Wii Miicro Deluxe ($450), PS4 / other mod, General question}, delivery, message (20–2000), photo? (image/*, size ≤ provider limit), consent, honeypot |
+| quote | name, email, phone?, requestType ∈ {Electronic repair, Custom build commission: GWii ($900), Custom build commission: Wii Miicro Deluxe ($450), PS4 / other mod, Custom shell or RGB, General question}, delivery, message (20–2000), photo? (image/*, size ≤ provider limit), consent, honeypot |
 Responses → inline success/error states; provider errors show a friendly fallback with
 socials/DM link.
 

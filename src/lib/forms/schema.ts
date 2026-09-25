@@ -35,14 +35,14 @@ export const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 
 const trimmed = (min: number, max: number, label: string) =>
   z
-    .string()
+    .string({ error: `${label} is required.` })
     .trim()
     .min(min, `${label} must be at least ${min} characters.`)
     .max(max, `${label} must be at most ${max} characters.`);
 
 const base = {
   name: trimmed(2, 80, "Name"),
-  email: z.string().trim().toLowerCase().pipe(z.email("Please enter a valid email address.").max(254)),
+  email: z.string({ error: "Email is required." }).trim().toLowerCase().pipe(z.email("Please enter a valid email address.").max(254)),
   phone: z
     .string()
     .trim()
