@@ -4,7 +4,8 @@ import { faqs } from "../../src/data/faq";
 import { categories, photos, photosFor, projects } from "../../src/data/gallery";
 import photoRecords from "../../src/data/photos.json";
 import { services } from "../../src/data/services";
-import { bookSchema, quoteSchema, buildRequestType } from "../../src/lib/forms/schema";
+import { bookSchema, quoteSchema, buildRequestType, quoteRequestTypes } from "../../src/lib/forms/schema";
+import { quoteServices } from "../../src/data/services";
 
 describe("content integrity", () => {
   it("keeps the approved prices", () => {
@@ -45,6 +46,11 @@ describe("owner-confirmed details", () => {
 
   it("lists \"Ask about games\" on every Switch and Xbox 360 service (owner request)", () => {
     for (const s of services.filter((x) => x.platform === "switch" || x.platform === "xbox")) expect(s.includes, s.id).toContain("Ask about games");
+  });
+
+  it("doesn't offer PS4 PPPwn installs as a service (owner request; gallery photos stay)", () => {
+    const offered = JSON.stringify({ services, quoteServices, quoteRequestTypes });
+    expect(offered).not.toMatch(/pppwn|ps4/i);
   });
 
   it("tells Switch customers to bring a genuine 256GB+ microSD card", () => {

@@ -17,7 +17,7 @@ export const quoteRequestTypes = [
   "Electronic repair",
   "Custom build commission: GWii ($900)",
   "Custom build commission: Wii Miicro Deluxe ($450)",
-  "PS4 / other mod",
+  "Other mod",
   "Custom shell or RGB",
   "General question",
 ] as const;

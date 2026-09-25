@@ -12,7 +12,7 @@ export type Service = {
 };
 
 export const serviceIds = ["xbox-360-rgh", "switch-oled", "switch-v1-v2", "switch-lite"] as const;
-export type ServiceId = (typeof serviceIds)[number] | "ps4-pppwn" | "repair" | "custom-shell";
+export type ServiceId = (typeof serviceIds)[number] | "repair" | "custom-shell";
 
 /** Priced mod services (bookable on /book). */
 export const services: Service[] = [
@@ -69,14 +69,6 @@ export const services: Service[] = [
 
 /** Quote-based work (shown on /services, requested via /quote). */
 export const quoteServices: Service[] = [
-  {
-    id: "ps4-pppwn",
-    name: "PS4 internal PPPwn",
-    platform: "playstation",
-    price: null,
-    summary: "An internal Luckfox Pico Mini runs PPPwn automatically. Nothing hanging off the back of your console.",
-    includes: ["Internal install", "Clean wiring", "Setup + walkthrough"],
-  },
   {
     id: "repair",
     name: "Electronics repair",
