@@ -7,7 +7,7 @@
  * - quote photos: pick/drop, downscale to ≤1600px JPEG, thumbnails with remove buttons
  * - no-JS round trip: shows ?sent=1 / ?error=code status on load
  */
-import { errorCopy, fieldErrorsFromIssues, outcomeFromQuery, outcomeFromResponse, summaryText, type Outcome } from "./messages";
+import { errorCopy, fieldErrorsFromIssues, outcomeFromQuery, outcomeFromResponse, summaryText, withoutHoneypot, type Outcome } from "./messages";
 import { checkFiles, DecodeError, decodeErrorMessage, formatBytes, prepareImage } from "./photos";
 
 type Turnstile = {
@@ -182,38 +182,49 @@ function enhance(form: HTMLFormElement) {
     return li;
   };
 
-  const addFiles = async (files: File[]) => {
+  /** Photos are processed strictly one at a time (phone memory); submit waits on this chain. */
+  let photoQueue: Promise<void> = Promise.resolve();
+
+  const processOne = async (file: File, errors: string[]) => {
     if (!thumbs) return;
+    const placeholder = document.createElement("li");
+    placeholder.innerHTML = '<span class="thumb-busy">Preparing…</span>';
+    thumbs.append(placeholder);
+    try {
+      const ready = await prepareImage(file, maxBytes);
+      const a = { id: nextId++, file: ready, url: URL.createObjectURL(ready) };
+      attached.push(a);
+      placeholder.replaceWith(renderThumb(a));
+    } catch (err) {
+      placeholder.remove();
+      errors.push(err instanceof DecodeError ? err.message : decodeErrorMessage(file.name));
+      photoError(errors);
+    } finally {
+      pendingPhotos--;
+    }
+  };
+
+  const addFiles = (files: File[]) => {
+    if (!thumbs || !files.length) return photoQueue;
     const { accept, errors } = checkFiles(files, attached.length + pendingPhotos, maxFiles);
     photoError(errors);
     pendingPhotos += accept.length;
-    await Promise.all(
-      accept.map(async (file) => {
-        const placeholder = document.createElement("li");
-        placeholder.innerHTML = '<span class="thumb-busy">Preparing…</span>';
-        thumbs.append(placeholder);
-        try {
-          const ready = await prepareImage(file, maxBytes);
-          const a = { id: nextId++, file: ready, url: URL.createObjectURL(ready) };
-          attached.push(a);
-          placeholder.replaceWith(renderThumb(a));
-        } catch (err) {
-          placeholder.remove();
-          errors.push(err instanceof DecodeError ? err.message : decodeErrorMessage(file.name));
-          photoError(errors);
-        } finally {
-          pendingPhotos--;
-        }
-      }),
-    );
-    if (accept.length) setStatus("info", `${attached.length} of ${maxFiles} photos attached.`);
+    photoQueue = photoQueue.then(async () => {
+      for (const file of accept) await processOne(file, errors);
+      if (accept.length) setStatus("info", `${attached.length} of ${maxFiles} photos attached.`);
+    });
+    return photoQueue;
   };
 
-  photoInput?.addEventListener("change", () => {
+  const takeInputFiles = () => {
+    if (!photoInput) return;
     const files = Array.from(photoInput.files ?? []);
     photoInput.value = ""; // processed copies are sent instead of the originals
     void addFiles(files);
-  });
+  };
+  photoInput?.addEventListener("change", takeInputFiles);
+  // Files picked before this script loaded (slow connection): adopt them instead of dropping them.
+  takeInputFiles();
   if (dropzone) {
     dropzone.addEventListener("dragover", (e) => {
       e.preventDefault();
@@ -228,11 +239,11 @@ function enhance(form: HTMLFormElement) {
   }
 
   /* ---------- submit ---------- */
-  const setBusy = (on: boolean) => {
+  const setBusy = (on: boolean, label = "Sending…") => {
     busy = on;
     submit.disabled = on;
     submit.setAttribute("aria-busy", String(on));
-    submitLabel.textContent = on ? "Sending…" : idleLabel;
+    submitLabel.textContent = on ? label : idleLabel;
   };
 
   function showSuccess(message: string) {
@@ -265,52 +276,58 @@ function enhance(form: HTMLFormElement) {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (busy) return;
-    if (pendingPhotos > 0) {
-      setStatus("info", "Hang on, still preparing your photos…");
-      return;
-    }
-
-    const fd = new FormData(form);
-    fd.delete("photos");
-    if (kind === "quote") attached.forEach((a) => fd.append("photos", a.file, a.file.name));
-
-    let schema;
+    setBusy(true, pendingPhotos > 0 ? "Preparing photos…" : "Sending…"); // before any await: no double submits
+    let outcome: Outcome | undefined;
     try {
-      schema = await loadValidation();
-    } catch {
-      schema = undefined; // validation chunk failed to load: let the server validate
-    }
-    if (schema) {
-      const parsed = (kind === "book" ? schema.bookSchema : schema.quoteSchema).safeParse(schema.formDataToObject(fd));
-      if (!parsed.success) {
-        showFieldErrors(fieldErrorsFromIssues(parsed.error.issues));
+      // never send while photos are still being prepared
+      await photoQueue;
+
+      const fd = new FormData(form);
+      fd.delete("photos");
+      if (kind === "quote") attached.forEach((a) => fd.append("photos", a.file, a.file.name));
+
+      let schema;
+      try {
+        schema = await loadValidation();
+      } catch {
+        schema = undefined; // validation chunk failed to load: let the server validate
+      }
+      if (schema) {
+        const parsed = (kind === "book" ? schema.bookSchema : schema.quoteSchema).safeParse(schema.formDataToObject(fd));
+        if (!parsed.success) {
+          // honeypot errors are never shown: a person can't see that field
+          const errors = withoutHoneypot(fieldErrorsFromIssues(parsed.error.issues));
+          if (errors) {
+            showFieldErrors(errors);
+            return;
+          }
+        }
+      }
+
+      if (tsSlot && window.turnstile && tsWidget !== undefined && !fd.get("cf-turnstile-response")) {
+        setStatus("info", "One sec: the spam check above the button is still finishing. Try again in a moment.");
         return;
       }
-    }
 
-    if (tsSlot && window.turnstile && tsWidget !== undefined && !fd.get("cf-turnstile-response")) {
-      setStatus("info", "One sec: the spam check above the button is still finishing. Try again in a moment.");
-      return;
-    }
-
-    clearErrors();
-    setStatus(null);
-    setBusy(true);
-    let outcome: Outcome;
-    try {
-      const res = await fetch(form.action, { method: "POST", body: fd, headers: { Accept: "application/json" } });
-      let body: unknown = null;
+      clearErrors();
+      setStatus(null);
+      submitLabel.textContent = "Sending…";
       try {
-        body = await res.json();
+        const res = await fetch(form.action, { method: "POST", body: fd, headers: { Accept: "application/json" } });
+        let body: unknown = null;
+        try {
+          body = await res.json();
+        } catch {
+          body = null;
+        }
+        outcome = outcomeFromResponse(res.status, body);
       } catch {
-        body = null;
+        outcome = { kind: "error", code: "network", message: errorCopy.network };
       }
-      outcome = outcomeFromResponse(res.status, body);
-    } catch {
-      outcome = { kind: "error", code: "network", message: errorCopy.network };
     } finally {
       setBusy(false);
     }
+    if (!outcome) return;
 
     if (outcome.kind === "success") {
       resetAll();

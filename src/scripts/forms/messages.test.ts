@@ -78,3 +78,16 @@ describe("fieldErrorsFromIssues + summaryText", () => {
     expect(summaryText({ _form: ["Try again later."] })).toBe("Try again later.");
   });
 });
+
+describe("honeypot errors are never shown", () => {
+  it("drops hp / hp_7f3 keys and returns null when nothing else is left", async () => {
+    const { withoutHoneypot } = await import("./messages");
+    expect(withoutHoneypot({ hp: ["x"], email: ["bad"] })).toEqual({ email: ["bad"] });
+    expect(withoutHoneypot({ hp_7f3: ["x"] })).toBeNull();
+  });
+  it("turns a server validation error that only flags the honeypot into a generic error", () => {
+    const o = outcomeFromResponse(400, { ok: false, error: "validation", fieldErrors: { hp: ["Must be empty"] } });
+    expect(o).toMatchObject({ kind: "error", code: "server" });
+    expect("fieldErrors" in o && o.fieldErrors).toBeFalsy();
+  });
+});

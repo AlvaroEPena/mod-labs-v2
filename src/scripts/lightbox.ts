@@ -53,20 +53,28 @@ async function open(gallery: Element, index: number) {
     padding: { top: 24, bottom: 24, left: 0, right: 0 },
   });
 
-  // Back gesture / back button closes the lightbox instead of leaving the page.
+  // Back gesture / back button closes the lightbox instead of leaving the page. PhotoSwipe ignores
+  // close() during its opening transition, so a back press then is deferred until it finishes.
   let closedByHistory = false;
+  let opened = false;
   history.pushState({ pswp: true }, "");
   const onPop = () => {
     closedByHistory = true;
-    pswp.close();
+    if (opened) pswp.close();
   };
   addEventListener("popstate", onPop);
+  pswp.on("openingAnimationEnd", () => {
+    opened = true;
+    if (closedByHistory) pswp.close();
+  });
   pswp.on("destroy", () => {
     removeEventListener("popstate", onPop);
     if (!closedByHistory && history.state?.pswp) history.back();
   });
 
   pswp.init();
+  // the dialog needs an accessible name
+  pswp.element?.setAttribute("aria-label", "Photo viewer");
 }
 
 function onClick(e: MouseEvent) {

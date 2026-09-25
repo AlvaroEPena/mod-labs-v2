@@ -25,4 +25,4 @@ export function localBusinessLd(siteUrl: string) {
 }
 
 /** Safe JSON for <script type="application/ld+json"> */
-export const ldJson = (data: unknown) => JSON.stringify(data).replace(/</g, "\u003c");
+export const ldJson = (data: unknown) => JSON.stringify(data).replace(/</g, "\\u003c");

@@ -14,7 +14,7 @@ export default defineConfig({
   compressHTML: true,
   prefetch: { prefetchAll: true, defaultStrategy: "hover" },
   image: { responsiveStyles: false },
-  redirects: { "/contact": "/quote" },
+  // /contact → /quote is a 301 in public/_redirects (owned by the Worker/backend side)
   integrations: [
     sitemap({
       filter: (page) => !/\/(404|contact)$/.test(page.replace(/\/$/, "")),

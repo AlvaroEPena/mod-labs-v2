@@ -146,10 +146,10 @@ const dataAttrs = Object.fromEntries(Object.entries(data).map(([k, v]) => [`data
         <p class="field-error" id={e("consent")} data-error-for={F.consent}></p>
       </div>
 
-      <!-- Honeypot: hidden from people and assistive tech; bots tend to fill it. -->
+      <!-- Honeypot: off-screen, not focusable, hidden from assistive tech; bots tend to fill it. -->
       <div class="hp" aria-hidden="true">
-        <label for={`${id}-company`}>Company</label>
-        <input id={`${id}-company`} type="text" name={F.honeypot} tabindex="-1" autocomplete="off" />
+        <label for={`${id}-${F.honeypot}`}>Field 7f3</label>
+        <input id={`${id}-${F.honeypot}`} type="text" name={F.honeypot} tabindex="-1" autocomplete="new-password" />
       </div>
 
       <Turnstile action={kind} />
@@ -173,7 +173,7 @@ const dataAttrs = Object.fromEntries(Object.entries(data).map(([k, v]) => [`data
     </div>
   </form>
 
-  <div class="form-success" data-success hidden tabindex="-1" aria-labelledby={`${id}-success-title`}>
+  <div class="form-success" data-success hidden tabindex="-1" role="region" aria-labelledby={`${id}-success-title`}>
     <div class="success-icon" aria-hidden="true"><Icon name="check" size={34} strokeWidth={2.5} /></div>
     <h2 id={`${id}-success-title`} class="mt-6 text-3xl">Request sent!</h2>
     <p class="lead mx-auto mt-3 max-w-md" data-success-message>

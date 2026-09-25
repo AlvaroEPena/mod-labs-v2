@@ -51,3 +51,32 @@ describe("helpers", () => {
     expect(decodeErrorMessage("x.png")).toMatch(/Couldn't read/);
   });
 });
+
+describe("readImageInfo (header-only size probe)", () => {
+  it("reads PNG IHDR", async () => {
+    const { readImageInfo } = await import("./photos");
+    const b = new Uint8Array(24);
+    const v = new DataView(b.buffer);
+    v.setUint32(0, 0x89504e47);
+    v.setUint32(16, 640);
+    v.setUint32(20, 480);
+    expect(readImageInfo(b)).toEqual({ width: 640, height: 480, orientation: 1 });
+  });
+
+  it("reads JPEG SOF0 size and EXIF orientation, and swaps for upright size", async () => {
+    const { readImageInfo, uprightSize } = await import("./photos");
+    // SOI, APP1 Exif (big-endian TIFF, 1 IFD entry: orientation = 6), SOF0 4032×3024
+    const exif = [0x45, 0x78, 0x69, 0x66, 0, 0, 0x4d, 0x4d, 0, 0x2a, 0, 0, 0, 8, 0, 1, 0x01, 0x12, 0, 3, 0, 0, 0, 1, 0, 6, 0, 0, 0, 0, 0, 0];
+    const app1 = [0xff, 0xe1, 0, exif.length + 2, ...exif];
+    const sof = [0xff, 0xc0, 0, 17, 8, 3024 >> 8, 3024 & 255, 4032 >> 8, 4032 & 255, 3, 1, 0x22, 0, 2, 0x11, 1, 3, 0x11, 1];
+    const bytes = new Uint8Array([0xff, 0xd8, ...app1, ...sof, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+    const info = readImageInfo(bytes);
+    expect(info).toEqual({ width: 4032, height: 3024, orientation: 6 });
+    expect(uprightSize(info!)).toEqual({ width: 3024, height: 4032 });
+  });
+
+  it("returns null for unknown formats (e.g. HEIC)", async () => {
+    const { readImageInfo } = await import("./photos");
+    expect(readImageInfo(new TextEncoder().encode("\0\0\0\x18ftypheic................"))).toBeNull();
+  });
+});

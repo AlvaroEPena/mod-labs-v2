@@ -32,7 +32,9 @@ export function outcomeFromResponse(status: number, body: unknown): Outcome {
   if (r && r.ok === true) return { kind: "success", message: successCopy };
   if (r && r.ok === false) {
     if (r.error === "validation" && "fieldErrors" in r && r.fieldErrors) {
-      return { kind: "error", code: "validation", message: errorCopy.validation, fieldErrors: r.fieldErrors };
+      const fieldErrors = withoutHoneypot(r.fieldErrors);
+      if (!fieldErrors) return { kind: "error", code: "server", message: errorCopy.server };
+      return { kind: "error", code: "validation", message: errorCopy.validation, fieldErrors };
     }
     if (isErrorCode(r.error)) return { kind: "error", code: r.error, message: errorCopy[r.error] };
   }
@@ -77,8 +79,16 @@ export const fieldLabels: Record<string, string> = {
   message: "Message",
   photos: "Photos",
   consent: "Consent",
-  company: "Form",
 };
+
+/** Honeypot keys (schema key + field name). Never shown to people: a real visitor can't fill it. */
+const HONEYPOT_KEYS = new Set(["hp", "hp_7f3"]);
+
+/** Remove honeypot errors; returns null when nothing user-fixable is left. */
+export function withoutHoneypot(errors: Record<string, string[]>): Record<string, string[]> | null {
+  const out = Object.fromEntries(Object.entries(errors).filter(([k]) => !HONEYPOT_KEYS.has(k)));
+  return Object.keys(out).length ? out : null;
+}
 
 export function summaryText(fieldErrors: Record<string, string[]>): string {
   const fields = Object.keys(fieldErrors).filter((k) => k !== "_form");
