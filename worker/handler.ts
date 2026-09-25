@@ -1,6 +1,7 @@
 import { fieldNames } from "../src/lib/forms/schema";
 import { renderEmail, toAttachments } from "./lib/email";
-import { DEFAULT_EMAIL_FROM, emailMode, type Env } from "./lib/env";
+import { readFormDataLimited } from "./lib/body";
+import { DEFAULT_EMAIL_FROM, emailMode, isLocalHostname, isTestTurnstileSecret, type Env } from "./lib/env";
 import { failure, jsonResponse, respond, success, validationFailure, type Outcome } from "./lib/http";
 import { sendViaResend, verifyTurnstile } from "./lib/integrations";
 import { allowRequest } from "./lib/ratelimit";
@@ -13,6 +14,9 @@ const ROUTES: Record<string, { kind: FormKind; page: string }> = {
   "/api/book": { kind: "book", page: "/book" },
   "/api/quote": { kind: "quote", page: "/quote" },
 };
+
+/** Per-isolate count of honeypot trips (logged; no PII). */
+let honeypotTrips = 0;
 
 const SUCCESS_MESSAGE = "Thanks! Your request is in — I'll get back to you by email soon.";
 
@@ -45,7 +49,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
 
   let outcome: Outcome;
   try {
-    outcome = await processSubmission(request, env, route.kind);
+    outcome = await processSubmission(request, env, route.kind, url.hostname);
   } catch (err) {
     console.error("form handler error", err instanceof Error ? err.name : "unknown");
     outcome = failure("server", "Something went wrong on our side. Please try again or message me directly.");
@@ -53,7 +57,7 @@ export async function handleApi(request: Request, env: Env): Promise<Response> {
   return respond(request, route.page, outcome);
 }
 
-async function processSubmission(request: Request, env: Env, kind: FormKind): Promise<Outcome> {
+async function processSubmission(request: Request, env: Env, kind: FormKind, hostname: string): Promise<Outcome> {
   const ip = request.headers.get("CF-Connecting-IP");
 
   // 1. Abuse limit (cheap, before touching the body)
@@ -61,37 +65,49 @@ async function processSubmission(request: Request, env: Env, kind: FormKind): Pr
     return failure("rate_limited", "Too many requests. Please wait a minute and try again.");
   }
 
-  // 2. Size guard on the declared body length
-  const declared = Number(request.headers.get("Content-Length") ?? "0");
-  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
-    return failure("too_large", "That upload is too large. Attach up to 3 photos of 2 MB each.");
+  // 2+3. Size guard (Content-Length required, and enforced again while streaming) + parse
+  const body = await readFormDataLimited(request, MAX_BODY_BYTES);
+  if (!body.ok) {
+    switch (body.reason) {
+      case "length_required":
+        return failure("too_large", "The upload couldn't be read (missing length). Please try again.", 411);
+      case "too_large":
+        return failure("too_large", "That upload is too large. Attach up to 3 photos of 2 MB each.");
+      case "unsupported":
+        return validationFailure({ _form: ["Unsupported form submission."] });
+      default:
+        return validationFailure({ _form: ["The form submission couldn't be read. Please try again."] });
+    }
   }
-
-  // 3. Parse
-  const contentType = (request.headers.get("Content-Type") ?? "").toLowerCase();
-  if (!contentType.startsWith("multipart/form-data") && !contentType.startsWith("application/x-www-form-urlencoded")) {
-    return validationFailure({ _form: ["Unsupported form submission."] });
-  }
-  let fd: FormData;
-  try {
-    fd = await request.formData();
-  } catch {
-    return validationFailure({ _form: ["The form submission couldn't be read. Please try again."] });
-  }
+  const fd = body.formData;
 
   // 4. Honeypot: pretend success, send nothing
   if (isHoneypotTripped(fd)) {
-    console.warn("honeypot tripped", kind);
+    honeypotTrips += 1;
+    console.warn("honeypot tripped", JSON.stringify({ kind, isolateCount: honeypotTrips }));
     return success(SUCCESS_MESSAGE);
   }
 
   // 5. Turnstile
-  if (!env.TURNSTILE_SECRET_KEY) {
+  const mode = emailMode(env, hostname);
+  const secret = env.TURNSTILE_SECRET_KEY?.trim();
+  if (!secret) {
     console.error("TURNSTILE_SECRET_KEY is not set");
     return failure("not_configured", "The form isn't set up yet. Please message me directly instead.");
   }
+  if (mode === "send" && isTestTurnstileSecret(secret)) {
+    console.error(
+      "TURNSTILE_SECRET_KEY is a Cloudflare TEST secret; refusing to send email. Set the real secret with `npx wrangler secret put TURNSTILE_SECRET_KEY`.",
+    );
+    return failure("not_configured", "The form isn't set up yet. Please message me directly instead.");
+  }
   const token = fd.get(fieldNames.turnstile);
-  const verdict = await verifyTurnstile(env.TURNSTILE_SECRET_KEY, typeof token === "string" ? token : "", ip);
+  // Test secrets report hostname "example.com", and local runs have no real hostname: skip that check there.
+  const checkHostname = !isLocalHostname(hostname) && !isTestTurnstileSecret(secret);
+  const verdict = await verifyTurnstile(secret, typeof token === "string" ? token : "", ip, {
+    hostname: checkHostname ? hostname : null,
+    action: kind,
+  });
   if (verdict === "failed") {
     return failure("captcha", "The spam check failed. Please complete the verification and try again.");
   }
@@ -115,7 +131,6 @@ async function processSubmission(request: Request, env: Env, kind: FormKind): Pr
 
   // 8. Email
   const email = renderEmail(validation.submission, photos);
-  const mode = emailMode(env);
   const logSummary = () =>
     console.log(
       "[form email]",

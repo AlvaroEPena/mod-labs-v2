@@ -11,7 +11,7 @@ const validBook = {
   services: "Switch OLED modchip, Kamikaze ($160)",
   message: "Testing the booking API end to end, please ignore.",
   consent: "yes",
-  company: "",
+  hp_7f3: "",
 };
 
 test.describe("form API", () => {

@@ -48,7 +48,7 @@ export const builds: Build[] = [
     features: [
       { title: "HDMI output", detail: "VGA patches + an analog-to-HDMI converter for a cleaner, sharper image than the original Wii." },
       { title: "USB-C PD power", detail: "Runs on standard USB-C PD (5V / 15W minimum to boot). 12V PD recommended to power a sensor bar." },
-      { title: "128GB USB storage", detail: "Included USB drive for your library." },
+      { title: "128GB USB storage", detail: "Included 128GB USB drive for storage." },
       { title: "MX chip relocation", detail: "Timekeeping (RTC) works for games that need it." },
       { title: "Bluetooth relocation", detail: "Wiimotes pair normally. No quirks." },
       { title: "Ultra-compact", detail: "Light, tiny and extremely portable." },

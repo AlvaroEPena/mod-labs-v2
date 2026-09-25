@@ -3,6 +3,9 @@ import { buildSubject, renderEmail, toBase64 } from "./email";
 import { escapeHtml, safeFilename, singleLine } from "./escape";
 import { isCrossSite } from "../handler";
 import { MemoryRateLimiter } from "./ratelimit";
+import { emailMode, isLocalHostname, isTestTurnstileSecret, type Env } from "./env";
+import { checkSiteverify } from "./integrations";
+import { byteLimitStream, readFormDataLimited } from "./body";
 import { validateFields } from "./validate";
 import type { BookInput, QuoteInput } from "../../src/lib/forms/schema";
 
@@ -13,7 +16,7 @@ const book: BookInput = {
   delivery: "Mail-in (let's talk)",
   message: "Line one\nLine <two> & more text here",
   consent: "yes",
-  company: "",
+  hp: "",
   services: ["Xbox 360 RGH ($100)", "Switch Lite modchip ($140)"],
 };
 
@@ -87,5 +90,66 @@ describe("MemoryRateLimiter", () => {
     expect([rl.check("a", 0), rl.check("a", 10), rl.check("a", 20)]).toEqual([true, true, false]);
     expect(rl.check("b", 20)).toBe(true);
     expect(rl.check("a", 1011)).toBe(true);
+  });
+});
+
+describe("env helpers", () => {
+  const env = (EMAIL_MODE?: string) => ({ EMAIL_MODE }) as Env;
+  it("detects Cloudflare test secrets", () => {
+    expect(isTestTurnstileSecret("1x0000000000000000000000000000000AA")).toBe(true);
+    expect(isTestTurnstileSecret("3x0000000000000000000000000000000AA")).toBe(true);
+    expect(isTestTurnstileSecret("0x4AAAAAAAreal")).toBe(false);
+  });
+  it("honours EMAIL_MODE=log only on localhost", () => {
+    expect(isLocalHostname("127.0.0.1")).toBe(true);
+    expect(emailMode(env("log"), "localhost")).toBe("log");
+    expect(emailMode(env("log"), "mod-labs.workers.dev")).toBe("send");
+    expect(emailMode(env(undefined), "localhost")).toBe("send");
+  });
+});
+
+describe("checkSiteverify", () => {
+  const expectBook = { hostname: "site.test", action: "book" };
+  it("requires success, matching hostname and (if present) matching action", () => {
+    expect(checkSiteverify({ success: true, hostname: "site.test" }, expectBook)).toBe("ok");
+    expect(checkSiteverify({ success: true, hostname: "SITE.test", action: "book" }, expectBook)).toBe("ok");
+    expect(checkSiteverify({ success: false, hostname: "site.test" }, expectBook)).toBe("failed");
+    expect(checkSiteverify({ success: true, hostname: "other.test" }, expectBook)).toBe("failed");
+    expect(checkSiteverify({ success: true, hostname: "site.test", action: "quote" }, expectBook)).toBe("failed");
+  });
+  it("skips the hostname check when expectation is null (test keys return example.com)", () => {
+    expect(checkSiteverify({ success: true, hostname: "example.com" }, { hostname: null, action: "book" })).toBe("ok");
+  });
+});
+
+describe("bounded body reading", () => {
+  it("byteLimitStream passes data under the limit and errors past it", async () => {
+    let exceeded = false;
+    const src = new Response(new Uint8Array(10)).body!;
+    await expect(new Response(src.pipeThrough(byteLimitStream(10))).arrayBuffer()).resolves.toHaveProperty("byteLength", 10);
+    const big = new Response(new Uint8Array(11)).body!;
+    await expect(new Response(big.pipeThrough(byteLimitStream(10, () => (exceeded = true)))).arrayBuffer()).rejects.toThrow();
+    expect(exceeded).toBe(true);
+  });
+  it("parses a normal form body", async () => {
+    const fd = new FormData();
+    fd.append("name", "Sam");
+    const enc = new Response(fd);
+    const bytes = new Uint8Array(await enc.arrayBuffer());
+    const req = new Request("https://site.test/api/book", {
+      method: "POST",
+      body: bytes,
+      headers: { "Content-Type": enc.headers.get("Content-Type") ?? "", "Content-Length": String(bytes.byteLength) },
+    });
+    const r = await readFormDataLimited(req, 1_000_000);
+    expect(r.ok && r.formData.get("name")).toBe("Sam");
+  });
+  it("rejects unsupported content types", async () => {
+    const req = new Request("https://site.test/api/book", {
+      method: "POST",
+      body: "{}",
+      headers: { "Content-Type": "application/json", "Content-Length": "2" },
+    });
+    expect(await readFormDataLimited(req, 100)).toEqual({ ok: false, reason: "unsupported" });
   });
 });

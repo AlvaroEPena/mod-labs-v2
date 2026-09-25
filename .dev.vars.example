@@ -6,8 +6,10 @@ TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA
 RESEND_API_KEY=
 # Inbox that receives booking/quote requests (must be the Resend account email until a domain is verified)
 LEAD_EMAIL_TO=
-# "log" = print a summary of each email to the console and return success (local dev / tests).
+# "log" = print a summary of each email to the console and return success. Only honoured for requests to
+#   localhost/127.0.0.1; on any other host the Worker behaves as "send" (never fake success in production).
 # "send" (production default from wrangler.jsonc) = deliver via Resend; missing key/inbox → 503 not_configured.
+#   In send mode a Cloudflare TEST Turnstile secret (1x0000…/2x0000…/3x0000…) is refused with not_configured.
 EMAIL_MODE=log
 # Optional sender override once a domain is verified in Resend (default: Mod Labs <onboarding@resend.dev>)
 # EMAIL_FROM=Mod Labs <leads@example.com>

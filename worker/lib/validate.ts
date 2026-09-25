@@ -41,10 +41,10 @@ export function validateFields(kind: FormKind, fd: FormData): ValidationResult {
   return { ok: false, fieldErrors };
 }
 
-/** The honeypot field is filled by bots only. */
+/** The honeypot field (fieldNames.honeypot = "hp_7f3") is filled by bots only. */
 export function isHoneypotTripped(fd: FormData): boolean {
-  const v = fd.get(fieldNames.honeypot);
-  return typeof v === "string" && v.trim().length > 0;
+  // Check every value: a duplicated field ("", "spam") must not slip past a first-value-only read.
+  return fd.getAll(fieldNames.honeypot).some((v) => typeof v !== "string" || v.trim().length > 0);
 }
 
 export interface Photo {

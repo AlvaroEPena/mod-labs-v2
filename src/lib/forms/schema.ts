@@ -53,8 +53,8 @@ const base = {
   delivery: z.enum(deliveryOptions, { message: "Choose how you'll get your device to me." }),
   message: trimmed(20, 2000, "Message"),
   consent: z.literal("yes", { message: "Please confirm I can contact you about this request." }),
-  /** honeypot: must be empty */
-  company: z.string().max(0).optional().or(z.literal("")),
+  /** honeypot (field name hp_7f3: non-semantic so browser autofill ignores it): must be empty */
+  hp: z.string().max(0).optional().or(z.literal("")),
 };
 
 export const bookSchema = z.object({
@@ -81,7 +81,7 @@ export const fieldNames = {
   delivery: "delivery",
   message: "message",
   consent: "consent",
-  honeypot: "company",
+  honeypot: "hp_7f3",
   services: "services",
   requestType: "requestType",
   photos: "photos",
@@ -107,7 +107,7 @@ export function formDataToObject(fd: FormData) {
     delivery: get(fieldNames.delivery),
     message: get(fieldNames.message),
     consent: get(fieldNames.consent),
-    company: get(fieldNames.honeypot),
+    hp: get(fieldNames.honeypot),
     services: fd.getAll(fieldNames.services).filter((v): v is string => typeof v === "string"),
     requestType: get(fieldNames.requestType),
   };

@@ -6,8 +6,44 @@ const TIMEOUT_MS = 10_000;
 
 export type TurnstileResult = "ok" | "failed" | "unavailable";
 
+export interface TurnstileExpectations {
+  /** Hostname the widget must have been solved on (the request's hostname), or null to skip the check. */
+  hostname: string | null;
+  /** Widget action (e.g. "book" / "quote"); enforced only when siteverify reports a non-empty action. */
+  action: string;
+}
+
+interface SiteverifyResponse {
+  success?: boolean;
+  hostname?: string;
+  action?: string;
+  "error-codes"?: string[];
+}
+
+/** Pure check of a siteverify response against what this request expects. */
+export function checkSiteverify(data: SiteverifyResponse, expect: TurnstileExpectations): TurnstileResult {
+  if (data.success !== true) {
+    console.warn("turnstile rejected", data["error-codes"] ?? []);
+    return "failed";
+  }
+  if (expect.hostname !== null && (data.hostname ?? "").toLowerCase() !== expect.hostname.toLowerCase()) {
+    console.warn("turnstile hostname mismatch");
+    return "failed";
+  }
+  if (data.action && data.action !== expect.action) {
+    console.warn("turnstile action mismatch");
+    return "failed";
+  }
+  return "ok";
+}
+
 /** Server-side Turnstile token verification (https://developers.cloudflare.com/turnstile/get-started/server-side-validation/). */
-export async function verifyTurnstile(secret: string, token: string, remoteIp: string | null): Promise<TurnstileResult> {
+export async function verifyTurnstile(
+  secret: string,
+  token: string,
+  remoteIp: string | null,
+  expect: TurnstileExpectations,
+): Promise<TurnstileResult> {
   if (!token || token.length > 2048) return "failed";
   const body = new FormData();
   body.append("secret", secret);
@@ -19,10 +55,7 @@ export async function verifyTurnstile(secret: string, token: string, remoteIp: s
       console.error("turnstile siteverify http error", res.status);
       return "unavailable";
     }
-    const data = (await res.json()) as { success?: boolean; "error-codes"?: string[] };
-    if (data.success === true) return "ok";
-    console.warn("turnstile rejected", data["error-codes"] ?? []);
-    return "failed";
+    return checkSiteverify((await res.json()) as SiteverifyResponse, expect);
   } catch (err) {
     console.error("turnstile siteverify request failed", err instanceof Error ? err.name : "unknown");
     return "unavailable";

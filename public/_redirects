@@ -1,0 +1,3 @@
+# Workers static assets redirects (applied before asset lookup; not applied to Worker-handled /api/*).
+/contact /quote 301
+/contact/ /quote 301

@@ -1,8 +1,8 @@
 # Progress Log
 
-**Current phase:** 6-qa + 7-review (parallel)
+**Current phase:** 7-review fixes (in progress)
 <!-- phases: 1-intake · 2-research · 3-spec-approved · 4-scaffolded · 5-building (slice N) · 6-qa · 7-review · 8-done -->
-**Next step:** fix QA bugs + Critical/High review findings, re-run gates, handoff
+**Next step:** finish fix round (backend + frontend agents), rerun all gates incl. e2e, commit, handoff screenshots
 
 ## Gate status
 | Gate | Status | Last run |
@@ -44,3 +44,11 @@
 - Orchestrator: user asked to drop photo #57 and merge clear RGB Xbox into "Custom Halo 4 RGH + RGB Xbox 360" (fa18491). "Get a free quote" → "Get a quote" (no free claim from owner).
 - Gates at integration: check 0 errors, 78 unit tests pass, build 16 pages (~6s warm).
 - Deferred: per-photo alt text (currently "<project>, photo n of m").
+
+### 2026-09-24 — 6-qa + 7-review
+- QA (c9b1e67): 308 e2e tests (251 pass / 6 fail = 3 bugs × 2 projects / 51 intentional skips). Lighthouse mobile: / 99/100/100/100, /gallery 97/96/100/100. audit 0 vulns.
+  Bugs: photo picked before JS loads is dropped; lightbox dialog unnamed (axe); /contact is 200 meta-refresh (want 301); back during lightbox open anim (low).
+- Review: no Critical. H1 test Turnstile key would ship; H2 placeholder site URL. M1 chunked body bypasses size guard; M2 honeypot "company" autofill trap; M3 parallel full-res decode on phones; M4 "quote is free" claim; M5 no README. Lows L1–L12.
+- Done by orchestrator: README + deploy checklist, scripts/predeploy-check.mjs wired into `npm run deploy` (c81432b); honeypot renamed in schema → hp / hp_7f3 (uncommitted, waiting for agents); builds.ts "library" wording.
+- Fix round delegated: backend (M1, H1 server-side, L2, L3, L7, _redirects 301, honeypot); frontend (QA bugs 1/2/4, M3, L1, L4, L5, turnstile action, remove astro redirect, M4, "runs cooler" copy, optional zod/mini).
+- Interrupted once by API rate limit (agents had made no edits); resumed.

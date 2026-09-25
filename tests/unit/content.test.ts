@@ -31,7 +31,7 @@ describe("content integrity", () => {
 
 describe("form schemas", () => {
   const base = { name: "Al Tester", email: "al@example.com", phone: "", delivery: "Local drop-off (Seattle)",
-    message: "My OLED switch needs the Kamikaze install please.", consent: "yes", company: "" };
+    message: "My OLED switch needs the Kamikaze install please.", consent: "yes", hp: "" };
 
   it("accepts a valid booking and rejects an empty service list", () => {
     expect(bookSchema.safeParse({ ...base, services: ["Switch OLED modchip, Kamikaze ($160)"] }).success).toBe(true);
@@ -40,6 +40,6 @@ describe("form schemas", () => {
 
   it("rejects the honeypot and maps build slugs to request types", () => {
     expect(quoteSchema.safeParse({ ...base, requestType: buildRequestType.gwii }).success).toBe(true);
-    expect(quoteSchema.safeParse({ ...base, requestType: "General question", company: "spam" }).success).toBe(false);
+    expect(quoteSchema.safeParse({ ...base, requestType: "General question", hp: "spam" }).success).toBe(false);
   });
 });
