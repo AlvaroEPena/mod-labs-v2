@@ -57,3 +57,8 @@
 - Backend ae078bb, frontend fixes commit: all review M-items + QA bugs fixed. Gates rerun by orchestrator: check 0 errors, 104 unit, build OK, e2e 257 pass / 0 fail, audit 0.
 - Accepted: /book & /quote JS 31.1 KB gz total (zod lazy on first focus; 1.1 KB over budget) → optional zod/mini later. No-JS form path can't pass Turnstile (noscript note shown). Alt text generic.
 - NOT deployed. Owner must do README deploy checklist (Cloudflare, Turnstile, Resend, secrets, .env.production).
+
+### 2026-09-24 — post-handoff changes (owner requests)
+- Price badges centred (flex: none), home strip "Switch $120+" derived from data, FAQ microSD advice (256GB+, reputable seller), builds include USB-C PD brick / no cable (7ce850b).
+- Workspace: mandatory engineering-standards.md for all agents (e69db38).
+- Local photo admin (`npm run admin`, 127.0.0.1:4400): reorder/move/delete→trash/restore/upload. photos.json source of truth, id-based files, id-based picks with fallbacks. check: 155 unit tests; build OK; e2e 257 pass (agent run). Committed.
