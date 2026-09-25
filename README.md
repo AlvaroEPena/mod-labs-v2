@@ -102,6 +102,18 @@ Good to know:
 | `EMAIL_FROM` | Worker var (optional) | The sender address, once a domain is verified in Resend |
 | `EMAIL_MODE` | Worker var | `send` in production (set in `wrangler.jsonc`), `log` locally |
 
+## How this site is deployed (current setup)
+- **Live URL:** https://seattle.modlabs.workers.dev (Cloudflare Worker `seattle`, account subdomain `modlabs`).
+- **Automatic deploys:** the Worker is connected to GitHub (`AlvaroEPena/mod-labs-v2`, branch `main`)
+  through Cloudflare Workers Builds, so **every `git push` rebuilds and redeploys the site** in a few minutes.
+  Build command: `npm run build` (its `prebuild` step blocks the build if the public values are missing or
+  test values). Deploy command: `npx wrangler deploy`.
+- **Public build values** live in the committed `.env.production` (site URL and Turnstile *site* key). They
+  are public by design. **Never put secrets there.**
+- **Secrets** (`TURNSTILE_SECRET_KEY`, `RESEND_API_KEY`, `LEAD_EMAIL_TO`) are stored on the Worker with
+  `npx wrangler secret put <NAME>` and survive every redeploy.
+- `npm run deploy` still works as a manual deploy from this computer.
+
 ## Deploy checklist (first launch)
 All free. Do these in order:
 
@@ -115,7 +127,7 @@ All free. Do these in order:
    then create an API key. Until you verify your own domain, Resend can only send to that
    address, and the emails come from `onboarding@resend.dev`, so check your spam folder the
    first time.
-5. **Create `.env.production`** in this folder. It's gitignored:
+5. **Fill in `.env.production`** in this folder. It's committed, and holds only public values:
    ```
    PUBLIC_SITE_URL=https://mod-labs.<subdomain>.workers.dev
    PUBLIC_TURNSTILE_SITE_KEY=<site key from step 3>

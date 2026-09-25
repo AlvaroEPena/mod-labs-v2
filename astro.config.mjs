@@ -2,9 +2,13 @@
 import { defineConfig, fontProviders } from "astro/config";
 import tailwindcss from "@tailwindcss/vite";
 import sitemap from "@astrojs/sitemap";
+import { loadEnv } from "vite";
 
-// Update when a custom domain is added (also PUBLIC_SITE_URL).
-const site = process.env.PUBLIC_SITE_URL ?? "https://mod-labs.workers.dev";
+// Astro doesn't load .env files before reading this config, so load them the same way Vite does
+// (`astro build` = production mode → .env + .env.production). Set PUBLIC_SITE_URL there.
+const mode = process.argv.includes("dev") ? "development" : "production";
+const env = { ...loadEnv(mode, process.cwd(), "PUBLIC_"), ...process.env };
+const site = env.PUBLIC_SITE_URL || "http://localhost:4321";
 
 export default defineConfig({
   site,

@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "mod-labs",
+  "name": "seattle",
   "main": "./worker/index.ts",
   "compatibility_date": "2026-09-24",
   // nodejs_compat provides a global Buffer (fast base64 for photo attachments)

@@ -16,6 +16,8 @@ export default defineConfig({
     // Built site + Worker API with Turnstile test keys and no Resend key (emails are logged, not sent)
     command: `npm run build && npx wrangler dev --port ${PORT} --var EMAIL_MODE:log --var TURNSTILE_SECRET_KEY:1x0000000000000000000000000000000AA`,
     url: `http://localhost:${PORT}`,
+    // Real env vars beat .env.production, so e2e builds always use Turnstile TEST keys and a local URL.
+    env: { PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA", PUBLIC_SITE_URL: "https://mod-labs.example" },
     reuseExistingServer: !process.env.CI,
     timeout: 600_000,
   },

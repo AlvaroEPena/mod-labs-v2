@@ -1,7 +1,11 @@
 // Refuses to deploy a build that would break production (see README "Deploy checklist").
-// Runs before `wrangler deploy` via `npm run deploy`.
+// Runs before `wrangler deploy` via `npm run deploy`, and before every Cloudflare Workers Builds
+// build via the `prebuild` npm hook (`--ci-only`: a no-op unless WORKERS_CI is set, so local
+// builds and e2e runs with test keys keep working).
 import fs from "node:fs";
 import path from "node:path";
+
+if (process.argv.includes("--ci-only") && !process.env.WORKERS_CI) process.exit(0);
 
 const root = path.resolve(import.meta.dirname, "..");
 
@@ -43,6 +47,11 @@ if (fs.existsSync(dist)) {
   const quote = path.join(dist, "quote.html");
   if (fs.existsSync(quote) && /data-sitekey="[123]x0000/.test(fs.readFileSync(quote, "utf8"))) {
     problems.push("dist/quote.html was built with a TEST Turnstile key. Rebuild with the real key.");
+  }
+  const home = path.join(dist, "index.html");
+  const canonical = fs.existsSync(home) ? fs.readFileSync(home, "utf8").match(/rel="canonical" href="([^"]+)"/)?.[1] : undefined;
+  if (canonical && siteUrl && !canonical.startsWith(siteUrl.replace(/\/$/, ""))) {
+    problems.push(`dist/index.html canonical is ${canonical}, expected ${siteUrl}. Rebuild.`);
   }
 }
 
