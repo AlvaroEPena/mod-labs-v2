@@ -17,7 +17,7 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "check": "npm run typecheck && npm run lint && npm test",
-    "deploy": "astro build && wrangler deploy"
+    "deploy": "node scripts/predeploy-check.mjs && astro build && node scripts/predeploy-check.mjs && wrangler deploy"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
