@@ -83,7 +83,7 @@ All accounts are $0. None should need a credit card (*verify at sign-up*, since 
 | Account | Purpose | Cost | Notes |
 |---|---|---|---|
 | **Cloudflare** (free) | Workers hosting (`mod-labs.<acct>.workers.dev`), Workers Builds CI, Turnstile widget | $0 | Add the `workers.dev` hostname (and later the custom domain) to the Turnstile widget. Free plan: max 10 hostnames/widget. |
-| **Resend** (free) | Sends form emails to Al | $0 (3,000/mo, 100/day) | **Sign up with the inbox Al wants leads in.** Without a domain, it can only send to that address. |
+| **Resend** (free) | Sends form emails to Alvaro | $0 (3,000/mo, 100/day) | **Sign up with the inbox Alvaro wants leads in.** Without a domain, it can only send to that address. |
 | **GitHub** (existing: `AlvaroEPena`) | Source repo, connected to Workers Builds | $0 | Could be a new repo for the rebuild. |
 | Forminit (only if the fallback is used) | Hosted form backend | $0 | 1 form, 100/mo. |
 | Custom domain (later, optional) | Brand domain | ~$10–15/yr (the only future cost) | Cloudflare Registrar sells at cost *(price unverified)*. After adding it, verify the domain in Resend. |
@@ -153,7 +153,7 @@ npm create astro@latest <dir> -- --template minimal --install --no-git --no-ai -
 
 ## Risks / open questions
 
-1. **Resend without a custom domain** sends from `onboarding@resend.dev`, which is intended for testing, and only to the account owner's inbox. It works for "email the owner", but Resend could tighten it, and lead emails might land in spam. Mitigations: tell Al to whitelist the sender, then add a custom domain and verify it in Resend as soon as possible. Forminit is a drop-in fallback (swap the form `action`/endpoint).
+1. **Resend without a custom domain** sends from `onboarding@resend.dev`, which is intended for testing, and only to the account owner's inbox. It works for "email the owner", but Resend could tighten it, and lead emails might land in spam. Mitigations: tell Alvaro to whitelist the sender, then add a custom domain and verify it in Resend as soon as possible. Forminit is a drop-in fallback (swap the form `action`/endpoint).
 2. **First-build image processing time** (see the measurement above) versus the Workers Builds 20-min timeout. Mitigate with pre-resizing, fewer widths, the warm cache, or deploying from the local machine.
 3. **Workers free CPU limit of 10 ms/request** on the form Worker. Multipart parsing plus base64 of a large photo could exceed it (error 1102). Client-side downscaling keeps payloads small. This can't be measured locally, so verify on a deployed preview.
 4. **Firefox** gets no page transitions and no scroll-timeline effects. That's graceful degradation by design; the IntersectionObserver reveal keeps the site feeling animated.

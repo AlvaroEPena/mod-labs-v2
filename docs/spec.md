@@ -2,10 +2,10 @@
 _Last updated: 2026-09-24 · Status: approved (2026-09-24)_
 
 ## 1. Summary
-A complete rebuild of the Mod Labs marketing site: a dark "premium neon lab" site for Al's
+A complete rebuild of the Mod Labs marketing site: a dark "premium neon lab" site for Alvaro's
 Seattle console-modding & electronics-repair business. Goals: look unmistakably pro, load
 instantly on phones, show off the work (curated, categorized gallery), and turn visitors into
-service/quote/commission requests delivered to Al's email. Static site, no accounts, no DB,
+service/quote/commission requests delivered to Alvaro's email. Static site, no accounts, no DB,
 $0 running cost.
 
 ## 2. Stack
@@ -31,7 +31,7 @@ _Proposed — see `research.md` for evidence and alternatives._
 | `/builds` | Custom build commissions: **GWii $900**, **Wii Miicro Deluxe $450**: specs, what's included, photo carousel, "Request this build" | static |
 | `/gallery` | Category filter tabs (All / Switch / Xbox 360 / PlayStation / Custom Builds / Repairs), project cards with write-ups, masonry grid, lightbox (swipe, keyboard), the Halo Xbox video | static |
 | `/gallery/[category]` | Deep-linkable category views (share "see my Switch work") | static |
-| `/about` | Al's story (existing copy), how I work, devices & data policy, Seattle local + mail-in | static |
+| `/about` | Alvaro's story (existing copy), how I work, devices & data policy, Seattle local + mail-in | static |
 | `/book` | Service request form | static + form API |
 | `/quote` | Repair / custom / commission quote form with photo upload; `?build=gwii` preselects | static + form API |
 | `/faq` | FAQ accordion (also used on home as teaser) | static |
@@ -84,7 +84,7 @@ socials/DM link.
 None. Public site.
 
 ## 8. Integrations & env vars
-- Cloudflare (hosting, Worker API, Turnstile) · Resend (email to Al's inbox).
+- Cloudflare (hosting, Worker API, Turnstile) · Resend (email to Alvaro's inbox).
 - Secrets (Worker, via `.dev.vars` locally / `wrangler secret` in prod): `TURNSTILE_SECRET_KEY`,
   `RESEND_API_KEY`, `LEAD_EMAIL_TO`. Public: `PUBLIC_TURNSTILE_SITE_KEY`, `PUBLIC_SITE_URL`.
 - Dev without keys: API returns a clear "email not configured" error and logs the payload;

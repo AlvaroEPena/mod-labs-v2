@@ -1,6 +1,6 @@
 export type Faq = { q: string; a: string; home?: boolean };
 
-/** Answers stay honest and non-committal where Al hasn't set a policy (e.g. warranty terms). */
+/** Answers stay honest and non-committal where Alvaro hasn't set a policy (e.g. warranty terms). */
 export const faqs: Faq[] = [
   {
     q: "Is modding safe for my console?",

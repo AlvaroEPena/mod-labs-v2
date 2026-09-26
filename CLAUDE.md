@@ -1,6 +1,6 @@
 # Mod Labs — Project Rules
 
-Al's Seattle console-modding & electronics-repair business site ("premium neon lab").
+Alvaro's Seattle console-modding & electronics-repair business site ("premium neon lab").
 Part of the web-dev-agent workspace; this folder is a fully independent project (own deps, own git repo).
 
 ## Read first

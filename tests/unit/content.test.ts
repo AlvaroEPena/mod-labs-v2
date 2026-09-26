@@ -61,7 +61,7 @@ describe("owner-confirmed details", () => {
 });
 
 describe("form schemas", () => {
-  const base = { name: "Al Tester", email: "al@example.com", phone: "", delivery: "Local drop-off (Seattle)",
+  const base = { name: "Alvaro Tester", email: "al@example.com", phone: "", delivery: "Local drop-off (Seattle)",
     message: "My OLED switch needs the Kamikaze install please.", consent: "yes", hp: "" };
 
   it("accepts a valid booking and rejects an empty service list", () => {

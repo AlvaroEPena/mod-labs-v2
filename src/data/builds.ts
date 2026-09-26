@@ -1,4 +1,4 @@
-/** Custom build commissions (made to order). Content from Al's Marketplace listings; game preloads intentionally omitted. */
+/** Custom build commissions (made to order). Content from Alvaro's Marketplace listings; game preloads intentionally omitted. */
 export type Build = {
   slug: BuildSlug;
   name: string;

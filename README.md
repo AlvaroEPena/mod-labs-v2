@@ -1,8 +1,8 @@
 # Mod Labs
 
-Website for **Mod Labs**, Al's console modding and electronics repair shop in Seattle.
+Website for **Mod Labs**, Alvaro's console modding and electronics repair shop in Seattle.
 It covers the services and prices, the custom build commissions (GWii and Wii Miicro), a
-categorized gallery, and the booking and quote forms, which email Al.
+categorized gallery, and the booking and quote forms, which email Alvaro.
 
 **Stack:**
 - Astro 7 (static site)

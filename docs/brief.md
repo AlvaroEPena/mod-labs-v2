@@ -4,7 +4,7 @@ _Mode: refactor (full rebuild) · Created: 2026-09-24_
 ## Pitch
 "Rebuild this site as completely new, using new technologies and something that would pop
 out to people and be good … modern, fast and smooth on all platforms, no chunky loading."
-Mod Labs is Al's one-person console modding & electronics repair shop in Seattle.
+Mod Labs is Alvaro's one-person console modding & electronics repair shop in Seattle.
 
 ## Type & audience
 - Site type: marketing / service-business site with request forms and a photo gallery
@@ -18,7 +18,7 @@ Mod Labs is Al's one-person console modding & electronics repair shop in Seattle
   real work quality
 
 ## Content & accounts
-- Who edits content: Al (developer-comfortable); content in code/data files is fine
+- Who edits content: Alvaro (developer-comfortable); content in code/data files is fine
 - Accounts / roles: none (fully public site)
 
 ## Required features (MVP)
@@ -33,8 +33,8 @@ Mod Labs is Al's one-person console modding & electronics repair shop in Seattle
     12V PD recommended for sensor bar), 128GB USB storage, MX chip relocation (RTC works),
     Bluetooth relocation (Wiimotes pair normally). Includes console + 20W USB-C PD brick +
     128GB USB drive; no controllers/cables/sensor bar. Hand-built: micro-soldering, board
-    trimming, chip relocation, tuning. (Source: Al's FB Marketplace listing, listed there at $400;
-    Al set $450 for the site.)
+    trimming, chip relocation, tuning. (Source: Alvaro's FB Marketplace listing, listed there at $400;
+    Alvaro set $450 for the site.)
   - **GWii Portable Handheld Wii — $900**. Real Wii motherboard trimmed for handheld play, no
     emulation; plays Wii + GameCube natively; USB-C PD charging; 128GB internal storage
     (upgradeable microSD); smart USB drive switching (plug into PC to manage files); VGA
@@ -49,7 +49,7 @@ Mod Labs is Al's one-person console modding & electronics repair shop in Seattle
   ("contact me and we'll work out the details")
 - "How it works" steps section
 - FAQ section/page
-- Reviews/testimonials section — only real reviews supplied by Al (none fabricated)
+- Reviews/testimonials section — only real reviews supplied by Alvaro (none fabricated)
 - Contact: Instagram section (account coming later → placeholder, easy to fill in), TikTok,
   Discord, email/forms
 - Gallery: curated from ~451 photos in `C:\Users\Alvaro\Desktop\ModdingWebsiteImages` + the 54
@@ -57,7 +57,7 @@ Mod Labs is Al's one-person console modding & electronics repair shop in Seattle
   Modchips, Xbox 360 RGH, PlayStation, Custom Builds & Portables, Repairs). Keep the 11
   existing project write-ups
 - Video: only the video(s) already on the old site (`project4.1.mp4`); no album videos
-- New logo + favicon + OG image and visual "eye candy" (Al gave free rein)
+- New logo + favicon + OG image and visual "eye candy" (Alvaro gave free rein)
 
 ## Nice-to-have (later)
 - Custom domain; Instagram feed once account exists; calendar booking

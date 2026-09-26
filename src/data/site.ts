@@ -2,7 +2,7 @@
 export const site = {
   name: "Mod Labs",
   tagline: "Console modding & electronics repair",
-  owner: "Al",
+  owner: "Alvaro",
   location: { city: "Seattle", region: "WA", country: "US" },
   description:
     "Seattle console modding and electronics repair: Xbox 360 RGH, Nintendo Switch modchips (OLED Kamikaze, V1/V2, Lite), custom handheld Wii builds and board-level repair.",
