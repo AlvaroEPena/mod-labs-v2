@@ -45,20 +45,15 @@ const BUILD_COVERS: Record<string, PhotoPick> = {
   "wii-miicro": { id: 402, project: "wii-miicro" }, // wii-miicro-01
 };
 
-/** Video posters that shouldn't just use the project cover. */
-const VIDEO_POSTERS: Record<string, PhotoPick> = {
-  "halo-xbox": { id: 19, project: "halo-xbox" }, // halo-xbox-04
-};
-
 export const heroPhoto = () => pick(HERO);
 export const categoryCover = (slug: CategorySlug) => pick(CATEGORY_COVERS[slug]);
 export const buildCover = (slug: string) => pick(BUILD_COVERS[slug] ?? HERO);
 /**
- * Poster for a project video: the video's own posterId, else the project's hand-picked poster, else
- * the project cover (id 0 never exists, so pick() falls back to the cover).
+ * Poster for a project video: its `posterId` from videos.json (chosen in the admin) while that photo
+ * is still in the project, else the project cover (id 0 never exists, so pick() falls back to it).
  */
 export const videoPoster = (projectSlug: string, posterId?: number) =>
-  pick(posterId ? { id: posterId, project: projectSlug } : (VIDEO_POSTERS[projectSlug] ?? { id: 0, project: projectSlug }));
+  pick({ id: posterId ?? 0, project: projectSlug });
 
 /** About page: the bench shot and a board close-up. */
 export const aboutPhotos = () => ({

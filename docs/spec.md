@@ -217,3 +217,33 @@ Not in scope: editing text/prices, online access.
 - *Keyboard:* with a photo focused, arrows/Home/End move it. Changes are queued, so fast repeated presses all
   count, and focus stays on the same photo, scrolled smoothly into view and briefly highlighted.
 - *Testing option:* `--root <dir>` / `ADMIN_ROOT` points the admin at a copy of the data (never test on the real photos).
+
+**Update (2026-09-25, owner request): video management**
+- *Data:* videos moved out of `projects.ts` into `src/data/videos.json` (source of truth, ordered
+  `{ id, file, project, title, posterId? }`, one per line, grouped by project like photos.json). Files stay in
+  `public/media/`; uploads are `v<id>.mp4` (ids never reused, counting the trash and files on disk). Contract +
+  validation in import-free `src/lib/gallery/video-records.ts`; `gallery.ts` (`videos`, `videosFor`) fails the build
+  on duplicate ids/files, unknown projects, missing files, files over 24 MiB (Cloudflare rejects >25 MiB), empty or
+  >120-char titles, or a `posterId` that isn't an existing photo. The `Project.videos` field is gone.
+- *Posters:* `posterId` in videos.json is the only poster choice. The halo entry was migrated with `posterId: 19`,
+  replacing the hard-coded `VIDEO_POSTERS` in picks.ts, and all 16 built pages are byte-identical to before.
+  Omitted = the project cover. Deleting a photo used as a poster switches those videos to automatic (the photo's
+  trash entry remembers them and restoring it re-links them), so an admin delete can never break the build.
+- *Processing* (`scripts/lib/process-video.mjs`, ffmpeg from the `ffmpeg-static` optionalDependency, loaded lazily so a missing binary never breaks the site build or the photo admin; it ships no ffprobe,
+  so `ffmpeg -i` output is parsed): inputs over 500 MB or 3 minutes are refused with a clear message. Always an MP4
+  with `-map_metadata -1 -map_chapters -1 -fflags +bitexact -movflags +faststart` (no GPS/©xyz/ISO6709, no dates, no
+  encoder tags). Stream copy for H.264 yuv420p + AAC that fits 24 MiB (the phone's rotation flag is kept); otherwise
+  capped-CRF H.264 (CRF 26→28→30→32, ≤1080→720→540 px, AAC 128→96→64k, preset medium) with auto-rotation, stepping
+  down until ≤ 24 MiB. The output is then verified box by box (moov before mdat; no udta/meta/keys/loci/uuid/©
+  boxes; zeroed mvhd/tkhd/mdhd times; no location strings; only basic tags) and rejected otherwise. ffmpeg always
+  writes an empty `udta/meta/ilst`; it is retyped to `free` so the file has no metadata atoms at all.
+- *Admin API* (same token/Host/Origin guards; ids and slugs validated; file paths only from validated records):
+  `POST /api/videos/upload?project&title&name` (raw file body streamed to disk, 500 MB cap counted while reading;
+  202 + job), `GET /api/videos/jobs/:id` (state/stage/progress; jobs run one at a time in the background, ffmpeg in
+  a child process), `POST /api/videos/{move,arrange,update,delete,restore}`, and `GET /api/video/:id?t=` (preview
+  with Range support; the CSP gained `media-src 'self'`). Video trash: `.admin-trash/<file>` + `.admin-trash/videos.json`.
+- *Admin UI:* a "Videos" strip above each project's photos (poster + play button, title, ‹ › / drag reorder via the
+  shared sortable, Rename…, Poster… picker, Move…, Delete with Undo; the Trash view has a Videos section with
+  Restore). The pure list operations are now generic (`admin/lib/list-ops.ts`) and shared by photos and videos.
+- *Known limit (render unchanged, as asked):* the site shows every video cropped to 9:16 (`aspect-ratio: 9/16;
+  object-fit: cover`, width/height 1080×1920). Landscape uploads will be cropped until the render uses real sizes.

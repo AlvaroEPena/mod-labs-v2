@@ -8,9 +8,9 @@
   "scripts": {
     "prebuild": "node scripts/predeploy-check.mjs --ci-only",
     "dev": "astro dev",
-    "dev:full": "astro build && wrangler dev --port 8787",
+    "dev:full": "astro build && wrangler dev --port 8787 --local-upstream localhost:8787",
     "build": "astro build",
-    "preview": "wrangler dev --port 8787",
+    "preview": "wrangler dev --port 8787 --local-upstream localhost:8787",
     "admin": "node admin/server.ts",
     "typecheck": "astro check && tsc -p worker/tsconfig.json --noEmit && tsc -p admin/tsconfig.json && tsc -p admin/public/tsconfig.json",
     "lint": "eslint .",
@@ -30,7 +30,8 @@
   },
   "allowScripts": {
     "esbuild": true,
-    "workerd": true
+    "workerd": true,
+    "ffmpeg-static": true
   },
   "private": true,
   "devDependencies": {
@@ -49,5 +50,8 @@
     "typescript-eslint": "^8.70.1",
     "vitest": "~4.1.11",
     "wrangler": "^4.139.0"
+  },
+  "optionalDependencies": {
+    "ffmpeg-static": "^5.3.0"
   }
 }

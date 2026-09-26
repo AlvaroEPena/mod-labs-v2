@@ -1,7 +1,16 @@
 import type { ImageMetadata } from "astro";
+import fs from "node:fs";
+import path from "node:path";
 import records from "./photos.json";
+import videoData from "./videos.json";
 import { projects, type CategorySlug } from "./projects";
 import { validatePhotoRecords, type PhotoRecord } from "../lib/gallery/records";
+import {
+  MAX_VIDEO_BYTES,
+  validateVideoRecords,
+  videoSrc,
+  type VideoRecord,
+} from "../lib/gallery/video-records";
 
 export { categories, categorySlugs, projects } from "./projects";
 export type { Category, CategorySlug, Project } from "./projects";
@@ -81,3 +90,43 @@ export const photosInCategory = (c: CategorySlug) => photos.filter((p) => p.cate
 export const projectsInCategory = (c: CategorySlug) =>
   projects.filter((p) => p.category === c && photosFor(p.slug).length > 0);
 export const coverFor = (projectSlug: string) => photosFor(projectSlug)[0];
+
+/* ---------- videos (src/data/videos.json, files in public/media/) ---------- */
+
+export type Video = { id: number; project: string; src: string; title: string; posterId?: number };
+
+const MEDIA_DIR = path.join(process.cwd(), "public", "media");
+
+/** Checked at build time like photos.json; also refuses files Cloudflare would reject (>25 MiB). */
+function loadVideos(): VideoRecord[] {
+  const result = validateVideoRecords(videoData, {
+    knownProjects: projects.map((p) => p.slug),
+    photoIds: photos.map((p) => p.id),
+    fileExists: (file) => fs.existsSync(path.join(MEDIA_DIR, file)),
+  });
+  const problems = result.ok ? [] : [...result.problems];
+  for (const v of result.ok ? result.records : []) {
+    const bytes = fs.statSync(path.join(MEDIA_DIR, v.file)).size;
+    if (bytes > MAX_VIDEO_BYTES)
+      problems.push(
+        `id ${v.id}: public/media/${v.file} is ${(bytes / 2 ** 20).toFixed(1)} MiB (limit 24 MiB).`,
+      );
+  }
+  if (problems.length) {
+    throw new Error(
+      `Invalid src/data/videos.json (fix it or use npm run admin):\n- ${problems.join("\n- ")}`,
+    );
+  }
+  return result.ok ? result.records : [];
+}
+
+/** All videos in display order (array order within each project). */
+export const videos: Video[] = loadVideos().map((v) => ({
+  id: v.id,
+  project: v.project,
+  src: videoSrc(v.file),
+  title: v.title,
+  ...(v.posterId === undefined ? {} : { posterId: v.posterId }),
+}));
+
+export const videosFor = (projectSlug: string) => videos.filter((v) => v.project === projectSlug);

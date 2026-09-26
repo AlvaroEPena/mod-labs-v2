@@ -15,22 +15,11 @@ export const categories: Category[] = [
   { slug: "repairs", title: "Repairs & Electronics", short: "Repairs", blurb: "Trace repair, port replacement, BIOS recovery: board-level fixes beyond consoles." },
 ];
 
-export type ProjectVideo = {
-  /** public path, e.g. "/media/halo-xbox.mp4" (files live in public/media/) */
-  src: string;
-  /** accessible name + caption */
-  title: string;
-  /** photo id to use as the poster; defaults to the project's hand-picked poster or cover */
-  posterId?: number;
-};
-
 export type Project = {
   slug: string;
   title: string;
   category: CategorySlug;
   caption: string;
-  /** Vetted videos, shown in their own row above the project's photos (in this order). */
-  videos?: ProjectVideo[];
   /** links to a commission build on /builds */
   build?: "gwii" | "wii-miicro";
 };
@@ -44,7 +33,6 @@ export const projects: Project[] = [
   { slug: "gboy", title: "Portable Handheld Wii (G-boy)", category: "custom",
     caption: "Transformed a Wii into a portable handheld by reducing the board size by 70% with custom, compact, modular components: GameCube controller emulation, integrated speakers, amp, screen, internal memory and power management." },
   { slug: "halo-xbox", title: "Custom Halo 4 RGH + RGB Xbox 360", category: "custom",
-    videos: [{ src: "/media/halo-xbox.mp4", title: "Custom Halo 4 Xbox 360 RGB lighting" }],
     caption: "A Halo 4 edition Xbox 360 with RGH and a fully custom RGB layout glowing through the clear shell. It has a Bluetooth RGB controller that connects to phones, a sound chip flashed to R2-D2, and swapped ring-of-light LEDs." },
   { slug: "rgh3-compilation", title: "Compilation of RGH3", category: "xbox",
     caption: "A ton of RGH3 installs on slims. Dozens more went unphotographed :)" },

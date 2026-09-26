@@ -30,6 +30,7 @@ const ICONS = {
   move: '<path d="M4 7h11M11 3l4 4-4 4M20 17H9M13 13l-4 4 4 4"/>',
   trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
   check: '<path d="M5 12.5l4.5 4.5L19 7.5" stroke-width="3" stroke-linecap="round"/>',
+  play: '<path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/>',
 };
 
 /** @param {keyof typeof ICONS} name */

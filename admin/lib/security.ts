@@ -9,7 +9,7 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
 
 export const TOKEN_HEADER = "x-admin-token";
-/** Thumbnails load through <img>, which can't send headers, so they carry the token as `?t=`. */
+/** Thumbnails (<img>) and video previews (<video>) can't send headers, so they carry the token as `?t=`. */
 export const TOKEN_QUERY = "t";
 
 export const createToken = () => randomBytes(24).toString("base64url");
@@ -36,7 +36,7 @@ export function isValidToken(candidate: string | null, token: string): boolean {
 /** Headers for every response: no framing, no sniffing, no referrers (thumb URLs carry the token). */
 export const SECURITY_HEADERS: Record<string, string> = {
   "Content-Security-Policy":
-    "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' blob:; connect-src 'self'; " +
+    "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' blob:; media-src 'self'; connect-src 'self'; " +
     "base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",

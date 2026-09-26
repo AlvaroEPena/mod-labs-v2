@@ -16,14 +16,15 @@ import {
   validatePhotoRecords,
 } from "../../src/lib/gallery/records.ts";
 import type { AdminPaths } from "./config.ts";
+import { createLock, type Lock } from "./lock.ts";
 import { HttpError } from "./http.ts";
 import type { PhotoRecord, TrashEntry } from "./types.ts";
 
 const RETRYABLE = new Set(["EPERM", "EBUSY", "EACCES"]);
-const errorCode = (err: unknown) => (err as NodeJS.ErrnoException | undefined)?.code;
+export const errorCode = (err: unknown) => (err as NodeJS.ErrnoException | undefined)?.code;
 
 /** Windows briefly locks files that a watcher or antivirus has open; retry a few times. */
-async function renameWithRetry(from: string, to: string): Promise<void> {
+export async function renameWithRetry(from: string, to: string): Promise<void> {
   for (let attempt = 0; ; attempt++) {
     try {
       await fs.rename(from, to);
@@ -46,7 +47,7 @@ export async function atomicWrite(file: string, data: string | Uint8Array): Prom
   }
 }
 
-async function readJsonFile(file: string): Promise<unknown | undefined> {
+export async function readJsonFile(file: string): Promise<unknown | undefined> {
   try {
     return JSON.parse(await fs.readFile(file, "utf8"));
   } catch (err) {
@@ -57,18 +58,23 @@ async function readJsonFile(file: string): Promise<unknown | undefined> {
 
 const PHOTO_FILE = /^p(\d{4,})\.jpg$/;
 
+/** Read a folder's names; a missing folder is just empty. */
+export const listDir = (dir: string) =>
+  fs.readdir(dir).catch((err: unknown) => {
+    if (errorCode(err) === "ENOENT") return [] as string[];
+    throw err;
+  });
+
 export type Storage = ReturnType<typeof createStorage>;
 
-export function createStorage(paths: AdminPaths, knownProjects: readonly string[]) {
-  let queue: Promise<unknown> = Promise.resolve();
-
-  /** Run `task` after every earlier change has finished (one change at a time). */
-  function withLock<T>(task: () => Promise<T>): Promise<T> {
-    const run = queue.then(task, task);
-    queue = run.catch(() => undefined);
-    return run;
-  }
-
+/**
+ * @param withLock shared with the video storage so photo and video changes never interleave
+ */
+export function createStorage(
+  paths: AdminPaths,
+  knownProjects: readonly string[],
+  withLock: Lock = createLock(),
+) {
   async function readPhotos(): Promise<PhotoRecord[]> {
     const raw = await readJsonFile(paths.photosJson);
     const result = validatePhotoRecords(raw ?? null, knownProjects);
@@ -124,14 +130,7 @@ export function createStorage(paths: AdminPaths, knownProjects: readonly string[
 
   /** Ids of every pNNNN.jpg in the gallery and trash folders (so ids are never reused). */
   async function idsOnDisk(): Promise<number[]> {
-    const lists = await Promise.all(
-      [paths.photosDir, paths.trashDir].map((dir) =>
-        fs.readdir(dir).catch((err: unknown) => {
-          if (errorCode(err) === "ENOENT") return [] as string[];
-          throw err;
-        }),
-      ),
-    );
+    const lists = await Promise.all([paths.photosDir, paths.trashDir].map(listDir));
     return lists.flat().flatMap((name) => {
       const match = PHOTO_FILE.exec(name);
       return match ? [Number(match[1])] : [];

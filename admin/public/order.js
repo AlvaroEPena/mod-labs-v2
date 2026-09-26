@@ -36,7 +36,7 @@ export const moveBy = (ids, id, step) => moveTo(ids, id, ids.indexOf(id) + step)
 export const idAfter = (order, id) => order[order.indexOf(id) + 1] ?? null;
 
 /**
- * Same rules as the server's movePhotos: the photos keep their relative (list) order and land
+ * Same rules as the server's moveItems: the photos keep their relative (list) order and land
  * before `beforeId`, or at the end of `project`. Used to re-render immediately after a drop.
  * @template {Placed} P
  * @param {readonly P[]} photos
@@ -45,7 +45,7 @@ export const idAfter = (order, id) => order[order.indexOf(id) + 1] ?? null;
  * @param {number | null} beforeId
  * @returns {P[]}
  */
-export function movePhotos(photos, ids, project, beforeId) {
+export function moveItems(photos, ids, project, beforeId) {
   const moving = new Set(ids);
   const rest = photos.filter((p) => !moving.has(p.id));
   const records = photos.filter((p) => moving.has(p.id)).map((p) => ({ ...p, project }));

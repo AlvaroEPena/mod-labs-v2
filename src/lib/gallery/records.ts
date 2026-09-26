@@ -81,12 +81,12 @@ const toRecord = (r: PhotoRecord): PhotoRecord => ({
  * display order (the sort is stable). The file is then fully determined by each project's order,
  * so undoing a change (move a photo out and back, delete then restore) gives identical bytes.
  */
-export function groupByProject(
-  records: readonly PhotoRecord[],
+export function groupByProject<T extends { project: string }>(
+  records: readonly T[],
   projectOrder: readonly string[],
-): PhotoRecord[] {
+): T[] {
   const rank = new Map(projectOrder.map((slug, i) => [slug, i]));
-  const rankOf = (r: PhotoRecord) => rank.get(r.project) ?? projectOrder.length;
+  const rankOf = (r: T) => rank.get(r.project) ?? projectOrder.length;
   return [...records].sort((a, b) => rankOf(a) - rankOf(b));
 }
 

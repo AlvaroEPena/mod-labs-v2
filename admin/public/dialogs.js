@@ -45,37 +45,44 @@ function showThumbs(container, ids) {
 }
 
 /**
- * @param {readonly number[]} ids
+ * What a dialog is about: how many photos or videos, and which photo thumbnails to show
+ * (for videos, their posters).
+ * @typedef {{ count: number, noun: "photo" | "video", thumbIds: readonly number[] }} Subject
+ */
+
+/**
+ * @param {Subject} subject
  * @returns {Promise<boolean>}
  */
-export function confirmDelete(ids) {
-  const isOne = ids.length === 1;
-  showThumbs(byId("confirm-thumbs"), ids);
-  byId("confirm-title").textContent = isOne ? "Delete this photo?" : `Delete ${plural(ids.length, "photo")}?`;
+export function confirmDelete({ count, noun, thumbIds }) {
+  const isOne = count === 1;
+  showThumbs(byId("confirm-thumbs"), thumbIds);
+  byId("confirm-title").textContent = isOne ? `Delete this ${noun}?` : `Delete ${plural(count, noun)}?`;
   byId("confirm-text").textContent = isOne
     ? "It goes to the Trash, and you can restore it from there."
     : "They go to the Trash, and you can restore them from there (or press Undo right after).";
   const confirm = byId("confirm-dialog").querySelector('[data-close="confirm"]');
-  if (confirm) confirm.textContent = isOne ? "Move to trash" : `Move ${ids.length} to trash`;
+  if (confirm) confirm.textContent = isOne ? "Move to trash" : `Move ${count} to trash`;
   return ask(/** @type {HTMLDialogElement} */ (byId("confirm-dialog")));
 }
 
 /**
- * Ask where to move photos. Resolves to the chosen project, or null if cancelled or unchanged.
+ * Ask where to move photos or videos. Resolves to the chosen project, or null if cancelled or
+ * unchanged.
  * @param {AdminState} state
- * @param {readonly number[]} ids
+ * @param {Subject & { fromProjects: readonly string[] }} subject
  * @returns {Promise<string | null>}
  */
-export async function chooseProject(state, ids) {
-  const from = new Set(state.photos.filter((p) => ids.includes(p.id)).map((p) => p.project));
+export async function chooseProject(state, { count, noun, thumbIds, fromProjects }) {
+  const from = new Set(fromProjects);
   const select = /** @type {HTMLSelectElement} */ (byId("move-project"));
   fillProjectSelect(select, state, { selected: from.size === 1 ? [...from][0] : state.projects[0].slug });
-  showThumbs(byId("move-thumbs"), ids);
-  byId("move-title").textContent = ids.length === 1 ? "Move photo" : `Move ${plural(ids.length, "photo")}`;
+  showThumbs(byId("move-thumbs"), thumbIds);
+  byId("move-title").textContent = count === 1 ? `Move ${noun}` : `Move ${plural(count, noun)}`;
 
   const dialog = /** @type {HTMLDialogElement} */ (byId("move-dialog"));
   const confirm = /** @type {HTMLButtonElement} */ (dialog.querySelector('[data-close="confirm"]'));
-  // Nothing to do if every photo is already in the chosen project.
+  // Nothing to do if everything is already in the chosen project.
   const isNoChange = () => from.size === 1 && from.has(select.value);
   select.onchange = () => (confirm.disabled = isNoChange());
   confirm.disabled = isNoChange();

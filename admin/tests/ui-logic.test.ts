@@ -1,7 +1,7 @@
 /** The browser UI's pure logic (no DOM): ordering/prediction helpers and the selection model. */
 import { describe, expect, it, vi } from "vitest";
-import { movePhotos as serverMovePhotos } from "../lib/photos.ts";
-import { idAfter, idsBetween, layoutOf, moveBy, moveTo, movePhotos, sameLayout } from "../public/order.js";
+import { moveItems as serverMoveItems } from "../lib/list-ops.ts";
+import { idAfter, idsBetween, layoutOf, moveBy, moveTo, moveItems, sameLayout } from "../public/order.js";
 import { createSelection } from "../public/select.js";
 
 const photos = [
@@ -34,7 +34,7 @@ describe("keyboard ordering helpers", () => {
   });
 });
 
-describe("movePhotos (UI prediction)", () => {
+describe("moveItems (UI prediction)", () => {
   it("matches the server's rules so the page never jumps after saving", () => {
     const cases: [number[], string, number | null][] = [
       [[3], "a", 1],
@@ -44,8 +44,8 @@ describe("movePhotos (UI prediction)", () => {
       [[1, 2, 3], "c", null],
     ];
     for (const [ids, project, beforeId] of cases) {
-      const ui = movePhotos(photos, ids, project, beforeId);
-      const server = serverMovePhotos(full, ids, project, beforeId);
+      const ui = moveItems(photos, ids, project, beforeId);
+      const server = serverMoveItems(full, ids, project, beforeId);
       for (const slug of ["a", "b", "c"])
         expect(idsOf(ui, slug), `${ids}→${project}`).toEqual(idsOf(server, slug));
     }
@@ -57,8 +57,8 @@ describe("layouts (undo snapshots)", () => {
     const before = layoutOf(photos, ["a", "b", "a"]);
     expect(before).toEqual({ a: [1, 2, 3], b: [4, 5] });
     expect(sameLayout(before, layoutOf(photos, ["b", "a"]))).toBe(true);
-    expect(sameLayout(before, layoutOf(movePhotos(photos, [3], "a", 1), ["a", "b"]))).toBe(false);
-    expect(sameLayout(before, layoutOf(movePhotos(photos, [3], "a", null), ["a", "b"]))).toBe(true); // no-op drop
+    expect(sameLayout(before, layoutOf(moveItems(photos, [3], "a", 1), ["a", "b"]))).toBe(false);
+    expect(sameLayout(before, layoutOf(moveItems(photos, [3], "a", null), ["a", "b"]))).toBe(true); // no-op drop
   });
 
   it("idsBetween gives Shift-click ranges in either direction", () => {

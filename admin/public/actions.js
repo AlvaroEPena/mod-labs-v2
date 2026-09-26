@@ -1,65 +1,59 @@
 // @ts-check
 /**
- * Every change the admin makes, with its announcement and Undo. Changes run one after another
- * through a queue (so fast arrow-key presses are never dropped), and each works from the latest
- * state when its turn comes.
+ * Every change to photos or videos, with its announcement and Undo. One factory, two kinds: they
+ * differ only in which list of the state they touch, the API prefix, and the wording.
+ * Changes go through the shared queue (see queue.js).
  * @typedef {import("../lib/types.ts").AdminState} AdminState
- * @typedef {import("./sortable.js").DropResult} DropResult
- * @typedef {{ id: number, moveFocus: boolean }} FocusTarget
+ * @typedef {import("./queue.js").Enqueue} Enqueue
+ * @typedef {{ id: number, moveFocus: boolean, kind?: Kind }} FocusTarget
+ * @typedef {"photos" | "videos"} Kind
  * @typedef {{
- *   getState: () => AdminState | undefined,
+ *   kind: Kind,
+ *   enqueue: Enqueue,
  *   applyState: (next: AdminState, focus?: FocusTarget) => void,
- *   onReloadNeeded: () => Promise<void>,
  * }} ActionDeps
  */
-import { ApiRequestError, post } from "./api.js";
+import { post } from "./api.js";
 import { plural } from "./dom.js";
-import { idAfter, layoutOf, movePhotos, sameLayout } from "./order.js";
+import { idAfter, layoutOf, moveItems, sameLayout } from "./order.js";
 import { projectTitles } from "./render.js";
 import { announce } from "./toast.js";
 
-/** @param {ActionDeps} deps */
-export function createActions({ getState, applyState, onReloadNeeded }) {
-  /** @type {Promise<unknown>} */
-  let queue = Promise.resolve();
+/** @type {Record<Kind, { api: "" | "videos/", noun: string, firstIs: string }>} */
+const KINDS = {
+  photos: { api: "", noun: "photo", firstIs: "the cover" },
+  videos: { api: "videos/", noun: "video", firstIs: "first" },
+};
 
-  /**
-   * Queue a change. `task` gets the current state (skipped if nothing is loaded yet).
-   * @param {(state: AdminState) => Promise<void>} task
-   */
-  function enqueue(task) {
-    const run = queue.then(async () => {
-      const state = getState();
-      if (!state) return;
-      try {
-        await task(state);
-      } catch (err) {
-        announce(err instanceof Error ? err.message : "That didn't work.", { isError: true });
-        // Out of date (another tab, a restart): reload so the page matches the disk again.
-        if (err instanceof ApiRequestError && [404, 409].includes(err.status)) await onReloadNeeded();
-      }
-    });
-    queue = run;
-    return run;
-  }
+/** @param {ActionDeps} deps */
+export function createActions({ kind, enqueue, applyState }) {
+  const { api, noun, firstIs } = KINDS[kind];
+  /** @returns {{ id: number, project: string }[]} this kind's items, in display order */
+  const listOf = (/** @type {AdminState} */ state) => (kind === "photos" ? state.photos : state.videos);
+  /** Replace this kind's list in a state (for showing a predicted order before saving). */
+  const withList = (/** @type {AdminState} */ state, /** @type {{ id: number, project: string }[]} */ list) =>
+    /** @type {AdminState} */ (kind === "photos" ? { ...state, photos: list } : { ...state, videos: list });
+  const focusOn = (/** @type {number} */ id, /** @type {boolean} */ moveFocus) => ({ id, moveFocus, kind });
 
   const titleOf = (/** @type {AdminState} */ state, /** @type {string} */ slug) =>
     projectTitles(state).get(slug) ?? slug;
   const projectsOf = (/** @type {AdminState} */ state, /** @type {readonly number[]} */ ids) =>
-    state.photos.filter((p) => ids.includes(p.id)).map((p) => p.project);
+    listOf(state)
+      .filter((p) => ids.includes(p.id))
+      .map((p) => p.project);
 
   /** Undo for moves/drags: put the affected projects back exactly as they were. */
   const undoLayout = (/** @type {Record<string, number[]>} */ layout) => ({
     label: "Undo",
     run: () =>
       enqueue(async () => {
-        applyState(await post("arrange", { layout }));
-        announce("Undone. The photos are back where they were.");
+        applyState(await post(`${api}arrange`, { layout }));
+        announce(`Undone. The ${noun}s are back where they were.`);
       }),
   });
 
   /**
-   * Move photos into `project` before `beforeId` (null = at the end). Shows the new order right
+   * Move items into `project` before `beforeId` (null = at the end). Shows the new order right
    * away (same rules as the server), then saves it with one request. Runs inside a queued task.
    * @param {AdminState} state
    * @param {readonly number[]} ids
@@ -69,23 +63,23 @@ export function createActions({ getState, applyState, onReloadNeeded }) {
    */
   async function applyMove(state, ids, project, beforeId, { focus, withUndo }) {
     const affected = [...projectsOf(state, ids), project];
-    const before = layoutOf(state.photos, affected);
-    const predicted = movePhotos(state.photos, ids, project, beforeId);
+    const before = layoutOf(listOf(state), affected);
+    const predicted = moveItems(listOf(state), ids, project, beforeId);
     const after = layoutOf(predicted, affected);
     if (sameLayout(before, after)) return; // dropped where it already was
-    applyState({ ...state, photos: predicted }, { id: ids[0], moveFocus: focus });
+    applyState(withList(state, predicted), focusOn(ids[0], focus));
 
-    const saved = await post("move", { ids: [...ids], project, beforeId });
-    applyState(saved, { id: ids[0], moveFocus: focus });
+    const saved = await post(`${api}move`, { ids: [...ids], project, beforeId });
+    applyState(saved, focusOn(ids[0], focus));
     const order = after[project];
     const position = order.indexOf(ids[0]);
     const isReorder = projectsOf(state, ids).every((p) => p === project);
     const message =
       isReorder && ids.length === 1
-        ? `Saved. ${position === 0 ? `Now the cover of ${titleOf(state, project)}` : `Position ${position + 1} of ${order.length}`}.`
+        ? `Saved. ${position === 0 ? `Now ${firstIs} in ${titleOf(state, project)}` : `Position ${position + 1} of ${order.length}`}.`
         : isReorder
-          ? `Saved. ${plural(ids.length, "photo")} reordered in ${titleOf(state, project)}.`
-          : `Saved. Moved ${plural(ids.length, "photo")} to ${titleOf(state, project)}.`;
+          ? `Saved. ${plural(ids.length, noun)} reordered in ${titleOf(state, project)}.`
+          : `Saved. Moved ${plural(ids.length, noun)} to ${titleOf(state, project)}.`;
     announce(message, withUndo ? { action: undoLayout(before) } : {});
   }
 
@@ -99,27 +93,29 @@ export function createActions({ getState, applyState, onReloadNeeded }) {
     enqueue((state) => applyMove(state, ids, project, beforeId, { focus: false, withUndo: true }));
 
   /**
-   * Keyboard / arrow-button reordering of one photo within its project. Focus stays on it.
+   * Keyboard / arrow-button reordering of one item within its project. Focus stays on it.
    * Computed when its turn in the queue comes, so fast repeated presses all count.
    * @param {number} id
    * @param {(order: number[]) => number[]} reorder
    */
   const step = (id, reorder) =>
     enqueue(async (state) => {
-      const photo = state.photos.find((p) => p.id === id);
-      if (!photo) return;
-      const order = state.photos.filter((p) => p.project === photo.project).map((p) => p.id);
+      const item = listOf(state).find((p) => p.id === id);
+      if (!item) return;
+      const order = listOf(state)
+        .filter((p) => p.project === item.project)
+        .map((p) => p.id);
       const next = reorder(order);
-      await applyMove(state, [id], photo.project, idAfter(next, id), { focus: true, withUndo: false });
+      await applyMove(state, [id], item.project, idAfter(next, id), { focus: true, withUndo: false });
     });
 
   /** @param {readonly number[]} ids */
   function remove(ids) {
     return enqueue(async (state) => {
       const from = [...new Set(projectsOf(state, ids))];
-      applyState(await post("delete", { ids: [...ids] }));
+      applyState(await post(`${api}delete`, { ids: [...ids] }));
       const where = from.length === 1 ? ` from ${titleOf(state, from[0])}` : "";
-      announce(`Moved ${plural(ids.length, "photo")} to the trash${where}.`, {
+      announce(`Moved ${plural(ids.length, noun)} to the trash${where}.`, {
         action: { label: "Undo", run: () => restore(ids) },
       });
     });
@@ -128,9 +124,9 @@ export function createActions({ getState, applyState, onReloadNeeded }) {
   /** @param {readonly number[]} ids */
   function restore(ids) {
     return enqueue(async () => {
-      const next = await post("restore", { ids: [...ids] });
-      applyState(next, { id: ids[0], moveFocus: false });
-      announce(`Restored ${plural(ids.length, "photo")}.`);
+      const next = await post(`${api}restore`, { ids: [...ids] });
+      applyState(next, focusOn(ids[0], false));
+      announce(`Restored ${plural(ids.length, noun)}.`);
     });
   }
 

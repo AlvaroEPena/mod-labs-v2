@@ -9,7 +9,9 @@ import { createApp } from "./app.ts";
 import { HOSTNAME, pathsFor, resolvePort, resolveRoot } from "./lib/config.ts";
 import { gitPendingChanges } from "./lib/git-status.ts";
 import { createToken } from "./lib/security.ts";
+import { createLock } from "./lib/lock.ts";
 import { createStorage } from "./lib/storage.ts";
+import { createVideoStorage } from "./lib/video-storage.ts";
 import { projectSlugs } from "./handlers.ts";
 
 const siteRoot = path.resolve(import.meta.dirname, "..");
@@ -18,11 +20,13 @@ const port = resolvePort(argv, process.env);
 const root = resolveRoot(argv, process.env, siteRoot);
 const paths = pathsFor(root);
 
+const lock = createLock();
 const handle = createApp({
   port,
   token: createToken(),
   paths,
-  storage: createStorage(paths, projectSlugs),
+  storage: createStorage(paths, projectSlugs, lock),
+  videoStorage: createVideoStorage(paths, projectSlugs),
   pending: () => gitPendingChanges(root),
   publicDir: path.join(import.meta.dirname, "public"),
   logError: (err) => console.error("[admin] request failed:", err),
@@ -66,7 +70,8 @@ server.on("error", (err: NodeJS.ErrnoException) => {
 server.listen(port, HOSTNAME, () => {
   console.log(`\n  Mod Labs photo admin is running (this computer only).\n`);
   console.log(`  Open:  http://${HOSTNAME}:${port}/\n`);
-  if (root !== siteRoot) console.log(`  TEST MODE: using the data in ${root}, not the real site photos.\n`);
+  if (root !== siteRoot)
+    console.log(`  TEST MODE: using the data in ${root}, not the real site photos and videos.\n`);
   console.log(`  Preview the site at the same time: npm run dev (http://localhost:4321/gallery)`);
   console.log(`  Publish your changes: npm run deploy`);
   console.log(`  Stop: press Ctrl+C\n`);

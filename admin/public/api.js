@@ -4,6 +4,7 @@
  * @typedef {import("../lib/types.ts").AdminState} AdminState
  * @typedef {import("../lib/types.ts").UploadResult} UploadResult
  * @typedef {import("../lib/types.ts").ApiError} ApiError
+ * @typedef {import("../lib/types.ts").VideoJob} VideoJob
  */
 
 const token = document.querySelector('meta[name="admin-token"]')?.getAttribute("content") ?? "";
@@ -54,7 +55,7 @@ async function call(path, init = {}) {
 export const getState = () => call("/api/state");
 
 /**
- * @param {"move" | "arrange" | "delete" | "restore"} action
+ * @param {`${"" | "videos/"}${"move" | "arrange" | "delete" | "restore"}` | "videos/update"} action
  * @param {object} body
  * @returns {Promise<AdminState>}
  */
@@ -93,3 +94,41 @@ export function uploadPhoto(file, project, onProgress) {
     xhr.send(form);
   });
 }
+
+/** @param {number} id */
+export const videoUrl = (id) => `/api/video/${id}?t=${encodeURIComponent(token)}`;
+
+/**
+ * Send a video file as the raw request body (streamed to disk by the server). Resolves with the
+ * processing job once the upload itself has finished.
+ * @param {File} file
+ * @param {{ project: string, title: string }} details
+ * @param {(fraction: number) => void} onProgress
+ * @returns {Promise<VideoJob>}
+ */
+export function uploadVideo(file, { project, title }, onProgress) {
+  return new Promise((resolve, reject) => {
+    const query = new URLSearchParams({ project, title, name: file.name });
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `/api/videos/upload?${query}`);
+    xhr.setRequestHeader(TOKEN_HEADER, token);
+    xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+    xhr.upload.addEventListener("progress", (e) => {
+      if (e.lengthComputable) onProgress(e.loaded / e.total);
+    });
+    xhr.addEventListener("load", () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve(JSON.parse(xhr.responseText));
+      else reject(errorFrom(xhr.status, xhr.responseText));
+    });
+    xhr.addEventListener("error", () =>
+      reject(new ApiRequestError("The upload was interrupted. Is the admin still running?", 0)),
+    );
+    xhr.send(file);
+  });
+}
+
+/**
+ * @param {string} id
+ * @returns {Promise<VideoJob>}
+ */
+export const getVideoJob = (id) => call(`/api/videos/jobs/${encodeURIComponent(id)}`);

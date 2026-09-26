@@ -15,6 +15,11 @@ export const ACCEPTED_UPLOAD_TYPES = ["image/jpeg", "image/png", "image/webp", "
 
 export const THUMB_EDGE_PX = 360;
 
+/** Video uploads stream to disk (never held in memory); processing makes them ≤ 24 MiB. */
+export const MAX_VIDEO_UPLOAD_BYTES = 500 * 1024 * 1024;
+export const ACCEPTED_VIDEO_TYPES = ["video/mp4", "video/quicktime", "video/webm"];
+export const ACCEPTED_VIDEO_EXTENSIONS = [".mp4", ".mov", ".m4v", ".webm"];
+
 export type AdminPaths = {
   root: string;
   photosJson: string;
@@ -22,6 +27,10 @@ export type AdminPaths = {
   trashDir: string;
   trashManifest: string;
   thumbCacheDir: string;
+  videosJson: string;
+  mediaDir: string;
+  videoTrashManifest: string;
+  uploadDir: string;
 };
 
 export function pathsFor(root: string): AdminPaths {
@@ -32,6 +41,10 @@ export function pathsFor(root: string): AdminPaths {
     trashDir: path.join(root, ".admin-trash"),
     trashManifest: path.join(root, ".admin-trash", "trash.json"),
     thumbCacheDir: path.join(root, "node_modules", ".cache", "mod-labs-admin", "thumbs"),
+    videosJson: path.join(root, "src", "data", "videos.json"),
+    mediaDir: path.join(root, "public", "media"),
+    videoTrashManifest: path.join(root, ".admin-trash", "videos.json"),
+    uploadDir: path.join(root, "node_modules", ".cache", "mod-labs-admin", "uploads"),
   };
 }
 
@@ -55,8 +68,9 @@ export function resolvePort(argv: readonly string[], env: Record<string, string 
 
 /**
  * TESTING OPTION: `--root <dir>` or ADMIN_ROOT=<dir> points the admin at a copy of the data
- * (<dir>/src/data/photos.json, <dir>/src/assets/gallery/photos/, <dir>/.admin-trash/) instead of
- * this site folder, so tests never touch the real photos. Defaults to the site folder.
+ * (<dir>/src/data/photos.json + videos.json, <dir>/src/assets/gallery/photos/, <dir>/public/media/,
+ * <dir>/.admin-trash/) instead of this site folder, so tests never touch the real data.
+ * Defaults to the site folder.
  */
 export function resolveRoot(
   argv: readonly string[],

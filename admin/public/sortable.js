@@ -8,7 +8,8 @@
  *   top/bottom edge, and Esc cancels.
  * The DOM is only rearranged temporarily; on drop, `onDrop` gets the result and the app saves it.
  *
- * Markup contract: `.grid[data-project]` lists holding `.card[data-id]` items.
+ * Markup contract: lists (`options.list`, default `.grid`) with `data-project`, holding items
+ * (`options.item`, default `.card`) with `data-id`. Photos and videos each get their own sortable.
  */
 
 const MOUSE_THRESHOLD_PX = 6;
@@ -41,16 +42,14 @@ function flip(elements, mutate) {
   }
 }
 
-/** @param {EventTarget | null} target */
-const cardOf = (target) =>
-  target instanceof Element ? /** @type {HTMLElement | null} */ (target.closest(".card[data-id]")) : null;
-
 /**
  * @typedef {{ ids: number[], project: string, beforeId: number | null }} DropResult
  * @typedef {{
  *   dragIds: (id: number) => number[],
  *   onDrop: (result: DropResult) => void,
  *   onCancel?: () => void,
+ *   item?: string,
+ *   list?: string,
  * }} SortableOptions
  */
 
@@ -58,14 +57,18 @@ const cardOf = (target) =>
  * @param {HTMLElement} root container of the project grids
  * @param {SortableOptions} options
  */
-export function setupSortable(root, { dragIds, onDrop, onCancel }) {
+export function setupSortable(root, { dragIds, onDrop, onCancel, item = ".card", list = ".grid" }) {
+  /** @param {EventTarget | null} target */
+  const cardOf = (target) =>
+    target instanceof Element ? /** @type {HTMLElement | null} */ (target.closest(`${item}[data-id]`)) : null;
+
   /** @type {{ card: HTMLElement, pointerId: number, type: string, x: number, y: number, timer: number } | null} */
   let pending = null;
   /** @type {{ ids: number[], sources: HTMLElement[], ghost: HTMLElement, placeholder: HTMLElement, offsetX: number, offsetY: number, x: number, y: number, frame: number } | null} */
   let drag = null;
 
   const visibleCards = (/** @type {Element} */ grid) =>
-    /** @type {HTMLElement[]} */ ([...grid.querySelectorAll(":scope > .card:not(.is-drag-source)")]);
+    /** @type {HTMLElement[]} */ ([...grid.querySelectorAll(`:scope > ${item}:not(.is-drag-source)`)]);
 
   function start() {
     if (!pending) return;
@@ -74,7 +77,7 @@ export function setupSortable(root, { dragIds, onDrop, onCancel }) {
     pending = null;
     const ids = dragIds(Number(card.dataset.id));
     const sources = ids
-      .map((id) => root.querySelector(`.card[data-id="${id}"]`))
+      .map((id) => root.querySelector(`${item}[data-id="${id}"]`))
       .filter((el) => el instanceof HTMLElement);
     const rect = card.getBoundingClientRect();
 
@@ -128,7 +131,8 @@ export function setupSortable(root, { dragIds, onDrop, onCancel }) {
     if (!drag) return;
     const hit = document.elementFromPoint(drag.x, drag.y);
     const grid =
-      hit?.closest(".grid[data-project]") ?? hit?.closest(".project")?.querySelector(".grid[data-project]");
+      hit?.closest(`${list}[data-project]`) ??
+      hit?.closest(".project")?.querySelector(`${list}[data-project]`);
     if (!(grid instanceof HTMLElement)) return;
 
     const { x, y, placeholder } = drag;
@@ -150,7 +154,7 @@ export function setupSortable(root, { dragIds, onDrop, onCancel }) {
   /** @param {Element} el */
   function nextCard(el) {
     let next = el.nextElementSibling;
-    while (next && !(next.matches(".card") && !next.classList.contains("is-drag-source")))
+    while (next && !(next.matches(item) && !next.classList.contains("is-drag-source")))
       next = next.nextElementSibling;
     return next;
   }

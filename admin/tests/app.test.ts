@@ -1,93 +1,19 @@
 /**
- * Admin server handlers, end to end on a throwaway copy of the data layout (temp dir): guards,
- * every operation, and upload processing. No port is opened; requests go straight to the app.
+ * Photo admin handlers, end to end on a throwaway copy of the data layout (see harness.ts):
+ * guards, every photo operation, and photo upload processing.
  */
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import sharp from "sharp";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { formatPhotosJson, photoFileForId, type PhotoRecord } from "../../src/lib/gallery/records.ts";
+import { describe, expect, it } from "vitest";
+import { formatPhotosJson } from "../../src/lib/gallery/records.ts";
 import { hasMetadata } from "../../scripts/lib/process-photo.mjs";
-import { createApp } from "../app.ts";
-import { projectSlugs } from "../handlers.ts";
-import { pathsFor, type AdminPaths } from "../lib/config.ts";
-import { createStorage } from "../lib/storage.ts";
 import type { AdminState, ApiError, UploadResult } from "../lib/types.ts";
+import { idsOf, initialPhotos as initial, jpeg, PORT, TOKEN, useTestAdmin } from "./harness.ts";
 
-const PORT = 4400;
-const TOKEN = "test-token-0123456789";
-const ORIGIN = `http://127.0.0.1:${PORT}`;
-const publicDir = path.resolve(import.meta.dirname, "../public");
-
-const rec = (id: number, project: string): PhotoRecord => ({
-  id,
-  file: photoFileForId(id),
-  project,
-  width: 40,
-  height: 30,
-});
-const initial = [rec(10, "gwii"), rec(11, "gwii"), rec(12, "gwii"), rec(20, "gboy")];
-
-let root: string;
-let paths: AdminPaths;
-let app: (request: Request) => Promise<Response>;
-
-const jpeg = (width = 40, height = 30) =>
-  sharp({ create: { width, height, channels: 3, background: "#0af" } })
-    .jpeg()
-    .toBuffer();
-
-beforeEach(async () => {
-  root = await fs.mkdtemp(path.join(os.tmpdir(), "mod-labs-admin-"));
-  paths = pathsFor(root);
-  await fs.mkdir(paths.photosDir, { recursive: true });
-  await fs.mkdir(path.dirname(paths.photosJson), { recursive: true });
-  await fs.writeFile(paths.photosJson, formatPhotosJson(initial));
-  for (const r of initial) await fs.writeFile(path.join(root, "src/assets/gallery", r.file), await jpeg());
-  app = createApp({
-    port: PORT,
-    token: TOKEN,
-    paths,
-    storage: createStorage(paths, projectSlugs),
-    pending: async () => ({ count: 0 }),
-    publicDir,
-  });
-});
-
-afterEach(async () => {
-  await fs.rm(root, { recursive: true, force: true });
-});
-
-type Options = {
-  method?: string;
-  host?: string;
-  token?: string | null;
-  origin?: string | null;
-  json?: unknown;
-  body?: RequestInit["body"];
-};
-function send(
-  pathname: string,
-  { method, host = `127.0.0.1:${PORT}`, token = TOKEN, origin = ORIGIN, json, body }: Options = {},
-) {
-  const headers = new Headers({ host });
-  if (token) headers.set("x-admin-token", token);
-  if (origin) headers.set("origin", origin);
-  if (json !== undefined) headers.set("content-type", "application/json");
-  const hasBody = json !== undefined || body !== undefined;
-  return app(
-    new Request(`http://127.0.0.1:${PORT}${pathname}`, {
-      method: method ?? (hasBody ? "POST" : "GET"),
-      headers,
-      body: json !== undefined ? JSON.stringify(json) : body,
-    }),
-  );
-}
-const post = (pathname: string, json: unknown, options: Options = {}) => send(pathname, { ...options, json });
-const readList = async () => JSON.parse(await fs.readFile(paths.photosJson, "utf8")) as PhotoRecord[];
-const idsOf = (list: { id: number; project: string }[], project: string) =>
-  list.filter((p) => p.project === project).map((p) => p.id);
+const admin = useTestAdmin();
+const { send, post } = admin;
+const readList = () => admin.readPhotos();
 
 function uploadForm(file: Blob, name: string, project = "gboy") {
   const form = new FormData();
@@ -155,7 +81,7 @@ describe("operations", () => {
   });
 
   it("moves several photos across projects in one write, then undoes it with arrange", async () => {
-    const before = await fs.readFile(paths.photosJson, "utf8");
+    const before = await fs.readFile(admin.paths.photosJson, "utf8");
     const res = await post("/api/move", { ids: [20, 11], project: "halo-xbox", beforeId: null });
     expect(res.status).toBe(200);
     const list = await readList();
@@ -165,7 +91,7 @@ describe("operations", () => {
 
     const undo = await post("/api/arrange", { layout: { gwii: [10, 11, 12], gboy: [20], "halo-xbox": [] } });
     expect(undo.status).toBe(200);
-    expect(await fs.readFile(paths.photosJson, "utf8")).toBe(before);
+    expect(await fs.readFile(admin.paths.photosJson, "utf8")).toBe(before);
   });
 
   it("places photos before a drop target, and refuses stale targets and layouts with 409", async () => {
@@ -179,28 +105,28 @@ describe("operations", () => {
     expect((await post("/api/move", { ids: [10, 999], project: "gboy", beforeId: null })).status).toBe(404);
     expect((await post("/api/delete", { ids: [10, 999] })).status).toBe(404);
     expect(await readList()).toEqual(initial);
-    expect(await fs.readdir(paths.photosDir)).toHaveLength(4);
+    expect(await fs.readdir(admin.paths.photosDir)).toHaveLength(4);
   });
 
   it("deletes a batch to the trash and restores it byte-for-byte", async () => {
-    const before = await fs.readFile(paths.photosJson, "utf8");
+    const before = await fs.readFile(admin.paths.photosJson, "utf8");
     const deleted = (await (await post("/api/delete", { ids: [11, 20, 10] })).json()) as AdminState;
     expect(deleted.photos.map((p) => p.id)).toEqual([12]);
     expect(deleted.trash.map((t) => t.id).sort()).toEqual([10, 11, 20]);
     for (const f of ["p0010.jpg", "p0011.jpg", "p0020.jpg"]) {
-      await expect(fs.access(path.join(paths.trashDir, f))).resolves.toBeUndefined();
+      await expect(fs.access(path.join(admin.paths.trashDir, f))).resolves.toBeUndefined();
     }
     expect((await send("/api/thumb/11")).status).toBe(200); // trash view thumbnails
 
     expect((await post("/api/restore", { ids: [10, 11, 20] })).status).toBe(200);
-    expect(await fs.readFile(paths.photosJson, "utf8")).toBe(before);
-    expect(JSON.parse(await fs.readFile(paths.trashManifest, "utf8"))).toEqual([]);
+    expect(await fs.readFile(admin.paths.photosJson, "utf8")).toBe(before);
+    expect(JSON.parse(await fs.readFile(admin.paths.trashManifest, "utf8"))).toEqual([]);
     expect((await post("/api/restore", { ids: [11] })).status).toBe(404);
   });
 
   it("restores part of a batch, and reads trash entries written by the previous version", async () => {
     await post("/api/delete", { ids: [10, 11] });
-    const manifest = JSON.parse(await fs.readFile(paths.trashManifest, "utf8"));
+    const manifest = JSON.parse(await fs.readFile(admin.paths.trashManifest, "utf8"));
     expect(Object.keys(manifest[0]).sort()).toEqual(["afterId", "deletedAt", "index", "record"]);
     expect((await post("/api/restore", { ids: [11] })).status).toBe(200);
     expect(idsOf(await readList(), "gwii")).toEqual([11, 12]);
@@ -229,10 +155,10 @@ describe("upload", () => {
     expect(photo.file).toBe("photos/p0021.jpg");
     expect([photo.width, photo.height]).toEqual([1024, 2048]); // rotated upright, long edge 2048
     expect(state.photos.at(-1)?.id).toBe(21);
-    const saved = path.join(paths.photosDir, "p0021.jpg");
+    const saved = path.join(admin.paths.photosDir, "p0021.jpg");
     expect(await hasMetadata(saved)).toBe(false);
     expect(await sharp(saved).metadata()).toMatchObject({ format: "jpeg", width: 1024, height: 2048 });
-    expect(await fs.readFile(paths.photosJson, "utf8")).toBe(formatPhotosJson(await readList()));
+    expect(await fs.readFile(admin.paths.photosJson, "utf8")).toBe(formatPhotosJson(await readList()));
   });
 
   it("gives clear errors for HEIC, non-images and missing input", async () => {

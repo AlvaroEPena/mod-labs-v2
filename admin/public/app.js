@@ -1,7 +1,8 @@
 // @ts-check
 /**
- * Photo admin UI controller: loads state, renders it, and wires input (click, keyboard, drag,
- * selection bars, views) to the actions. Focus and highlights follow the photo being worked on.
+ * Photo & video admin UI controller: loads state, renders it, and wires photo input (click,
+ * keyboard, drag, selection bars, views) to the actions; video input is wired in
+ * video-controls.js. Focus and highlights follow the item being worked on.
  * @typedef {import("../lib/types.ts").AdminState} AdminState
  * @typedef {import("./actions.js").FocusTarget} FocusTarget
  */
@@ -10,6 +11,7 @@ import { getState } from "./api.js";
 import { chooseProject, confirmDelete } from "./dialogs.js";
 import { h } from "./dom.js";
 import { moveBy, moveTo } from "./order.js";
+import { createQueue } from "./queue.js";
 import { fillProjectSelect, renderBanner, renderGallery } from "./render.js";
 import { createSelection } from "./select.js";
 import { syncSelection } from "./selection-ui.js";
@@ -17,6 +19,7 @@ import { setupSortable } from "./sortable.js";
 import { announce } from "./toast.js";
 import { renderTrash } from "./trash.js";
 import { setupUpload } from "./upload.js";
+import { setupVideoControls } from "./video-controls.js";
 
 const byId = (/** @type {string} */ id) => /** @type {HTMLElement} */ (document.getElementById(id));
 const galleryEl = byId("gallery");
@@ -51,17 +54,18 @@ function applyState(next, focus) {
   renderGallery(galleryEl, byId("jump"), next);
   renderTrash(trashEl, next);
   renderBanner(byId("banner"), next.pending);
-  byId("trash-count").textContent = String(next.trash.length);
+  byId("trash-count").textContent = String(next.trash.length + next.videoTrash.length);
   fillProjectSelect(/** @type {HTMLSelectElement} */ (byId("upload-project")), next, {
     placeholder: "Choose a project…",
   });
   syncSelections();
   if (!focus) return;
-  const card = galleryEl.querySelector(`.card[data-id="${focus.id}"]`);
+  const selector = focus.kind === "videos" ? ".vcard" : ".card";
+  const card = galleryEl.querySelector(`${selector}[data-id="${focus.id}"]`);
   if (!(card instanceof HTMLElement)) return;
   card.classList.add("is-flash");
   if (!focus.moveFocus) return;
-  card.querySelector("button")?.focus({ preventScroll: true }); // the first button is the photo handle
+  card.querySelector("button")?.focus({ preventScroll: true }); // the first button is the photo/poster handle
   card.scrollIntoView({ block: "nearest", behavior: prefersReducedMotion() ? "auto" : "smooth" });
 }
 
@@ -78,7 +82,15 @@ async function load() {
   }
 }
 
-const actions = createActions({ getState: () => state, applyState, onReloadNeeded: load });
+const enqueue = createQueue({ getState: () => state, onReloadNeeded: load });
+const actions = createActions({ kind: "photos", enqueue, applyState });
+const videoControls = setupVideoControls({
+  root: galleryEl,
+  enqueue,
+  getState: () => state,
+  applyState,
+  reload: load,
+});
 const uploads = setupUpload({
   getState: () => state,
   onUploaded: (next, id) => applyState(next, { id, moveFocus: false }),
@@ -106,7 +118,13 @@ function select(id, isRange) {
 /** @param {readonly number[]} ids */
 async function moveWithDialog(ids) {
   if (!state || ids.length === 0) return;
-  const project = await chooseProject(state, ids);
+  const fromProjects = state.photos.filter((p) => ids.includes(p.id)).map((p) => p.project);
+  const project = await chooseProject(state, {
+    count: ids.length,
+    noun: "photo",
+    thumbIds: ids,
+    fromProjects,
+  });
   if (!project) return;
   selection.clear();
   await actions.move(ids, project, null);
@@ -114,7 +132,7 @@ async function moveWithDialog(ids) {
 
 /** @param {readonly number[]} ids */
 async function deleteWithConfirm(ids) {
-  if (ids.length === 0 || !(await confirmDelete(ids))) return;
+  if (ids.length === 0 || !(await confirmDelete({ count: ids.length, noun: "photo", thumbIds: ids }))) return;
   selection.clear();
   await actions.remove(ids);
 }
@@ -123,6 +141,7 @@ async function deleteWithConfirm(ids) {
 
 galleryEl.addEventListener("click", (e) => {
   const target = e.target instanceof Element ? e.target : null;
+  if (target?.closest(".videos")) return; // video strips: see video-controls.js
   const handle = target?.closest('[data-role="handle"]');
   if (handle) return select(idOf(handle), e.shiftKey);
   const button = target?.closest("button[data-action]");
@@ -206,6 +225,11 @@ trashEl.addEventListener("click", (e) => {
     const id = idOf(handle);
     return e.shiftKey ? trashSelection.extendTo(trashOrder, id) : trashSelection.toggle(id);
   }
+  const videoButton = target?.closest('button[data-action="restore-video"]');
+  if (videoButton) {
+    videoControls.restore([Number(videoButton.getAttribute("data-video-id"))]);
+    return;
+  }
   const button = target?.closest('button[data-action="restore"]');
   if (!button) return;
   const id = idOf(button);
@@ -235,6 +259,7 @@ for (const tab of document.querySelectorAll(".view-tab")) {
     for (const t of document.querySelectorAll(".view-tab")) t.setAttribute("aria-pressed", String(t === tab));
     byId("gallery-view").hidden = view !== "gallery";
     byId("trash-view").hidden = view !== "trash";
+    window.scrollTo({ top: 0 });
     syncSelections();
   });
 }
@@ -246,7 +271,7 @@ for (const type of ["dragover", "drop"]) {
   });
 }
 window.addEventListener("beforeunload", (e) => {
-  if (uploads.isBusy()) e.preventDefault();
+  if (uploads.isBusy() || videoControls.isBusy()) e.preventDefault();
 });
 
 load();

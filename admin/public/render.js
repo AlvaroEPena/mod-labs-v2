@@ -6,6 +6,7 @@
  * @typedef {import("../lib/types.ts").PendingChanges} PendingChanges
  */
 import { h, icon, iconButton, photoHandle, plural } from "./dom.js";
+import { videoStrip } from "./videos.js";
 
 /** @param {AdminState} state */
 export const projectTitles = (state) => new Map(state.projects.map((p) => [p.slug, p.title]));
@@ -171,6 +172,7 @@ export function renderGallery(container, jumpNav, state) {
               "Add photos here",
             ),
           ),
+          videoStrip(state, project),
           // Always a list, so an empty project is still a drop target.
           h(
             "ol",

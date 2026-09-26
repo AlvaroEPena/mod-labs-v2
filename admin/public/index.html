@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex, nofollow" />
     <meta name="admin-token" content="__ADMIN_TOKEN__" />
-    <title>Photo admin · Mod Labs</title>
+    <title>Photo &amp; video admin · Mod Labs</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/styles.css" />
     <script type="module" src="/app.js"></script>
@@ -17,7 +17,7 @@
       <div class="wrap topbar-inner">
         <p class="brand">
           <span class="brand-mark" aria-hidden="true"></span>Mod Labs
-          <span class="brand-sub">Photo admin</span>
+          <span class="brand-sub">Photos &amp; videos</span>
         </p>
         <nav class="views" aria-label="Views">
           <button type="button" class="view-tab" data-view="gallery" aria-pressed="true">Gallery</button>
@@ -83,8 +83,8 @@
       <div id="trash-view" hidden>
         <h2 class="view-title">Trash</h2>
         <p class="hint">
-          Deleted photos wait here. Restore puts a photo back where it was. Click photos to restore several at
-          once. They are never published.
+          Deleted photos and videos wait here. Restore puts each one back where it was. Click photos to restore
+          several at once. Nothing in the Trash is ever published.
         </p>
         <div id="trash"></div>
       </div>
@@ -133,6 +133,82 @@
       <div class="dialog-actions">
         <button type="button" class="btn ghost" data-close="cancel">Cancel</button>
         <button type="button" class="btn primary" data-close="confirm">Move</button>
+      </div>
+    </dialog>
+    <dialog id="video-upload-dialog" aria-labelledby="video-upload-title">
+      <form method="dialog" id="video-upload-form" novalidate>
+        <h2 id="video-upload-title">Add a video</h2>
+        <p class="hint" id="video-upload-project"></p>
+        <div class="field">
+          <label for="video-title">Title <span class="hint">(shown under the video)</span></label>
+          <input id="video-title" name="title" type="text" maxlength="120" required autocomplete="off" />
+        </div>
+        <div class="field">
+          <label for="video-file">Video file</label>
+          <input
+            id="video-file"
+            name="file"
+            type="file"
+            accept="video/mp4,video/quicktime,video/webm,.mp4,.mov,.m4v,.webm"
+            required
+            aria-describedby="video-file-hint"
+          />
+          <p class="hint" id="video-file-hint">
+            MP4, MOV or WebM, up to 3 minutes. It's converted for the web and cleaned of hidden data (like GPS
+            location).
+          </p>
+        </div>
+        <div class="video-progress" id="video-progress" hidden>
+          <progress
+            id="video-progress-bar"
+            max="1"
+            value="0"
+            aria-labelledby="video-progress-text"
+          ></progress>
+          <p id="video-progress-text" aria-live="polite"></p>
+        </div>
+        <p class="field-error" id="video-upload-error" role="alert"></p>
+        <div class="dialog-actions">
+          <button type="button" class="btn ghost" data-close="cancel" id="video-upload-cancel">Cancel</button>
+          <button type="submit" class="btn primary" id="video-upload-submit">Upload</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="rename-dialog" aria-labelledby="rename-title">
+      <form method="dialog" id="rename-form" novalidate>
+        <h2 id="rename-title">Rename video</h2>
+        <div class="field">
+          <label for="rename-input">Title</label>
+          <input id="rename-input" type="text" maxlength="120" required autocomplete="off" />
+        </div>
+        <p class="field-error" id="rename-error" role="alert"></p>
+        <div class="dialog-actions">
+          <button type="button" class="btn ghost" data-close="cancel">Cancel</button>
+          <button type="submit" class="btn primary">Save</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="poster-dialog" aria-labelledby="poster-title" class="wide">
+      <form method="dialog" id="poster-form">
+        <h2 id="poster-title">Choose a poster</h2>
+        <p class="hint">The picture shown before the video plays.</p>
+        <fieldset class="poster-grid" id="poster-options">
+          <legend class="sr-only">Poster</legend>
+        </fieldset>
+        <div class="dialog-actions">
+          <button type="button" class="btn ghost" data-close="cancel">Cancel</button>
+          <button type="submit" class="btn primary">Use this poster</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="player-dialog" aria-labelledby="player-title" class="wide">
+      <h2 id="player-title"></h2>
+      <video id="player" controls playsinline preload="metadata"></video>
+      <div class="dialog-actions">
+        <button type="button" class="btn ghost" data-close="cancel">Close</button>
       </div>
     </dialog>
   </body>

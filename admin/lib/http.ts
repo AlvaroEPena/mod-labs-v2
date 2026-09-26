@@ -1,4 +1,5 @@
 /** Small Response helpers and a size-bounded body reader for the admin handlers. */
+import fs from "node:fs/promises";
 import type { ApiError } from "./types.ts";
 
 export class HttpError extends Error {
@@ -25,7 +26,7 @@ const tooLarge = (limit: number) =>
   new HttpError(
     413,
     "too_large",
-    `That's too big. The limit is ${Math.round(limit / (1024 * 1024))} MB per photo.`,
+    `That's too big. The limit is ${Math.round(limit / (1024 * 1024))} MB per file.`,
   );
 
 /**
@@ -82,4 +83,35 @@ export async function readFormData(request: Request, limit: number): Promise<For
   } catch {
     throw new HttpError(400, "bad_form", "The upload was incomplete or malformed. Try again.");
   }
+}
+
+/**
+ * Stream a raw request body into `file`, counting bytes as they arrive and stopping (and
+ * deleting the partial file) as soon as it passes `limit`. Returns the byte count.
+ */
+export async function streamBodyToFile(request: Request, file: string, limit: number): Promise<number> {
+  const declared = Number(request.headers.get("content-length") ?? "0");
+  if (declared > limit) throw tooLarge(limit);
+  if (!request.body) return 0;
+  const handle = await fs.open(file, "wx");
+  let total = 0;
+  try {
+    const reader = request.body.getReader();
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > limit) {
+        await reader.cancel();
+        throw tooLarge(limit);
+      }
+      await handle.write(value);
+    }
+  } catch (err) {
+    await handle.close();
+    await fs.rm(file, { force: true });
+    throw err;
+  }
+  await handle.close();
+  return total;
 }

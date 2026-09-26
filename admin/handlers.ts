@@ -5,19 +5,21 @@
 import { categories, projects } from "../src/data/projects.ts";
 import { photoFileForId, type PhotoRecord } from "../src/lib/gallery/records.ts";
 import { looksLikeHeic, processPhoto, UnsupportedPhotoError } from "../scripts/lib/process-photo.mjs";
-import { ACCEPTED_UPLOAD_TYPES, MAX_UPLOAD_BYTES, type AdminPaths } from "./lib/config.ts";
+import { MAX_DURATION_SECONDS } from "../scripts/lib/process-video.mjs";
+import {
+  ACCEPTED_UPLOAD_TYPES,
+  ACCEPTED_VIDEO_TYPES,
+  MAX_UPLOAD_BYTES,
+  MAX_VIDEO_UPLOAD_BYTES,
+  type AdminPaths,
+} from "./lib/config.ts";
 import { HttpError } from "./lib/http.ts";
 import { parseProject } from "./lib/parse.ts";
-import {
-  addPhoto,
-  arrangeProjects,
-  movePhotos,
-  nextPhotoId,
-  removePhotos,
-  restorePhotos,
-} from "./lib/photos.ts";
+import { addItem, arrangeProjects, moveItems, nextId, removeItems, restoreItems } from "./lib/list-ops.ts";
 import type { Storage } from "./lib/storage.ts";
 import { thumbnail } from "./lib/thumbs.ts";
+import { clearPosters, posterThumbId, relinkPosters } from "./lib/video-ops.ts";
+import type { VideoStorage } from "./lib/video-storage.ts";
 import type {
   AdminPhoto,
   AdminState,
@@ -43,22 +45,40 @@ async function moveAll(ids: readonly number[], moveOne: (id: number) => Promise<
 
 /* ---------- operations ---------- */
 
-type HandlerDeps = { storage: Storage; paths: AdminPaths; pending: () => Promise<PendingChanges> };
+type HandlerDeps = {
+  storage: Storage;
+  videoStorage: VideoStorage;
+  paths: AdminPaths;
+  pending: () => Promise<PendingChanges>;
+};
 
-export function createHandlers({ storage, paths, pending }: HandlerDeps) {
+export function createHandlers({ storage, videoStorage, paths, pending }: HandlerDeps) {
   async function getState(): Promise<AdminState> {
-    const [photos, trash, changes] = await Promise.all([
+    const [photos, trash, videoTrash, changes] = await Promise.all([
       storage.readPhotos(),
       storage.readTrash(),
+      videoStorage.readVideoTrash(),
       pending(),
     ]);
+    const videos = await videoStorage.readVideos(photos.map((p) => p.id));
     return {
       categories: categories.map((c) => ({ slug: c.slug, title: c.title })),
       projects: projects.map((p) => ({ slug: p.slug, title: p.title, category: p.category })),
       photos: photos.map(withCategory),
       trash: [...trash].reverse().map((t) => ({ ...t.record, deletedAt: t.deletedAt })),
+      videos: videos.map((v) => ({
+        ...v,
+        category: categoryOf.get(v.project) ?? "",
+        posterThumbId: posterThumbId(v, photos),
+      })),
+      videoTrash: [...videoTrash].reverse().map((t) => ({ ...t.record, deletedAt: t.deletedAt })),
       pending: changes,
       limits: { maxUploadBytes: MAX_UPLOAD_BYTES, acceptedTypes: ACCEPTED_UPLOAD_TYPES },
+      videoLimits: {
+        maxUploadBytes: MAX_VIDEO_UPLOAD_BYTES,
+        maxDurationSeconds: MAX_DURATION_SECONDS,
+        acceptedTypes: ACCEPTED_VIDEO_TYPES,
+      },
     };
   }
 
@@ -71,7 +91,7 @@ export function createHandlers({ storage, paths, pending }: HandlerDeps) {
   /** Move photos into a project (dialog, drag and drop, keyboard). One photos.json write. */
   const move = ({ ids, project, beforeId }: MoveBody) =>
     change(async () => {
-      await storage.writePhotos(movePhotos(await storage.readPhotos(), ids, project, beforeId));
+      await storage.writePhotos(moveItems(await storage.readPhotos(), ids, project, beforeId));
     });
 
   /** Set exact project contents/order (undo of a move or drag). One photos.json write. */
@@ -81,20 +101,24 @@ export function createHandlers({ storage, paths, pending }: HandlerDeps) {
     });
 
   /**
-   * Delete photos to the trash. photos.json is written first (so it never points at a missing
-   * file), then the files move, then the trash list is saved, even if a file move failed, so
-   * every removed photo stays restorable.
+   * Delete photos to the trash. Videos using one as their poster switch to "auto" first (the site
+   * build refuses a poster that doesn't exist); the trash entry remembers them for the restore.
+   * Then photos.json (so it never points at a missing file), then the files, then the trash list,
+   * even if a file move failed, so every removed photo stays restorable.
    */
   const remove = ({ ids }: IdsBody) =>
     change(async () => {
-      const { list, removals } = removePhotos(await storage.readPhotos(), ids);
+      const photos = await storage.readPhotos();
+      const { list, removals } = removeItems(photos, ids);
+      const videos = await videoStorage.readVideos(photos.map((p) => p.id));
+      const posters = clearPosters(videos, ids);
+      if (posters.posterOf.size) await videoStorage.writeVideos(posters.list);
       await storage.writePhotos(list);
       const deletedAt = new Date().toISOString();
-      const entries: TrashEntry[] = removals.map(({ record, placement }) => ({
-        record,
-        deletedAt,
-        ...placement,
-      }));
+      const entries: TrashEntry[] = removals.map(({ record, placement }) => {
+        const posterOf = posters.posterOf.get(record.id);
+        return { record, deletedAt, ...placement, ...(posterOf ? { posterOf } : {}) };
+      });
       try {
         await moveAll(ids, storage.moveToTrash);
       } finally {
@@ -114,17 +138,23 @@ export function createHandlers({ storage, paths, pending }: HandlerDeps) {
           "not_found",
           "Some of those photos aren't in the trash any more. Reload the page.",
         );
-      // Oldest deletion first: restorePhotos undoes them in reverse, which rebuilds the order exactly.
+      // Oldest deletion first: restoreItems undoes them in reverse, which rebuilds the order exactly.
       const entries = trash.filter((t) => ids.includes(t.record.id));
       const removals = entries.map(({ record, afterId, index }) => ({
         // The project may have been removed from the site since; fall back to the first one.
         record: { ...record, project: categoryOf.has(record.project) ? record.project : projectSlugs[0] },
         placement: { afterId, index },
       }));
-      const list = restorePhotos(await storage.readPhotos(), removals);
+      const list = restoreItems(await storage.readPhotos(), removals);
       await moveAll(ids, storage.moveFromTrash);
       await storage.writePhotos(list);
       await storage.writeTrash(trash.filter((t) => !ids.includes(t.record.id)));
+      // Videos that lost these photos as posters get them back (if still on "auto").
+      const links = new Map(entries.flatMap((t) => (t.posterOf ? [[t.record.id, t.posterOf] as const] : [])));
+      if (links.size) {
+        const videos = await videoStorage.readVideos(list.map((p) => p.id));
+        await videoStorage.writeVideos(relinkPosters(videos, links));
+      }
     });
 
   async function upload(form: FormData): Promise<UploadResult> {
@@ -160,10 +190,10 @@ export function createHandlers({ storage, paths, pending }: HandlerDeps) {
         storage.readTrash(),
         storage.idsOnDisk(),
       ]);
-      const id = nextPhotoId([...list.map((p) => p.id), ...trash.map((t) => t.record.id), ...onDisk]);
+      const id = nextId([...list.map((p) => p.id), ...trash.map((t) => t.record.id), ...onDisk]);
       added = { id, file: photoFileForId(id), project, width: processed.width, height: processed.height };
       await storage.writeNewPhoto(id, processed.data);
-      await storage.writePhotos(addPhoto(list, added));
+      await storage.writePhotos(addItem(list, added));
     });
     if (!added) throw new Error("upload finished without a photo record");
     return { state, photo: withCategory(added) };

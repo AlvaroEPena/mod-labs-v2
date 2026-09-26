@@ -50,7 +50,7 @@ describe("site picks (current data)", () => {
     expectPick(categoryCover("playstation"), 24, { category: "playstation" });
     expectPick(categoryCover("custom"), 208, { category: "custom" });
     expectPick(categoryCover("repairs"), 41, { category: "repairs" });
-    expectPick(videoPoster("halo-xbox"), 19, { project: "halo-xbox" });
+    expectPick(videoPoster("halo-xbox", 19), 19, { project: "halo-xbox" });
   });
 
   it("lets a video pick its own poster (posterId override), falling back gracefully", () => {
