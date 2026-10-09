@@ -3,23 +3,13 @@
  * - validates with the SAME zod schemas as the Worker (lazy-loaded on first interaction)
  * - inline field errors (aria-invalid + aria-describedby), focus first invalid, polite summary
  * - fetch with Accept: application/json, friendly copy for every ApiResult code
- * - Turnstile explicit render + reset after failures
+ * - Turnstile loaded + rendered on first interaction (not page load), reset after failures
  * - quote photos: pick/drop, downscale to ≤1600px JPEG, thumbnails with remove buttons
  * - no-JS round trip: shows ?sent=1 / ?error=code status on load
  */
 import { errorCopy, fieldErrorsFromIssues, outcomeFromQuery, outcomeFromResponse, summaryText, withoutHoneypot, type Outcome } from "./messages";
 import { checkFiles, DecodeError, decodeErrorMessage, formatBytes, prepareImage } from "./photos";
-
-type Turnstile = {
-  render: (el: HTMLElement, opts: Record<string, unknown>) => string;
-  reset: (id?: string) => void;
-  getResponse: (id?: string) => string | undefined;
-};
-declare global {
-  interface Window {
-    turnstile?: Turnstile;
-  }
-}
+import { FIRST_INTERACTION_EVENTS, loadTurnstile } from "./turnstile";
 
 type Kind = "book" | "quote";
 let validation: Promise<typeof import("../../lib/forms/schema")> | undefined;
@@ -95,22 +85,33 @@ function enhance(form: HTMLFormElement) {
   /* ---------- Turnstile ---------- */
   const tsSlot = form.querySelector<HTMLElement>("[data-turnstile]");
   let tsWidget: string | undefined;
-  const mountTurnstile = () => {
-    if (!tsSlot || tsWidget !== undefined || !window.turnstile) return;
-    tsWidget = window.turnstile.render(tsSlot, {
+  const showTurnstileError = () => {
+    const el = form.querySelector<HTMLElement>('[data-error-for="cf-turnstile-response"]');
+    if (el) el.textContent = "The spam check couldn't load. Refresh the page, or try another browser.";
+  };
+  /** Load + render the widget once, on the first interaction (see turnstile.ts for why). */
+  const startTurnstile = async () => {
+    if (!tsSlot || tsWidget !== undefined) return;
+    let turnstile;
+    try {
+      turnstile = await loadTurnstile();
+    } catch {
+      showTurnstileError();
+      return;
+    }
+    if (tsWidget !== undefined) return; // another interaction won the race
+    tsWidget = turnstile.render(tsSlot, {
       sitekey: tsSlot.dataset.sitekey,
       action: tsSlot.dataset.action,
       theme: "dark",
       size: "flexible",
       "response-field-name": "cf-turnstile-response",
-      "error-callback": () => {
-        const el = form.querySelector<HTMLElement>('[data-error-for="cf-turnstile-response"]');
-        if (el) el.textContent = "The spam check couldn't load. Refresh the page, or try another browser.";
-      },
+      "error-callback": showTurnstileError,
     });
   };
-  document.addEventListener("ml:turnstile", mountTurnstile);
-  mountTurnstile();
+  for (const type of FIRST_INTERACTION_EVENTS) {
+    form.addEventListener(type, () => void startTurnstile(), { once: true });
+  }
   const resetTurnstile = () => {
     if (window.turnstile && tsWidget !== undefined) window.turnstile.reset(tsWidget);
   };
@@ -304,7 +305,8 @@ function enhance(form: HTMLFormElement) {
         }
       }
 
-      if (tsSlot && window.turnstile && tsWidget !== undefined && !fd.get("cf-turnstile-response")) {
+      if (tsSlot && !fd.get("cf-turnstile-response")) {
+        void startTurnstile(); // no-op once started
         setStatus("info", "One sec: the spam check above the button is still finishing. Try again in a moment.");
         return;
       }

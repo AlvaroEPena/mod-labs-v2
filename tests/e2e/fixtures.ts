@@ -64,6 +64,8 @@ export async function makeJpeg(width = 1200, height = 900): Promise<Buffer> {
 
 /** Wait for the Turnstile widget (Cloudflare always-pass test key) to write its token into the form. */
 export async function waitForTurnstileToken(page: Page, formId: "book" | "quote") {
+  // Turnstile only loads on the first interaction with the form (src/scripts/forms/turnstile.ts).
+  await page.locator(`#${formId} [name="name"]`).focus();
   await expect
     .poll(
       () =>

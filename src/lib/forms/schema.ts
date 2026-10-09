@@ -4,6 +4,10 @@
  */
 import { z } from "zod";
 
+// Never probe `new Function`: the site's CSP (script-src without 'unsafe-eval') and Cloudflare
+// Workers both forbid eval, and zod's JIT probe would log a CSP violation on every form page.
+z.config({ jitless: true });
+
 export const deliveryOptions = ["Local drop-off (Seattle)", "Mail-in (let's talk)"] as const;
 
 export const bookServiceOptions = [

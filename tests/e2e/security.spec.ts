@@ -36,6 +36,20 @@ test("no CSP violations on /quote while Turnstile loads and renders", async ({ p
   expect(violations).toEqual([]);
 });
 
+test("Turnstile is not loaded until the visitor interacts with the form", async ({ page }) => {
+  const turnstileRequests: string[] = [];
+  page.on("request", (r) => {
+    if (r.url().startsWith("https://challenges.cloudflare.com/")) turnstileRequests.push(r.url());
+  });
+  await page.goto("/quote");
+  await page.waitForLoadState("networkidle");
+  expect(turnstileRequests, "loaded on page view").toEqual([]);
+  await expect(page.locator('#quote [name="cf-turnstile-response"]')).toHaveCount(0);
+
+  await waitForTurnstileToken(page, "quote"); // focuses the first field, then waits for the token
+  expect(turnstileRequests.length, "loaded after interaction").toBeGreaterThan(0);
+});
+
 test("no CSP violations on /gallery when the lightbox opens", async ({ page }) => {
   const violations = await trackCsp(page);
   await page.goto("/gallery");
