@@ -13,7 +13,11 @@ export type PhotoRecord = {
   project: string;
   width: number;
   height: number;
+  /** optional description for screen readers and image search; the site generates one when absent */
+  alt?: string;
 };
+
+export const MAX_ALT_LENGTH = 200;
 
 export const MAX_PHOTO_ID = 9_999_999;
 
@@ -61,6 +65,10 @@ export function validatePhotoRecords(input: unknown, knownProjects: Iterable<str
     }
     if (!isPositiveInt(r.width) || !isPositiveInt(r.height))
       problems.push(`${label}: width/height must be positive integers.`);
+    const badAlt =
+      typeof r.alt !== "string" || !r.alt.trim() || r.alt.length > MAX_ALT_LENGTH || /[\r\n]/.test(r.alt);
+    if (r.alt !== undefined && badAlt)
+      problems.push(`${label}: alt must be one line of text, 1-${MAX_ALT_LENGTH} characters.`);
   });
 
   if (problems.length) return { ok: false, problems };
@@ -74,6 +82,7 @@ const toRecord = (r: PhotoRecord): PhotoRecord => ({
   project: r.project,
   width: r.width,
   height: r.height,
+  ...(r.alt ? { alt: r.alt } : {}),
 });
 
 /**

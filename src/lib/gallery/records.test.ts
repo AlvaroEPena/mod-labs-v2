@@ -78,3 +78,22 @@ describe("formatPhotosJson", () => {
     expect(formatPhotosJson([])).toBe("[]\n");
   });
 });
+
+describe("optional alt text", () => {
+  it("keeps a hand-written alt through validation and formatting (so the admin never drops it)", () => {
+    const withAlt = { ...rec(1), alt: "Red Switch OLED after a Kamikaze install" };
+    const result = validatePhotoRecords([withAlt, rec(2)], known);
+    expect(result.ok && result.records[0]!.alt).toBe(withAlt.alt);
+    expect(result.ok && "alt" in result.records[1]!).toBe(false);
+    expect(formatPhotosJson(result.ok ? result.records : [])).toContain('"alt":"Red Switch OLED after a Kamikaze install"');
+  });
+
+  it.each([
+    ["empty", "  "],
+    ["multi-line", "one\ntwo"],
+    ["too long", "x".repeat(201)],
+    ["not text", 42],
+  ])("rejects %s alt text", (_label, alt) => {
+    expect(validatePhotoRecords([{ ...rec(1), alt }], known).ok).toBe(false);
+  });
+});

@@ -76,7 +76,8 @@ function buildPhotos(list: LoadedRecord[]): Photo[] {
       ...r,
       // validated in loadRecords: every project is known
       category: categoryOf.get(r.project) as CategorySlug,
-      alt: `${titleOf.get(r.project)}, photo ${n} of ${totals.get(r.project)}`,
+      // hand-written description when photos.json has one, else a generated fallback
+      alt: r.alt ?? `${titleOf.get(r.project)}, photo ${n} of ${totals.get(r.project)}`,
     };
   });
 }
