@@ -20,6 +20,24 @@ export const REVIEW_SERVICES = [
   "Other",
 ] as const;
 
+/** "How did you hear about Mod Labs?" (optional, owner request). Shown as subtext under the name. */
+export const REVIEW_SOURCES = ["Facebook", "Google", "Instagram", "A friend", "Other"] as const;
+export type ReviewSource = (typeof REVIEW_SOURCES)[number];
+
+/** Subtext shown for a source; "Other" (or none) shows nothing. */
+export const sourceLabel = (source: string | null | undefined): string => {
+  switch (source) {
+    case "Facebook":
+    case "Google":
+    case "Instagram":
+      return `Found us on ${source}`;
+    case "A friend":
+      return "Referred by a friend";
+    default:
+      return "";
+  }
+};
+
 export const REVIEW_NAME_MAX = 40;
 export const REVIEW_BODY_MIN = 20;
 export const REVIEW_BODY_MAX = 800;
@@ -31,6 +49,7 @@ export const reviewFields = {
   name: "name",
   rating: "rating",
   service: "service",
+  source: "source",
   body: "body",
   consent: "consent",
   honeypot: "hp_7f3",
@@ -53,6 +72,7 @@ export const reviewSchema = z.object({
     .min(1, "Choose a star rating.")
     .max(5, "Choose a star rating."),
   service: z.enum(REVIEW_SERVICES).optional().or(z.literal("")),
+  source: z.enum(REVIEW_SOURCES).optional().or(z.literal("")),
   body: z
     .string({ error: "Review is required." })
     .trim()
@@ -76,6 +96,7 @@ export function reviewFormToObject(fd: FormData) {
     name: get(reviewFields.name),
     rating: get(reviewFields.rating),
     service: get(reviewFields.service),
+    source: get(reviewFields.source),
     body: get(reviewFields.body),
     consent: get(reviewFields.consent),
     hp: get(reviewFields.honeypot),
@@ -88,6 +109,8 @@ export type PublicReview = {
   name: string;
   rating: number;
   service: string | null;
+  /** how they heard about Mod Labs (REVIEW_SOURCES) */
+  source: string | null;
   body: string;
   /** epoch ms when approved */
   approvedAt: number;
@@ -122,6 +145,7 @@ export function renderReviewItem(r: PublicReview): string {
   const rating = Math.min(5, Math.max(1, Math.round(r.rating)));
   const stars = Array.from({ length: 5 }, (_, i) => `<span class="star${i < rating ? " is-on" : ""}"></span>`).join("");
   const meta = [r.service ? escapeHtml(r.service) : "", reviewDate(r.approvedAt)].filter(Boolean).join(" · ");
+  const source = sourceLabel(r.source);
   const paragraphs = escapeHtml(r.body)
     .split(/\n{2,}/)
     .map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`)
@@ -131,6 +155,7 @@ export function renderReviewItem(r: PublicReview): string {
     `<span class="review-stars" role="img" aria-label="Rated ${rating} out of 5">${stars}</span>` +
     `<blockquote class="review-body">${paragraphs}</blockquote>` +
     `<figcaption class="review-by"><span class="review-name">${escapeHtml(r.name)}</span>` +
+    (source ? `<span class="review-source">${escapeHtml(source)}</span>` : "") +
     `<span class="review-meta">${meta}</span></figcaption>` +
     `</figure></li>`
   );

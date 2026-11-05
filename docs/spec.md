@@ -279,7 +279,8 @@ Phase 1 = home page, then owner review before other pages.
 
 ## 17. Reviews (2026-11-05, owner decisions) + phase 2 redesign
 **Owner decisions:** anyone can submit; **nothing is published until the owner approves it** (email with
-Approve / Delete); fields: name, 1-5 stars, optional service, review text (no email collected); a free
+Approve / Delete); fields: name, 1-5 stars, optional service, optional "how did you hear about us" (Facebook / Google / Instagram /
+a friend / other, shown as subtext like "Found us on Facebook"), review text (no email collected); a free
 Cloudflare D1 database stores them (owner approved creating it; orchestrator creates it, confirming first).
 
 **Contract:** `src/lib/reviews/contract.ts` (schema, field names, `PublicReview`, `renderReviewItem`, slots).
@@ -299,7 +300,8 @@ Only `renderReviewItem` produces review HTML, and it escapes every user string. 
    `GET /api/reviews` returns `{ ok, reviews, count, average }` (approved only).
 4. Markup contract (global CSS, not component-scoped, since it's injected):
    `li.review-card > figure > span.review-stars[role=img] > span.star(.is-on)×5, blockquote.review-body > p,
-   figcaption.review-by > span.review-name + span.review-meta`.
+   figcaption.review-by > span.review-name + span.review-source (optional) + span.review-meta`.
+   D1 row stores `source` too.
 
 **Phase 2 redesign scope:** every remaining page in the lab-glass system (spec §16), allowed to deviate further
 from the original, more interactive (motivated motion only), mobile-first; refined logo mark + regenerated

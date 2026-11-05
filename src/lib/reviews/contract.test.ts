@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { renderReviewItem, reviewDate, reviewFormToObject, reviewSchema, summarize, summaryText, type PublicReview } from "./contract";
+import { renderReviewItem, reviewDate, reviewFormToObject, reviewSchema, sourceLabel, summarize, summaryText, type PublicReview } from "./contract";
 
-const valid = { name: "Jordan M.", rating: "5", service: "Switch OLED", body: "Dropped off my OLED in the morning and it was done by dinner.", consent: "yes", hp: "" };
+const valid = { name: "Jordan M.", rating: "5", service: "Switch OLED", source: "Facebook", body: "Dropped off my OLED in the morning and it was done by dinner.", consent: "yes", hp: "" };
 
 describe("reviewSchema", () => {
   it("accepts a normal review and coerces the rating", () => {
@@ -17,6 +17,7 @@ describe("reviewSchema", () => {
     ["ratings out of range", { rating: "6" }],
     ["non-integer ratings", { rating: "4.5" }],
     ["unknown services", { service: "Toaster" }],
+    ["unknown sources", { source: "Myspace" }],
     ["short reviews", { body: "Good." }],
     ["missing consent", { consent: "" }],
     ["a filled honeypot", { hp: "bot" }],
@@ -24,8 +25,8 @@ describe("reviewSchema", () => {
     expect(reviewSchema.safeParse({ ...valid, ...patch }).success).toBe(false);
   });
 
-  it("allows an empty service and accented names", () => {
-    expect(reviewSchema.safeParse({ ...valid, service: "", name: "José O'Neil-Ávila" }).success).toBe(true);
+  it("allows an empty service/source and accented names", () => {
+    expect(reviewSchema.safeParse({ ...valid, service: "", source: "", name: "José O'Neil-Ávila" }).success).toBe(true);
   });
 
   it("reads multipart form data", () => {
@@ -36,7 +37,7 @@ describe("reviewSchema", () => {
 });
 
 describe("renderReviewItem", () => {
-  const review: PublicReview = { id: 1, name: "Sam", rating: 4, service: "Repair", body: "Fixed my joystick drift.", approvedAt: Date.UTC(2026, 10, 3) };
+  const review: PublicReview = { id: 1, name: "Sam", rating: 4, service: "Repair", source: "Google", body: "Fixed my joystick drift.", approvedAt: Date.UTC(2026, 10, 3) };
 
   it("escapes every user-supplied string", () => {
     const html = renderReviewItem({ ...review, name: `<img src=x onerror=alert(1)>`, body: `"><script>alert(1)</script>`, service: `<b>x</b>` });
@@ -49,6 +50,14 @@ describe("renderReviewItem", () => {
     expect(html.match(/class="star is-on"/g)).toHaveLength(4);
     expect(html).toContain('aria-label="Rated 4 out of 5"');
     expect(html).toContain("Repair · Nov 2026");
+  });
+
+  it("shows where they heard about Mod Labs as subtext, and nothing for Other/none", () => {
+    expect(renderReviewItem(review)).toContain('<span class="review-source">Found us on Google</span>');
+    expect(renderReviewItem({ ...review, source: "A friend" })).toContain("Referred by a friend");
+    expect(renderReviewItem({ ...review, source: "Other" })).not.toContain("review-source");
+    expect(renderReviewItem({ ...review, source: null })).not.toContain("review-source");
+    expect(sourceLabel("<b>")).toBe("");
   });
 
   it("keeps paragraph breaks without allowing markup", () => {
