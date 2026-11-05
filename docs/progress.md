@@ -68,3 +68,9 @@
 - www.modlabs.store: proxied DNS record + Redirect Rule "Redirect from WWW to root" (301, query string preserved). Verified 301 www/gallery → modlabs.store/gallery.
 - PUBLIC_SITE_URL → https://modlabs.store (canonical, sitemap, robots, OG, JSON-LD).
 - Owner TODO: add modlabs.store to Turnstile widget hostnames; later: Resend domain verification + EMAIL_FROM, Cloudflare Email Routing for @modlabs.store.
+
+### 2026-11-05 — glass redesign, phase 1: home (branch `redesign-glass`, NOT merged/pushed)
+- Owner asked for a full aesthetic redesign (retro circuit theme kept, glassy + professional), copy rewrite allowed except services' bullet lists; stop after the home page for review. Direction recorded in spec §16 (dials 8/7/4, dark-only, one cyan accent, Geist + Geist Mono, Phosphor icons).
+- Done: global design system (global.css), floating glass header, footer + phone CTA pill, new home: hero (GWii #340 in glass frame + powered traces), pricing bento (Xbox #207 / Switch #52 / quote), circuit timeline steps (scroll-drawn), build pair, gallery rail, trust split (bench #254, 9+ yrs), FAQ, CTA slab with socials.
+- Checks (orchestrator, local dev): npm run check 0 errors / 196 unit; e2e 259 pass / 51 skip; no horizontal overflow at 1440/390; 0 em/en dashes; 2 eyebrows.
+- Other pages inherit the new tokens but are NOT redesigned yet (phase 2 after owner approves the home look).
