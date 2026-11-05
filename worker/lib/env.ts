@@ -12,6 +12,12 @@ export interface Env {
   EMAIL_FROM?: string;
   /** Workers Rate Limiting binding (optional; in-memory fallback when absent). */
   FORM_RATE_LIMITER?: RateLimit;
+  /** Stricter rate limit for review submissions (optional; in-memory fallback when absent). */
+  REVIEW_RATE_LIMITER?: RateLimit;
+  /** D1 database with the `reviews` table (spec §17). Optional so a missing binding degrades gracefully. */
+  DB?: D1Database;
+  /** HMAC key for the signed Approve/Delete links (secret, at least 32 characters). */
+  REVIEW_SIGNING_KEY?: string;
 }
 
 export const DEFAULT_EMAIL_FROM = "Mod Labs <onboarding@resend.dev>";

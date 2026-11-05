@@ -75,11 +75,11 @@ export async function sendViaResend({ apiKey, from, to, email, attachments }: Se
   const payload: Record<string, unknown> = {
     from,
     to: [to],
-    reply_to: email.replyTo,
     subject: email.subject,
     html: email.html,
     text: email.text,
   };
+  if (email.replyTo) payload.reply_to = email.replyTo;
   if (attachments.length > 0) payload.attachments = attachments;
   try {
     const res = await fetch(RESEND_URL, {

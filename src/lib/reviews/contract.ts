@@ -118,6 +118,9 @@ export type PublicReview = {
 
 export type ReviewSummary = { count: number; average: number | null };
 
+/** `GET /api/reviews` success body (approved reviews only). Text is raw: never insert it as HTML. */
+export type ReviewListResult = { ok: true; reviews: PublicReview[] } & ReviewSummary;
+
 export const summarize = (reviews: readonly Pick<PublicReview, "rating">[]): ReviewSummary => ({
   count: reviews.length,
   average: reviews.length ? Math.round((reviews.reduce((s, r) => s + r.rating, 0) / reviews.length) * 10) / 10 : null,

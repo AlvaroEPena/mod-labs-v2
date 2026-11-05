@@ -32,19 +32,24 @@ export function validateFields(kind: FormKind, fd: FormData): ValidationResult {
     if (parsed.success) return { ok: true, submission: { kind, data: parsed.data } };
     error = parsed.error;
   }
+  return { ok: false, fieldErrors: toFieldErrors(error) };
+}
+
+/** Zod error → the `fieldErrors` map of the ApiResult contract (form-level errors under `_form`). */
+export function toFieldErrors(error: z.ZodError): Record<string, string[]> {
   const flat = z.flattenError(error);
   const fieldErrors: Record<string, string[]> = {};
   for (const [key, messages] of Object.entries(flat.fieldErrors as Record<string, string[] | undefined>)) {
     if (messages && messages.length > 0) fieldErrors[key] = messages;
   }
   if (flat.formErrors.length > 0) fieldErrors._form = flat.formErrors;
-  return { ok: false, fieldErrors };
+  return fieldErrors;
 }
 
-/** The honeypot field (fieldNames.honeypot = "hp_7f3") is filled by bots only. */
-export function isHoneypotTripped(fd: FormData): boolean {
+/** The honeypot field (default fieldNames.honeypot = "hp_7f3") is filled by bots only. */
+export function isHoneypotTripped(fd: FormData, field: string = fieldNames.honeypot): boolean {
   // Check every value: a duplicated field ("", "spam") must not slip past a first-value-only read.
-  return fd.getAll(fieldNames.honeypot).some((v) => typeof v !== "string" || v.trim().length > 0);
+  return fd.getAll(field).some((v) => typeof v !== "string" || v.trim().length > 0);
 }
 
 export interface Photo {

@@ -1,0 +1,314 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import entry from "../index";
+import { renderReviewItem, type PublicReview } from "../../src/lib/reviews/contract";
+import { derivedEtag, etagMatches } from "../lib/etag";
+import { EDGE_TTL_SECONDS, loadApproved, MEMORY_TTL_MS, purgeApproved, resetApprovedCache } from "./cache";
+import { handleReviewList } from "./list";
+import { MemoryReviewStore } from "./memory-store";
+import { renderModerationEmail } from "./moderation-email";
+import { servePageWithReviews } from "./publish";
+import { createModerationLink, parseModerationParams, signingKeyFrom, verifyModeration } from "./signing";
+import {
+  describeReviewStoreContract,
+  makeContext,
+  makeEnv,
+  NOW,
+  ORIGIN,
+  sampleReview,
+  SIGNING_KEY,
+} from "./testing";
+import { buildReviewsView } from "./view";
+
+beforeEach(() => {
+  resetApprovedCache();
+  vi.spyOn(console, "warn").mockImplementation(() => {});
+  vi.spyOn(console, "error").mockImplementation(() => {});
+});
+afterEach(() => vi.restoreAllMocks());
+
+const published = (id: number, patch: Partial<PublicReview> = {}): PublicReview => ({
+  id,
+  ...sampleReview({ name: `Reviewer ${id}` }),
+  approvedAt: NOW - id * 1000,
+  ...patch,
+});
+
+describeReviewStoreContract("MemoryReviewStore", async () => new MemoryReviewStore());
+
+describe("signing", () => {
+  it("requires a signing key of at least 32 characters", () => {
+    expect(signingKeyFrom(makeEnv())).toBe(SIGNING_KEY);
+    expect(signingKeyFrom(makeEnv({ REVIEW_SIGNING_KEY: "  " }))).toBeNull();
+    expect(signingKeyFrom(makeEnv({ REVIEW_SIGNING_KEY: "x".repeat(31) }))).toBeNull();
+  });
+
+  it("round-trips a link and rejects it after expiry", async () => {
+    const url = new URL((await createModerationLink(ORIGIN, SIGNING_KEY, 7, "approve", NOW)).url);
+    const params = parseModerationParams((k) => url.searchParams.get(k));
+    expect(params).toMatchObject({ id: 7, action: "approve" });
+    expect(params && (await verifyModeration(SIGNING_KEY, params, NOW))).toBe("ok");
+    expect(params && (await verifyModeration(SIGNING_KEY, params, NOW + 31 * 86_400_000))).toBe("expired");
+  });
+
+  it.each([
+    { id: "01" },
+    { id: "1.5" },
+    { id: "-1" },
+    { id: "1".repeat(16) },
+    { exp: "12ab" },
+    { exp: "0" },
+    { action: "Approve" },
+    { sig: "short" },
+    { sig: "x".repeat(42) + "=" },
+  ])("parses strictly: rejects %o", (patch) => {
+    const values: Record<string, string> = {
+      id: "3",
+      action: "delete",
+      exp: "1800000000",
+      sig: "A".repeat(43),
+      ...patch,
+    };
+    expect(parseModerationParams((k) => values[k] ?? null)).toBeNull();
+  });
+});
+
+describe("etag helpers", () => {
+  it("derives a weak tag from the asset tag and the content version", () => {
+    expect(derivedEtag('"abc"', "v1")).toBe('W/"abc.v1"');
+    expect(derivedEtag('W/"abc"', "v1")).toBe('W/"abc.v1"');
+    expect(derivedEtag(null, "v1")).toBeNull();
+  });
+  it("matches If-None-Match with weak comparison, lists and *", () => {
+    expect(etagMatches('W/"abc.v1"', 'W/"abc.v1"')).toBe(true);
+    expect(etagMatches('"abc.v1"', 'W/"abc.v1"')).toBe(true);
+    expect(etagMatches('"x", W/"abc.v1"', 'W/"abc.v1"')).toBe(true);
+    expect(etagMatches("*", 'W/"abc.v1"')).toBe(true);
+    expect(etagMatches('"abc"', 'W/"abc.v1"')).toBe(false);
+    expect(etagMatches(null, 'W/"abc.v1"')).toBe(false);
+  });
+});
+
+describe("buildReviewsView", () => {
+  it("renders the home slice, the full list and the summary via the contract", async () => {
+    const reviews = [1, 2, 3, 4].map((id) => published(id, { rating: id === 4 ? 4 : 5 }));
+    const view = await buildReviewsView(reviews);
+    expect(view.count).toBe(4);
+    expect(view.homeHtml).toBe(reviews.slice(0, 3).map(renderReviewItem).join(""));
+    expect(view.allHtml).toBe(reviews.map(renderReviewItem).join(""));
+    expect(view.summary).toBe("4.8 average from 4 reviews");
+    expect(view.version).toMatch(/^[0-9a-f]{16}$/);
+  });
+  it("escapes review text and changes version when the content changes", async () => {
+    const a = await buildReviewsView([
+      published(1, { body: "<script>alert(1)</script> nice work on the console" }),
+    ]);
+    expect(a.allHtml).not.toContain("<script>");
+    expect(a.allHtml).toContain("&lt;script&gt;");
+    const b = await buildReviewsView([published(1)]);
+    expect(b.version).not.toBe(a.version);
+    expect((await buildReviewsView([published(1)])).version).toBe(b.version);
+  });
+});
+
+/** Minimal Cache API stand-in keyed by URL. */
+class FakeCache {
+  entries = new Map<string, string>();
+  async match(req: Request) {
+    const body = this.entries.get(req.url);
+    return body === undefined ? undefined : new Response(body);
+  }
+  async put(req: Request, res: Response) {
+    expect(res.headers.get("Cache-Control")).toBe(`public, max-age=${EDGE_TTL_SECONDS}`);
+    this.entries.set(req.url, await res.text());
+  }
+  async delete(req: Request) {
+    return this.entries.delete(req.url);
+  }
+}
+
+describe("approved list cache", () => {
+  it("serves from memory within the TTL, reloads after it, and reloads after a purge", async () => {
+    const store = new MemoryReviewStore();
+    store.seed({ ...sampleReview(), status: "approved", createdAt: NOW, approvedAt: NOW });
+    const spy = vi.spyOn(store, "listApproved");
+    let now = NOW;
+    const deps = { edgeCache: null, now: () => now, waitUntil: () => {} };
+    await loadApproved(store, deps, ORIGIN);
+    await loadApproved(store, deps, ORIGIN);
+    expect(spy).toHaveBeenCalledTimes(1);
+    now += MEMORY_TTL_MS + 1;
+    await loadApproved(store, deps, ORIGIN);
+    expect(spy).toHaveBeenCalledTimes(2);
+    await purgeApproved(deps, ORIGIN);
+    await loadApproved(store, deps, ORIGIN);
+    expect(spy).toHaveBeenCalledTimes(3);
+  });
+
+  it("fills and reads the edge cache, and purges it on moderation", async () => {
+    const store = new MemoryReviewStore();
+    store.seed({ ...sampleReview(), status: "approved", createdAt: NOW, approvedAt: NOW });
+    const edge = new FakeCache();
+    const pendingWrites: Promise<unknown>[] = [];
+    const deps = {
+      edgeCache: edge as unknown as Cache,
+      now: () => NOW,
+      waitUntil: (p: Promise<unknown>) => void pendingWrites.push(p),
+    };
+    const first = await loadApproved(store, deps, ORIGIN);
+    await Promise.all(pendingWrites);
+    expect(edge.entries.size).toBe(1);
+
+    resetApprovedCache(); // a different isolate in the same location
+    const spy = vi.spyOn(store, "listApproved");
+    expect((await loadApproved(store, deps, ORIGIN)).reviews).toEqual(first.reviews);
+    expect(spy).not.toHaveBeenCalled();
+
+    await purgeApproved(deps, ORIGIN);
+    expect(edge.entries.size).toBe(0);
+  });
+
+  it("propagates store failures (callers degrade)", async () => {
+    const store = new MemoryReviewStore();
+    store.failWith = new Error("boom");
+    await expect(
+      loadApproved(store, { edgeCache: null, now: () => NOW, waitUntil: () => {} }, ORIGIN),
+    ).rejects.toThrow("boom");
+  });
+});
+
+describe("GET /api/reviews", () => {
+  it("returns approved reviews only, with count and average and a short cache", async () => {
+    const store = new MemoryReviewStore();
+    const a = store.seed({
+      ...sampleReview({ rating: 4 }),
+      status: "approved",
+      createdAt: NOW,
+      approvedAt: NOW - 5,
+    });
+    const b = store.seed({
+      ...sampleReview({ rating: 5 }),
+      status: "approved",
+      createdAt: NOW,
+      approvedAt: NOW,
+    });
+    store.seed({ ...sampleReview({ name: "Hidden" }), createdAt: NOW });
+    const res = await handleReviewList(new Request(`${ORIGIN}/api/reviews`), makeContext({ store }));
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Cache-Control")).toBe("public, max-age=10");
+    expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
+    const body = (await res.json()) as {
+      ok: boolean;
+      reviews: PublicReview[];
+      count: number;
+      average: number;
+    };
+    expect(body).toEqual({ ok: true, reviews: expect.any(Array), count: 2, average: 4.5 });
+    expect(body.reviews.map((r) => r.id)).toEqual([b.id, a.id]);
+    expect(Object.keys(body.reviews[0] ?? {}).sort()).toEqual([
+      "approvedAt",
+      "body",
+      "id",
+      "name",
+      "rating",
+      "service",
+      "source",
+    ]);
+  });
+
+  it("returns an empty list with a null average", async () => {
+    const res = await handleReviewList(new Request(`${ORIGIN}/api/reviews`), makeContext());
+    expect(await res.json()).toEqual({ ok: true, reviews: [], count: 0, average: null });
+  });
+
+  it("degrades with JSON errors and rejects writes", async () => {
+    expect(
+      (await handleReviewList(new Request(`${ORIGIN}/api/reviews`), makeContext({ store: null }))).status,
+    ).toBe(503);
+    const failing = new MemoryReviewStore();
+    failing.failWith = new Error("D1 down");
+    const res = await handleReviewList(new Request(`${ORIGIN}/api/reviews`), makeContext({ store: failing }));
+    expect(res.status).toBe(500);
+    expect(await res.json()).toMatchObject({ ok: false, error: "server" });
+    expect(
+      (await handleReviewList(new Request(`${ORIGIN}/api/reviews`, { method: "POST" }), makeContext()))
+        .status,
+    ).toBe(405);
+  });
+});
+
+describe("servePageWithReviews fallbacks (the HTMLRewriter path runs in runtime.test.ts)", () => {
+  const conditional = () => new Request(`${ORIGIN}/`, { headers: { "If-None-Match": '"asset"' } });
+
+  it.each([
+    ["no reviews", () => makeContext()],
+    ["no DB binding", () => makeContext({ store: null })],
+    [
+      "a database error",
+      () => {
+        const store = new MemoryReviewStore();
+        store.failWith = new Error("D1 down");
+        return makeContext({ store });
+      },
+    ],
+  ])("passes the original request straight to the assets with %s", async (_label, makeCtx) => {
+    const ctx = makeCtx();
+    const request = conditional();
+    expect(await (await servePageWithReviews(request, ctx)).text()).toBe("asset");
+    expect(ctx.env.ASSETS.fetch).toHaveBeenCalledWith(request); // validators kept → the asset layer can 304
+  });
+
+  it("doesn't touch non-GET/HEAD requests", async () => {
+    const ctx = makeContext();
+    await servePageWithReviews(new Request(`${ORIGIN}/`, { method: "POST" }), ctx);
+    expect(ctx.env.ASSETS.fetch).toHaveBeenCalledOnce();
+  });
+});
+
+describe("Worker routing", () => {
+  const ctx = { waitUntil: () => {}, passThroughOnException: () => {} } as unknown as ExecutionContext;
+
+  it("routes the review API (no DB binding → not_configured) and still 404s unknown API paths", async () => {
+    const env = makeEnv();
+    expect((await entry.fetch(new Request(`${ORIGIN}/api/reviews`), env, ctx)).status).toBe(503);
+    expect((await entry.fetch(new Request(`${ORIGIN}/api/review`), env, ctx)).status).toBe(405);
+    expect((await entry.fetch(new Request(`${ORIGIN}/api/reviews/moderate`), env, ctx)).status).toBe(503);
+    expect(
+      (await entry.fetch(new Request(`${ORIGIN}/api/reviews/nope`, { method: "POST" }), env, ctx)).status,
+    ).toBe(404);
+    expect(
+      (await entry.fetch(new Request(`${ORIGIN}/api/toString`, { method: "POST" }), env, ctx)).status,
+    ).toBe(404);
+  });
+
+  it("serves review pages untouched without a DB, and other pages straight from assets", async () => {
+    const env = makeEnv();
+    for (const path of ["/", "/reviews", "/gallery"]) {
+      expect(await (await entry.fetch(new Request(`${ORIGIN}${path}`), env, ctx)).text()).toBe("asset");
+    }
+  });
+});
+
+describe("moderation email", () => {
+  it("escapes every field, has no reply-to and carries both links", async () => {
+    const approve = await createModerationLink(ORIGIN, SIGNING_KEY, 3, "approve", NOW);
+    const remove = await createModerationLink(ORIGIN, SIGNING_KEY, 3, "delete", NOW);
+    const email = renderModerationEmail(
+      {
+        ...sampleReview({ name: "A\r\nBcc: x@y.z", body: `"><b>bold</b>`, source: "Other" }),
+        id: 3,
+        status: "pending",
+        createdAt: NOW,
+        approvedAt: null,
+      },
+      { approve, remove },
+    );
+    expect(email.replyTo).toBeUndefined();
+    expect(email.subject).not.toMatch(/[\r\n]/);
+    expect(email.html).not.toContain("<b>bold</b>");
+    expect(email.html).toContain("&quot;&gt;&lt;b&gt;bold&lt;/b&gt;");
+    expect(email.html).toContain(`href="${approve.url.replace(/&/g, "&amp;")}"`);
+    expect(email.text).toContain(`Delete: ${remove.url}`);
+    expect(email.text).toContain("Heard about us: Other");
+    expect(email.text).toContain("valid until 2026-12-05");
+  });
+});

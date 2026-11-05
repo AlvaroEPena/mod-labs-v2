@@ -5,7 +5,8 @@ export interface RenderedEmail {
   subject: string;
   html: string;
   text: string;
-  replyTo: string;
+  /** omitted for emails with no customer address (review moderation) */
+  replyTo?: string;
 }
 
 export interface Attachment {

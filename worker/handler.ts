@@ -1,9 +1,10 @@
 import { fieldNames } from "../src/lib/forms/schema";
 import { renderEmail, toAttachments } from "./lib/email";
 import { readFormDataLimited } from "./lib/body";
-import { DEFAULT_EMAIL_FROM, emailMode, isLocalHostname, isTestTurnstileSecret, type Env } from "./lib/env";
+import { DEFAULT_EMAIL_FROM, emailMode, type Env } from "./lib/env";
+import { bodyReadFailure, checkCaptcha, isCrossSite } from "./lib/guards";
 import { failure, jsonResponse, respond, success, validationFailure, type Outcome } from "./lib/http";
-import { sendViaResend, verifyTurnstile } from "./lib/integrations";
+import { sendViaResend } from "./lib/integrations";
 import { allowRequest } from "./lib/ratelimit";
 import { isHoneypotTripped, validateFields, validatePhotos, type FormKind, type Photo } from "./lib/validate";
 
@@ -19,19 +20,6 @@ const ROUTES: Record<string, { kind: FormKind; page: string }> = {
 let honeypotTrips = 0;
 
 const SUCCESS_MESSAGE = "Thanks! Your request is in — I'll get back to you by email soon.";
-
-/** Reject cross-site form posts (CSRF-style abuse). Same-origin fetch and form posts pass. */
-export function isCrossSite(request: Request): boolean {
-  const origin = request.headers.get("Origin");
-  if (origin !== null) {
-    try {
-      if (new URL(origin).host !== new URL(request.url).host) return true;
-    } catch {
-      return true; // "null" or malformed origin
-    }
-  }
-  return request.headers.get("Sec-Fetch-Site") === "cross-site";
-}
 
 export async function handleApi(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
@@ -67,18 +55,7 @@ async function processSubmission(request: Request, env: Env, kind: FormKind, hos
 
   // 2+3. Size guard (Content-Length required, and enforced again while streaming) + parse
   const body = await readFormDataLimited(request, MAX_BODY_BYTES);
-  if (!body.ok) {
-    switch (body.reason) {
-      case "length_required":
-        return failure("too_large", "The upload couldn't be read (missing length). Please try again.", 411);
-      case "too_large":
-        return failure("too_large", "That upload is too large. Attach up to 3 photos of 2 MB each.");
-      case "unsupported":
-        return validationFailure({ _form: ["Unsupported form submission."] });
-      default:
-        return validationFailure({ _form: ["The form submission couldn't be read. Please try again."] });
-    }
-  }
+  if (!body.ok) return bodyReadFailure(body.reason, "That upload is too large. Attach up to 3 photos of 2 MB each.");
   const fd = body.formData;
 
   // 4. Honeypot: pretend success, send nothing
@@ -90,30 +67,8 @@ async function processSubmission(request: Request, env: Env, kind: FormKind, hos
 
   // 5. Turnstile
   const mode = emailMode(env, hostname);
-  const secret = env.TURNSTILE_SECRET_KEY?.trim();
-  if (!secret) {
-    console.error("TURNSTILE_SECRET_KEY is not set");
-    return failure("not_configured", "The form isn't set up yet. Please message me directly instead.");
-  }
-  if (mode === "send" && isTestTurnstileSecret(secret)) {
-    console.error(
-      "TURNSTILE_SECRET_KEY is a Cloudflare TEST secret; refusing to send email. Set the real secret with `npx wrangler secret put TURNSTILE_SECRET_KEY`.",
-    );
-    return failure("not_configured", "The form isn't set up yet. Please message me directly instead.");
-  }
-  const token = fd.get(fieldNames.turnstile);
-  // Test secrets report hostname "example.com", and local runs have no real hostname: skip that check there.
-  const checkHostname = !isLocalHostname(hostname) && !isTestTurnstileSecret(secret);
-  const verdict = await verifyTurnstile(secret, typeof token === "string" ? token : "", ip, {
-    hostname: checkHostname ? hostname : null,
-    action: kind,
-  });
-  if (verdict === "failed") {
-    return failure("captcha", "The spam check failed. Please complete the verification and try again.");
-  }
-  if (verdict === "unavailable") {
-    return failure("server", "Couldn't verify the spam check right now. Please try again in a moment.", 502);
-  }
+  const captcha = await checkCaptcha({ env, mode, token: fd.get(fieldNames.turnstile), ip, hostname, action: kind });
+  if (captcha) return captcha;
 
   // 6. Field validation (shared contract)
   const validation = validateFields(kind, fd);

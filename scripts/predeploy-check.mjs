@@ -41,6 +41,14 @@ if (!siteKey || /^[123]x0000/.test(siteKey)) {
   );
 }
 
+// The reviews database must be the real one, not the placeholder id from local development.
+const wranglerConfig = fs.readFileSync(path.join(root, "wrangler.jsonc"), "utf8");
+if (/"database_id"\s*:\s*"0{8}-0{4}-0{4}-0{4}-0{12}"/.test(wranglerConfig)) {
+  problems.push(
+    "wrangler.jsonc still has the placeholder reviews database_id. Run `npx wrangler d1 create mod-labs-reviews` and put the printed id there.",
+  );
+}
+
 // Double-check the built output, in case the build ran with different env.
 const dist = path.join(root, "dist");
 if (fs.existsSync(dist)) {

@@ -16,7 +16,7 @@ export default defineConfig({
     // --local-upstream: wrangler.jsonc routes the Worker to modlabs.store, and without it wrangler dev
     // rewrites the request host to that domain, so the Worker would refuse log mode (localhost only).
     // Built site + Worker API with Turnstile test keys and no Resend key (emails are logged, not sent)
-    command: `npm run build && npx wrangler dev --port ${PORT} --local-upstream localhost:${PORT} --var EMAIL_MODE:log --var TURNSTILE_SECRET_KEY:1x0000000000000000000000000000000AA`,
+    command: `npm run build && npx wrangler d1 migrations apply mod-labs-reviews --local --persist-to .wrangler/e2e-state && npx wrangler dev --port ${PORT} --local-upstream localhost:${PORT} --persist-to .wrangler/e2e-state --var EMAIL_MODE:log --var TURNSTILE_SECRET_KEY:1x0000000000000000000000000000000AA --var REVIEW_SIGNING_KEY:e2e-only-review-signing-key-not-a-secret-0001`,
     url: `http://localhost:${PORT}`,
     // Real env vars beat .env.production, so e2e builds always use Turnstile TEST keys and a local URL.
     env: { PUBLIC_TURNSTILE_SITE_KEY: "1x00000000000000000000AA", PUBLIC_SITE_URL: "https://mod-labs.example" },

@@ -13,3 +13,9 @@ LEAD_EMAIL_TO=
 EMAIL_MODE=log
 # Optional sender override once a domain is verified in Resend (default: Mod Labs <onboarding@resend.dev>)
 # EMAIL_FROM=Mod Labs <leads@example.com>
+# Signs the Approve/Delete links in review moderation emails (HMAC-SHA256). Required for reviews; at least
+# 32 characters, random, and different in every environment. Generate one with either:
+#   openssl rand -base64 32
+#   node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+# Production: npx wrangler secret put REVIEW_SIGNING_KEY (rotating it invalidates every link already emailed).
+REVIEW_SIGNING_KEY=

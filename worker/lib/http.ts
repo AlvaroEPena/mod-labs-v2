@@ -31,16 +31,22 @@ export function wantsJson(request: Request): boolean {
   return (request.headers.get("Accept") ?? "").toLowerCase().includes("application/json");
 }
 
-function withSecurityHeaders(headers: HeadersInit = {}): Headers {
+/** `headers` plus every API security header it doesn't already set. */
+export function withSecurityHeaders(headers: HeadersInit = {}): Headers {
   const h = new Headers(headers);
   for (const [k, v] of Object.entries(API_SECURITY_HEADERS)) if (!h.has(k)) h.set(k, v);
   return h;
 }
 
-export function jsonResponse(body: ApiResult, status: number, extraHeaders: HeadersInit = {}): Response {
+/** JSON for read endpoints whose body isn't an ApiResult (e.g. GET /api/reviews). */
+export function jsonDataResponse(body: object, status: number, extraHeaders: HeadersInit = {}): Response {
   const headers = withSecurityHeaders(extraHeaders);
   headers.set("Content-Type", "application/json; charset=utf-8");
   return new Response(JSON.stringify(body), { status, headers });
+}
+
+export function jsonResponse(body: ApiResult, status: number, extraHeaders: HeadersInit = {}): Response {
+  return jsonDataResponse(body, status, extraHeaders);
 }
 
 export function redirectResponse(location: string): Response {

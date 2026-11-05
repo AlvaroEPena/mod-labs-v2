@@ -39,16 +39,36 @@ export class MemoryRateLimiter {
 
 export const memoryLimiter = new MemoryRateLimiter();
 
-/** Returns true if the request may proceed. Never throws: a limiter failure lets the request through. */
-export async function allowRequest(env: Env, key: string): Promise<boolean> {
-  if (env.FORM_RATE_LIMITER) {
+/**
+ * Reviews: 2 per 60 s per IP. Must match REVIEW_RATE_LIMITER in wrangler.jsonc. The binding only
+ * supports 10 s or 60 s periods, so longer-term abuse is bounded by the daily cap in reviews/submit.ts.
+ */
+export const REVIEW_RATE_LIMIT = 2;
+export const REVIEW_RATE_WINDOW_MS = 60_000;
+export const reviewMemoryLimiter = new MemoryRateLimiter(REVIEW_RATE_LIMIT, REVIEW_RATE_WINDOW_MS);
+
+/** Binding when configured, in-memory fallback otherwise. Never throws: a binding failure falls back. */
+async function allowWith(
+  binding: RateLimit | undefined,
+  fallback: MemoryRateLimiter,
+  key: string,
+): Promise<boolean> {
+  if (binding) {
     try {
-      const { success } = await env.FORM_RATE_LIMITER.limit({ key });
+      const { success } = await binding.limit({ key });
       return success;
     } catch (err) {
       console.error("rate limiter binding failed", err instanceof Error ? err.name : "unknown");
-      return memoryLimiter.check(key);
+      return fallback.check(key);
     }
   }
-  return memoryLimiter.check(key);
+  return fallback.check(key);
 }
+
+/** Book/quote forms. Returns true if the request may proceed. */
+export const allowRequest = (env: Env, key: string): Promise<boolean> =>
+  allowWith(env.FORM_RATE_LIMITER, memoryLimiter, key);
+
+/** Review submissions. Returns true if the request may proceed. */
+export const allowReviewRequest = (env: Env, key: string): Promise<boolean> =>
+  allowWith(env.REVIEW_RATE_LIMITER, reviewMemoryLimiter, key);

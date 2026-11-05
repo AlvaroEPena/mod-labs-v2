@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildSubject, renderEmail, toBase64 } from "./email";
 import { escapeHtml, safeFilename, singleLine } from "./escape";
-import { isCrossSite } from "../handler";
+import { isCrossSite } from "./guards";
 import { MemoryRateLimiter } from "./ratelimit";
 import { emailMode, isLocalHostname, isTestTurnstileSecret, type Env } from "./env";
 import { checkSiteverify } from "./integrations";

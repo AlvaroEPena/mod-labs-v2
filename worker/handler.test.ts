@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import worker from "./index";
+import entry from "./index";
 import type { Env } from "./lib/env";
 import { memoryLimiter } from "./lib/ratelimit";
 import { RESEND_URL, TURNSTILE_VERIFY_URL } from "./lib/integrations";
@@ -13,6 +13,8 @@ const TEST_SECRET = "1x0000000000000000000000000000000AA";
 const JPEG = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01, 1, 2, 3]);
 const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
 const b64 = (u8: Uint8Array) => btoa(String.fromCharCode(...u8));
+const testCtx = { waitUntil: () => {}, passThroughOnException: () => {} } as unknown as ExecutionContext;
+const worker = { fetch: (request: Request, env: Env) => entry.fetch(request, env, testCtx) };
 
 function makeEnv(overrides: Partial<Env> = {}): Env {
   return {
