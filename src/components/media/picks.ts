@@ -45,7 +45,18 @@ const BUILD_COVERS: Record<string, PhotoPick> = {
   "wii-miicro": { id: 402, project: "wii-miicro" }, // wii-miicro-01
 };
 
+/** Home pricing bento: one photo per platform tile (category picks survive moves between projects). */
+const PRICING_PHOTOS: Record<"xbox" | "switch", PhotoPick> = {
+  xbox: { id: 207, project: "halo-xbox" }, // clear-shell RGB Xbox 360 (an RGH console)
+  switch: { id: 52, category: "switch" }, // red OLED, finished Kamikaze install
+};
+
+/** Home "why me" section: the microscope bench. */
+const BENCH: PhotoPick = { id: 254, category: "switch" };
+
 export const heroPhoto = () => pick(HERO);
+export const pricingPhoto = (platform: keyof typeof PRICING_PHOTOS) => pick(PRICING_PHOTOS[platform]);
+export const benchPhoto = () => pick(BENCH);
 export const categoryCover = (slug: CategorySlug) => pick(CATEGORY_COVERS[slug]);
 export const buildCover = (slug: string) => pick(BUILD_COVERS[slug] ?? HERO);
 /**

@@ -29,7 +29,7 @@ const cols = [
 ];
 ---
 
-<footer class="site-footer relative mt-auto overflow-hidden border-t border-line-soft">
+<footer class="site-footer relative mt-auto overflow-hidden border-t border-line-soft bg-ink/60">
   <div class="footer-trace" aria-hidden="true"></div>
   <div class="container-x grid gap-12 pt-16 pb-10 lg:grid-cols-[1.3fr_2fr]">
     <div>
@@ -41,8 +41,8 @@ const cols = [
         of everything when you pick up.
       </p>
       <p class="mt-4 flex items-center gap-2 text-sm text-dim">
-        <Icon name="pin" size={16} class="text-cyan" /> Local drop-off in {site.location.city}, {site.location.region} · Mail-in
-        available
+        <Icon name="pin" size={16} class="text-cyan" /> Local drop-off in {site.location.city}, {site.location.region}. Mail-in
+        available.
       </p>
       {
         liveSocials.length > 0 && (
@@ -62,7 +62,7 @@ const cols = [
       {
         cols.map((c) => (
           <nav aria-label={`Footer: ${c.title}`}>
-            <h2 class="mb-3 text-xs font-semibold tracking-[0.2em] text-cyan uppercase">{c.title}</h2>
+            <h2 class="mono mb-3 text-xs font-medium tracking-[0.16em] text-dim uppercase">{c.title}</h2>
             <ul class="grid gap-0.5">
               {c.links.map((l) => (
                 <li>
@@ -88,8 +88,7 @@ const cols = [
     position: absolute;
     inset: 0 0 auto;
     height: 1px;
-    background: linear-gradient(90deg, transparent, var(--color-cyan) 30%, var(--color-purple) 70%, transparent);
-    opacity: 0.6;
+    background: linear-gradient(90deg, transparent, rgb(78 224 239 / 0.6) 50%, transparent);
   }
   .footer-link {
     display: inline-flex;
@@ -107,7 +106,7 @@ const cols = [
     place-items: center;
     width: 2.75rem;
     height: 2.75rem;
-    border-radius: 0.8rem;
+    border-radius: 999px;
     border: 1px solid var(--color-line);
     color: var(--color-muted);
   }

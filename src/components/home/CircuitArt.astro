@@ -3,7 +3,8 @@
  * Hero circuit traces that "power on": each trace draws outward from the photo frame
  * (stroke-dashoffset on pathLength=1), pads light up, then a current pulse keeps flowing along every
  * trace, staggered by PULSE_STAGGER_S so they never fire in sync.
- * Glow is a wide low-opacity duplicate stroke (no filters, so animations stay cheap).
+ * Glow is a wide low-opacity duplicate stroke (no filters, so animations stay cheap). Traces fade out
+ * radially from the frame so they read as light leaving the board, in the single cyan accent.
  * Fully drawn and static under prefers-reduced-motion.
  */
 const traces = [
@@ -32,26 +33,26 @@ const PULSE_STAGGER_S = 0.4;
 
 <svg class="circuit" viewBox="0 0 600 535" aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMid meet">
   <defs>
-    <linearGradient id="ca-g" x1="0" y1="0" x2="600" y2="535" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#00e5ff"></stop>
-      <stop offset=".6" stop-color="#a855f7"></stop>
-      <stop offset="1" stop-color="#ff3df2"></stop>
-    </linearGradient>
+    <radialGradient id="ca-g" cx="300" cy="268" r="330" gradientUnits="userSpaceOnUse">
+      <stop offset=".45" stop-color="#4ee0ef"></stop>
+      <stop offset=".8" stop-color="#4ee0ef" stop-opacity=".55"></stop>
+      <stop offset="1" stop-color="#4ee0ef" stop-opacity=".12"></stop>
+    </radialGradient>
   </defs>
-  <g class="ca-glow" fill="none" stroke="url(#ca-g)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" opacity=".16">
+  <g class="ca-glow" fill="none" stroke="url(#ca-g)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" opacity=".12">
     {traces.map((d, i) => <path d={d} pathLength="1" style={`--i:${i}`} />)}
   </g>
-  <g class="ca-traces" fill="none" stroke="url(#ca-g)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+  <g class="ca-traces" fill="none" stroke="url(#ca-g)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
     {traces.map((d, i) => <path d={d} pathLength="1" style={`--i:${i}`} />)}
   </g>
-  <g class="ca-pulses" fill="none" stroke="#e8fdff" stroke-width="3" stroke-linecap="round">
+  <g class="ca-pulses" fill="none" stroke="#effdff" stroke-width="2.6" stroke-linecap="round">
     {traces.map((d, i) => <path d={d} pathLength="1" style={`--p:${i}; --stagger:${PULSE_STAGGER_S}s`} />)}
   </g>
   <g class="ca-vias">
-    {vias.map(([x, y], i) => <circle cx={x} cy={y} r="4.5" fill="#070815" stroke="#7df2ff" stroke-width="2" style={`--i:${i}`} />)}
+    {vias.map(([x, y], i) => <circle cx={x} cy={y} r="4" fill="#05070e" stroke="#a9f2fa" stroke-opacity=".7" stroke-width="1.6" style={`--i:${i}`} />)}
   </g>
   <g class="ca-pads">
-    {pads.map(([x, y], i) => <rect x={x - 7} y={y - 7} width="14" height="14" rx="3" fill="#0f1230" stroke="#00e5ff" stroke-width="2.4" style={`--i:${i}`} />)}
+    {pads.map(([x, y], i) => <rect x={x - 7} y={y - 7} width="14" height="14" rx="3.5" fill="#0d1221" stroke="#4ee0ef" stroke-width="1.8" style={`--i:${i}`} />)}
   </g>
 </svg>
 

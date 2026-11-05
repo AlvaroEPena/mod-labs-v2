@@ -30,9 +30,9 @@ import { site } from "../data/site";
       <SectionHead id="mods-title" eyebrow="Modchips & RGH" title="Priced mods" intro="One flat price per console. You'll know the total before anything gets opened up." />
       <ul class="reveal-stagger mt-12 grid gap-5 md:grid-cols-2">
         {
-          services.map((s, i) => (
+          services.map((s) => (
             <li>
-              <ServiceCard service={s} detailed index={i} />
+              <ServiceCard service={s} detailed />
             </li>
           ))
         }
@@ -51,9 +51,9 @@ import { site } from "../data/site";
       />
       <ul class="reveal-stagger mt-12 grid gap-5 md:grid-cols-3">
         {
-          quoteServices.map((s, i) => (
+          quoteServices.map((s) => (
             <li>
-              <ServiceCard service={s} detailed index={i} />
+              <ServiceCard service={s} detailed />
             </li>
           ))
         }

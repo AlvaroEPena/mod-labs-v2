@@ -247,3 +247,32 @@ Not in scope: editing text/prices, online access.
   Restore). The pure list operations are now generic (`admin/lib/list-ops.ts`) and shared by photos and videos.
 - *Known limit (render unchanged, as asked):* the site shows every video cropped to 9:16 (`aspect-ratio: 9/16;
   object-fit: cover`, width/height 1080×1920). Landscape uploads will be cropped until the render uses real sizes.
+
+## 16. Glass redesign (2026-11-05, owner request) — branch `redesign-glass`
+**Design read:** redesign (overhaul) of a one-person console-modding & repair shop site for gamers and
+console owners, mostly on phones, in a premium frosted-glass language over the retro PCB/circuit motif,
+on the existing Astro + Tailwind v4 stack (native CSS glass, SVG traces, CSS scroll-driven motion).
+Owner constraints: keep the retro electrical-circuit theme; glassy, professional, beautiful; reuse all
+content and photos; copy may be rewritten EXCEPT the services' bullet lists (`services.ts` `includes`).
+Phase 1 = home page, then owner review before other pages.
+
+- **Dials:** DESIGN_VARIANCE 8 · MOTION_INTENSITY 7 · VISUAL_DENSITY 4 (taste skill, overhaul = baseline +2 on
+  variance/motion over the old ~6/5/4).
+- **Visual source:** `design-taste-frontend` only (no image-generation tool connected; image-to-code not used).
+- **Theme lock:** dark only. The brand is a lit-circuit "lab" whose glow/glass depth only reads on dark; a light
+  mode would lose the identity (skill §8.C override). `color-scheme: dark`.
+- **Palette:** off-black blue base `#05070e`; ONE accent: softened brand cyan `#4ee0ef` (UI, traces, focus).
+  Purple/magenta survive only in the logo and as faint ambient light behind glass, never on UI.
+- **Type:** Geist (display + body, tight tracking on headlines) + Geist Mono for technical labels and prices
+  (silkscreen feel). Oxanium retired.
+- **Glass:** `.glass` = translucent gradient + 1px white/9% border + inset top highlight + backdrop blur, used
+  where glass sits over imagery or the page (header, hero card, photo overlays). Content cards use the same look
+  without blur (perf on phones). `prefers-reduced-transparency` → solid panels.
+- **Shape lock:** cards/panels 20-28px radius, buttons/chips full pill, inputs 12px.
+- **Icons:** Phosphor (`@phosphor-icons/core`, regular weight) behind the existing `<Icon name>` API.
+- **Motion:** hero entrance stagger + powered-on circuit traces with current pulses (storytelling), scroll reveals,
+  scroll-drawn trace through the 4 steps (sequence), pointer spotlight on cards (feedback), gallery rail with
+  scroll-snap. All off under `prefers-reduced-motion`.
+- **Home layout families (no repeats):** asymmetric split hero → pricing bento (3 cells) → circuit timeline →
+  asymmetric build pair → full-bleed gallery rail → photo + 2-col trust split → FAQ accordion → CTA slab with socials.
+  Eyebrows: 2 (hero, builds) for 8 sections.

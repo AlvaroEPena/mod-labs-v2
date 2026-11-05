@@ -1,71 +1,177 @@
 ---
+/**
+ * How it works, as a circuit: four steps strung along one trace. With CSS scroll-driven animations
+ * the trace draws itself as the section scrolls in and each step's pad "powers on" in sequence
+ * (it tells the order without "Step 1" labels). Without support, or with reduced motion, everything
+ * is simply shown lit. Horizontal from lg, vertical (trace on the left) below.
+ */
 import Icon from "../ui/Icon.astro";
 import type { IconName } from "../ui/icons";
 
 const steps: { icon: IconName; title: string; body: string }[] = [
   { icon: "chat", title: "Tell me what you need", body: "Book a mod or send a quote request. Photos help with repairs. No jargon required." },
-  { icon: "check", title: "Get a clear price", body: "I confirm the price, timing and any questions before you hand anything over. No surprises." },
+  { icon: "check", title: "Get a clear price", body: "I confirm the price, timing and any questions before you hand anything over." },
   { icon: "pin", title: "Drop off or mail in", body: "Seattle drop-offs are usually done same or next day. Mail-in? We'll sort out shipping together." },
-  { icon: "sparkle", title: "Pick up & play", body: "Your console comes back cleaned, tested and set up, with a walkthrough of how to use everything." },
+  { icon: "sparkle", title: "Pick up and play", body: "Your console comes back cleaned, tested and set up, with a walkthrough of how to use everything." },
 ];
 ---
 
-<ol class="steps reveal-stagger grid gap-4 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
-  {
-    steps.map((s, i) => (
-      <li class="step card p-6">
-        <div class="flex items-center justify-between">
-          <span class="step-icon">
-            <Icon name={s.icon} size={22} />
-          </span>
-          <span class="step-num" aria-hidden="true">
-            0{i + 1}
-          </span>
-        </div>
-        <h3 class="mt-5 text-xl">
-          <span class="sr-only">Step {i + 1}: </span>
-          {s.title}
-        </h3>
-        <p class="mt-2 leading-relaxed text-muted">{s.body}</p>
-      </li>
-    ))
-  }
-</ol>
+<section class="section-y" aria-labelledby="how-title">
+  <div class="container-x">
+    <h2 id="how-title" class="reveal max-w-2xl text-4xl sm:text-5xl">From stock to modded in four steps.</h2>
+    <p class="lead reveal mt-5 max-w-xl">Never done this before? That's most people. Here's exactly what happens.</p>
+
+    <ol class="steps mt-14 lg:mt-20">
+      {
+        steps.map((s, i) => (
+          <li class="step" style={`--i:${i}`}>
+            <span class="pad" aria-hidden="true">
+              <Icon name={s.icon} size={22} />
+            </span>
+            <div class="min-w-0">
+              <h3 class="text-xl">{s.title}</h3>
+              <p class="mt-2 leading-relaxed text-muted">{s.body}</p>
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>
 
 <style>
   .steps {
+    --pad: 3.5rem;
     position: relative;
-    counter-reset: step;
+    display: grid;
+    gap: 2.25rem;
+    view-timeline-name: --steps;
   }
-  @media (width >= 64rem) {
-    .steps::before {
-      content: "";
-      position: absolute;
-      top: 3.05rem;
-      left: 3rem;
-      right: 3rem;
-      height: 2px;
-      background: repeating-linear-gradient(90deg, rgb(0 229 255 / 0.55) 0 10px, transparent 10px 18px);
-      z-index: -1;
-    }
+  /* the trace */
+  .steps::before {
+    content: "";
+    position: absolute;
+    top: calc(var(--pad) / 2);
+    bottom: 1rem;
+    left: calc(var(--pad) / 2 - 1px);
+    width: 2px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, var(--color-cyan), rgb(78 224 239 / 0.15));
+    transform-origin: top;
   }
-  .step-icon {
+  .step {
+    position: relative;
+    display: grid;
+    grid-template-columns: var(--pad) minmax(0, 1fr);
+    gap: 1.25rem;
+    align-items: start;
+    align-content: start; /* columns stretch to the tallest step: keep each step's content at the top */
+  }
+  .pad {
+    position: relative;
     display: grid;
     place-items: center;
-    width: 3rem;
-    height: 3rem;
-    border-radius: 0.9rem;
+    width: var(--pad);
+    height: var(--pad);
+    border-radius: 1rem;
     color: var(--color-cyan);
-    background: radial-gradient(circle at 30% 20%, rgb(0 229 255 / 0.25), rgb(15 18 48) 70%);
-    border: 1px solid rgb(0 229 255 / 0.4);
-    box-shadow: 0 0 24px -6px rgb(0 229 255 / 0.55);
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.08), rgb(255 255 255 / 0.02)),
+      var(--color-panel);
+    border: 1px solid rgb(78 224 239 / 0.45);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.1),
+      0 0 0 6px var(--color-ink);
   }
-  .step-num {
-    font-family: var(--font-display);
-    font-size: 2.2rem;
-    font-weight: 800;
-    line-height: 1;
-    color: transparent;
-    -webkit-text-stroke: 1px rgb(178 184 223 / 0.35);
+  /* powered-on glow (opacity only) */
+  .pad::before {
+    content: "";
+    position: absolute;
+    inset: -10px;
+    z-index: -1;
+    border-radius: 1.4rem;
+    background: radial-gradient(closest-side, rgb(78 224 239 / 0.4), transparent);
+  }
+  /* "unpowered" veil, faded out as the trace reaches the pad (opacity only) */
+  .pad::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    background: rgb(13 18 33 / 0.8);
+    opacity: 0;
+  }
+
+  @media (width >= 64rem) {
+    .steps {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 2.5rem;
+    }
+    .steps::before {
+      top: calc(var(--pad) / 2 - 1px);
+      bottom: auto;
+      left: calc(var(--pad) / 2);
+      right: 0;
+      width: auto;
+      height: 2px;
+      background: linear-gradient(90deg, var(--color-cyan) 70%, rgb(78 224 239 / 0));
+      transform-origin: left;
+    }
+    .step {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 1.75rem;
+    }
+    .step h3,
+    .step p {
+      padding-right: 1rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .steps::before {
+        animation: trace-draw-y linear both;
+        animation-timeline: --steps;
+        animation-range: entry 15% cover 50%;
+      }
+      .pad::after {
+        animation: veil-off linear both;
+        animation-timeline: --steps;
+        animation-range: entry calc(25% + var(--i) * 15%) entry calc(40% + var(--i) * 15%);
+      }
+      .pad::before {
+        animation: glow-on linear both;
+        animation-timeline: --steps;
+        animation-range: entry calc(25% + var(--i) * 15%) entry calc(40% + var(--i) * 15%);
+      }
+      @media (width >= 64rem) {
+        .steps::before {
+          animation-name: trace-draw-x;
+        }
+      }
+    }
+  }
+  @keyframes trace-draw-y {
+    from {
+      transform: scaleY(0);
+    }
+  }
+  @keyframes trace-draw-x {
+    from {
+      transform: scaleX(0);
+    }
+  }
+  @keyframes veil-off {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes glow-on {
+    from {
+      opacity: 0;
+    }
   }
 </style>

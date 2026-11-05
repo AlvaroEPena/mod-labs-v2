@@ -1,35 +1,77 @@
-/** Icon path data (24×24 stroke icons, original). */
-export const iconPaths = {
-  arrow: "M5 12h14M13 6l6 6-6 6",
-  "arrow-left": "M19 12H5M11 6l-6 6 6 6",
-  check: "M4.5 12.5l5 5 10-11",
-  x: "M6 6l12 12M18 6L6 18",
-  plus: "M12 5v14M5 12h14",
-  menu: "M4 7h16M4 12h16M4 17h10",
-  chip: "M8 4v3M12 4v3M16 4v3M8 17v3M12 17v3M16 17v3M4 8h3M4 12h3M4 16h3M17 8h3M17 12h3M17 16h3M7 7h10v10H7z",
-  flask: "M9.5 3h5M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4A2 2 0 0 0 19 18l-5-9V3M7.5 14h9",
-  bolt: "M13 2L4 14h7l-1 8 9-12h-7z",
-  shield: "M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6zM8.5 12l2.5 2.5 4.5-5",
-  clock: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2",
-  truck: "M3 6h11v10H3zM14 10h4l3 3v3h-7M7.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM17.5 19a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z",
-  pin: "M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21zM12 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",
-  chat: "M4 5h16v11H9l-5 4z M8 9.5h8M8 12.5h5",
-  wrench: "M14.5 4.5a4.5 4.5 0 0 0-5.8 5.8L3.5 15.5a2 2 0 0 0 2.9 2.9l5.2-5.2a4.5 4.5 0 0 0 5.8-5.8l-2.7 2.7-2.4-.5-.5-2.4z",
-  sparkle: "M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8zM19 16l.8 2.2L22 19l-2.2.8L19 22l-.8-2.2L16 19l2.2-.8z",
-  camera: "M4 8h3l2-3h6l2 3h3v11H4zM12 16.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z",
-  upload: "M12 16V4M7 9l5-5 5 5M4 16v4h16v-4",
-  eye: "M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
-  microscope: "M6 21h12M9 17h6M10 3l4 2-3 6-4-2zM12.5 8.5A6 6 0 0 1 15 17M8 13l-2 4",
-  thermo: "M10 14V5a2 2 0 1 1 4 0v9a4 4 0 1 1-4 0zM12 9v7",
-  hand: "M8 12V5.5a1.5 1.5 0 0 1 3 0V11M11 10.5v-7a1.5 1.5 0 0 1 3 0V11M14 10V5.5a1.5 1.5 0 0 1 3 0V13c0 4.4-2.6 8-7 8-2.5 0-4-1.3-5.4-3.6L3 14.2a1.5 1.5 0 0 1 2.4-1.8L8 15",
-  instagram: "M7 3h10a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4zM12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM17.3 6.7h.01",
-  tiktok: "M14 3v11.5a3.5 3.5 0 1 1-3.5-3.5M14 3c.4 2.6 2.3 4.4 5 4.6",
-  discord: "M8 7.5c2.6-.9 5.4-.9 8 0M7.5 16.5c2.9 1.2 6.1 1.2 9 0M8.2 5.8C6.5 6.3 5.2 7 4.4 7.8 3 10.6 2.6 13.4 3 16.2c1.4 1.1 3 1.8 4.6 2.2l1-1.9M15.8 5.8c1.7.5 3 1.2 3.8 2 1.4 2.8 1.8 5.6 1.4 8.4-1.4 1.1-3 1.8-4.6 2.2l-1-1.9M9.5 13.2h.01M14.5 13.2h.01",
-  play: "M7 4.5v15l12-7.5z",
-  alert: "M12 3l10 18H2zM12 10v4.5M12 17.5h.01",
-  home: "M3 11l9-7 9 7M5 9.5V20h14V9.5",
-  image: "M4 5h16v14H4zM4 16l5-5 4 4 2-2 5 5M15.5 9.5h.01",
-  refresh: "M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6",
+/**
+ * Icon registry: our short names → Phosphor icons (regular weight, MIT, @phosphor-icons/core).
+ * Imported as raw SVG at build time, so only the icons listed here ship, inlined, with zero client JS.
+ * Add an icon: import it below and give it a name in `icons`.
+ */
+import arrowRight from "@phosphor-icons/core/regular/arrow-right.svg?raw";
+import arrowLeft from "@phosphor-icons/core/regular/arrow-left.svg?raw";
+import check from "@phosphor-icons/core/regular/check.svg?raw";
+import x from "@phosphor-icons/core/regular/x.svg?raw";
+import plus from "@phosphor-icons/core/regular/plus.svg?raw";
+import list from "@phosphor-icons/core/regular/list.svg?raw";
+import cpu from "@phosphor-icons/core/regular/cpu.svg?raw";
+import flask from "@phosphor-icons/core/regular/flask.svg?raw";
+import lightning from "@phosphor-icons/core/regular/lightning.svg?raw";
+import shieldCheck from "@phosphor-icons/core/regular/shield-check.svg?raw";
+import clock from "@phosphor-icons/core/regular/clock.svg?raw";
+import truck from "@phosphor-icons/core/regular/truck.svg?raw";
+import mapPin from "@phosphor-icons/core/regular/map-pin.svg?raw";
+import chat from "@phosphor-icons/core/regular/chat-circle-text.svg?raw";
+import wrench from "@phosphor-icons/core/regular/wrench.svg?raw";
+import sparkle from "@phosphor-icons/core/regular/sparkle.svg?raw";
+import camera from "@phosphor-icons/core/regular/camera.svg?raw";
+import upload from "@phosphor-icons/core/regular/upload-simple.svg?raw";
+import eye from "@phosphor-icons/core/regular/eye.svg?raw";
+import microscope from "@phosphor-icons/core/regular/microscope.svg?raw";
+import thermometer from "@phosphor-icons/core/regular/thermometer-simple.svg?raw";
+import hand from "@phosphor-icons/core/regular/hand.svg?raw";
+import instagram from "@phosphor-icons/core/regular/instagram-logo.svg?raw";
+import tiktok from "@phosphor-icons/core/regular/tiktok-logo.svg?raw";
+import discord from "@phosphor-icons/core/regular/discord-logo.svg?raw";
+import play from "@phosphor-icons/core/fill/play-fill.svg?raw";
+import warning from "@phosphor-icons/core/regular/warning-circle.svg?raw";
+import house from "@phosphor-icons/core/regular/house.svg?raw";
+import image from "@phosphor-icons/core/regular/image.svg?raw";
+import refresh from "@phosphor-icons/core/regular/arrow-clockwise.svg?raw";
+import circuitry from "@phosphor-icons/core/regular/circuitry.svg?raw";
+import packageIcon from "@phosphor-icons/core/regular/package.svg?raw";
+
+const icons = {
+  arrow: arrowRight,
+  "arrow-left": arrowLeft,
+  check,
+  x,
+  plus,
+  menu: list,
+  chip: cpu,
+  flask,
+  bolt: lightning,
+  shield: shieldCheck,
+  clock,
+  truck,
+  pin: mapPin,
+  chat,
+  wrench,
+  sparkle,
+  camera,
+  upload,
+  eye,
+  microscope,
+  thermo: thermometer,
+  hand,
+  instagram,
+  tiktok,
+  discord,
+  play,
+  alert: warning,
+  home: house,
+  image,
+  refresh,
+  circuit: circuitry,
+  package: packageIcon,
 } as const;
 
-export type IconName = keyof typeof iconPaths;
+export type IconName = keyof typeof icons;
+
+/** Inner markup of a Phosphor SVG (its paths), without the outer <svg> wrapper. */
+export const iconBody = (name: IconName): string => icons[name].replace(/^[\s\S]*?<svg[^>]*>/, "").replace(/<\/svg>\s*$/, "");

@@ -6,39 +6,41 @@ import { mainNav, isCurrent } from "./nav";
 const path = Astro.url.pathname;
 ---
 
-<header class="site-header glass">
-  <div class="container-x flex h-(--header-h) items-center justify-between gap-4">
-    <a href="/" class="-ml-1 flex min-h-11 items-center rounded-lg px-1" aria-label="Mod Labs home">
-      <Logo id="hdr" size="md" />
-    </a>
+<header class="site-header">
+  <div class="container-x">
+    <div class="nav-shell glass">
+      <a href="/" class="flex min-h-11 items-center rounded-full px-1" aria-label="Mod Labs home">
+        <Logo id="hdr" size="md" />
+      </a>
 
-    <nav aria-label="Main" class="hidden lg:block">
-      <ul class="flex items-center gap-1">
-        {
-          mainNav.map((l) => (
-            <li>
-              <a href={l.href} class="nav-link" aria-current={isCurrent(path, l.href) ? "page" : undefined}>
-                {l.label}
-              </a>
-            </li>
-          ))
-        }
-      </ul>
-    </nav>
+      <nav aria-label="Main" class="hidden lg:block">
+        <ul class="flex items-center gap-0.5">
+          {
+            mainNav.map((l) => (
+              <li>
+                <a href={l.href} class="nav-link" aria-current={isCurrent(path, l.href) ? "page" : undefined}>
+                  {l.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
 
-    <div class="flex items-center gap-2">
-      <a href="/quote" class="btn btn-ghost btn-sm hidden lg:inline-flex">Get a quote</a>
-      <a href="/book" class="btn btn-primary btn-sm hidden md:inline-flex">Book a service</a>
-      <button type="button" class="burger grid lg:hidden" popovertarget="mobile-menu" aria-label="Menu" aria-controls="mobile-menu">
-        <span class="burger-lines" aria-hidden="true"><span></span><span></span><span></span></span>
-      </button>
+      <div class="flex items-center gap-2">
+        <a href="/quote" class="btn btn-ghost btn-sm hidden lg:inline-flex">Get a quote</a>
+        <a href="/book" class="btn btn-primary btn-sm hidden md:inline-flex">Book a service</a>
+        <button type="button" class="burger grid lg:hidden" popovertarget="mobile-menu" aria-label="Menu" aria-controls="mobile-menu">
+          <span class="burger-lines" aria-hidden="true"><span></span><span></span><span></span></span>
+        </button>
+      </div>
     </div>
   </div>
 </header>
 
-<div id="mobile-menu" popover class="mobile-menu">
-  <nav aria-label="Mobile" class="container-x pt-3 pb-6">
-    <ul class="grid gap-1">
+<div id="mobile-menu" popover class="mobile-menu glass">
+  <nav aria-label="Mobile" class="p-3 pb-5">
+    <ul class="grid gap-0.5">
       {
         mainNav.map((l, i) => (
           <li style={`--i:${i}`}>
@@ -50,12 +52,12 @@ const path = Astro.url.pathname;
         ))
       }
     </ul>
-    <div class="mt-5 grid grid-cols-2 gap-3">
+    <div class="mt-4 grid grid-cols-2 gap-2.5 px-1">
       <a href="/quote" class="btn btn-ghost">Get a quote</a>
       <a href="/book" class="btn btn-primary">Book a service</a>
     </div>
-    <p class="mt-5 flex items-center gap-2 text-sm text-(--color-dim)">
-      <Icon name="pin" size={16} /> Seattle local drop-off · Mail-in welcome
+    <p class="mt-4 flex items-center gap-2 px-2 text-sm text-dim">
+      <Icon name="pin" size={16} class="text-cyan" /> Seattle drop-off, mail-in welcome
     </p>
   </nav>
 </div>
@@ -65,19 +67,28 @@ const path = Astro.url.pathname;
     position: sticky;
     top: 0;
     z-index: 50;
-    border-width: 0 0 1px;
+    padding-top: 0.75rem;
+    height: var(--header-h);
     view-transition-name: site-header;
+  }
+  .nav-shell {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    height: 3.5rem;
+    padding: 0 0.5rem 0 1rem;
+    border-radius: 999px;
   }
   .nav-link {
     position: relative;
     display: inline-flex;
     align-items: center;
-    min-height: 2.75rem;
-    padding: 0 0.85rem;
-    border-radius: 0.7rem;
-    font-family: var(--font-display);
-    font-weight: 600;
-    font-size: 0.97rem;
+    min-height: 2.5rem;
+    padding: 0 0.9rem;
+    border-radius: 999px;
+    font-weight: 500;
+    font-size: 0.925rem;
     color: var(--color-muted);
     text-decoration: none;
     transition:
@@ -86,43 +97,34 @@ const path = Astro.url.pathname;
   }
   .nav-link:hover {
     color: var(--color-fg);
-    background: rgb(255 255 255 / 0.04);
+    background: rgb(255 255 255 / 0.06);
   }
   .nav-link[aria-current="page"] {
     color: var(--color-fg);
-  }
-  .nav-link[aria-current="page"]::after {
-    content: "";
-    position: absolute;
-    left: 0.85rem;
-    right: 0.85rem;
-    bottom: 0.35rem;
-    height: 2px;
-    border-radius: 2px;
-    background: linear-gradient(90deg, var(--color-cyan), var(--color-purple));
-    box-shadow: 0 0 10px rgb(0 229 255 / 0.7);
+    background: rgb(255 255 255 / 0.07);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
   }
 
   .burger {
     place-items: center;
-    width: 2.875rem;
-    height: 2.875rem;
-    border-radius: 0.8rem;
-    border: 1px solid rgb(125 242 255 / 0.28);
-    background: rgb(20 26 68 / 0.6);
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 999px;
+    border: 1px solid rgb(255 255 255 / 0.14);
+    background: rgb(255 255 255 / 0.05);
     color: var(--color-fg);
     cursor: pointer;
   }
   .burger-lines {
     position: relative;
     display: block;
-    width: 1.25rem;
-    height: 0.9rem;
+    width: 1.1rem;
+    height: 0.8rem;
   }
   .burger-lines span {
     position: absolute;
     left: 0;
-    height: 2px;
+    height: 1.5px;
     width: 100%;
     border-radius: 2px;
     background: currentColor;
@@ -134,62 +136,63 @@ const path = Astro.url.pathname;
     top: 0;
   }
   .burger-lines span:nth-child(2) {
-    top: calc(50% - 1px);
-    width: 70%;
+    top: calc(50% - 0.75px);
+    width: 65%;
   }
   .burger-lines span:nth-child(3) {
     bottom: 0;
   }
   :global(body:has(#mobile-menu:popover-open)) .burger-lines span:nth-child(1) {
-    transform: translateY(0.4rem) rotate(45deg);
+    transform: translateY(calc(0.4rem - 0.75px)) rotate(45deg);
   }
   :global(body:has(#mobile-menu:popover-open)) .burger-lines span:nth-child(2) {
     opacity: 0;
   }
   :global(body:has(#mobile-menu:popover-open)) .burger-lines span:nth-child(3) {
-    transform: translateY(-0.4rem) rotate(-45deg);
+    transform: translateY(calc(-0.4rem + 0.75px)) rotate(-45deg);
   }
 
   .mobile-menu {
     position: fixed;
-    inset: var(--header-h) 0 auto 0;
-    width: 100%;
-    max-width: none;
-    max-height: calc(100dvh - var(--header-h));
+    inset: calc(var(--header-h) + 0.5rem) 1.125rem auto 1.125rem;
+    width: auto;
+    max-width: 30rem;
+    max-height: calc(100dvh - var(--header-h) - 1.5rem);
     overflow-y: auto;
-    margin: 0;
+    margin: 0 0 0 auto;
     padding: 0;
-    border: 0;
-    border-bottom: 1px solid var(--color-line-soft);
+    border-radius: 1.5rem;
     color: var(--color-fg);
-    background: rgb(9 10 28 / 0.97);
-    box-shadow: 0 30px 60px -20px rgb(0 0 0 / 0.8);
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.08), rgb(255 255 255 / 0.02) 60%),
+      rgb(10 14 26 / 0.86);
   }
   .mobile-menu::backdrop {
-    top: 4rem; /* keep the header (and its close button) undimmed */
-    background: rgb(3 4 12 / 0.55);
+    background: rgb(3 4 10 / 0.5);
   }
   .mm-link {
     display: flex;
     align-items: center;
     justify-content: space-between;
     min-height: 3.25rem;
-    padding: 0 0.75rem;
-    border-radius: 0.8rem;
-    font-family: var(--font-display);
-    font-size: 1.3rem;
-    font-weight: 600;
+    padding: 0 0.9rem;
+    border-radius: 1rem;
+    font-size: 1.2rem;
+    font-weight: 500;
+    letter-spacing: -0.015em;
     text-decoration: none;
     color: var(--color-fg);
   }
   .mm-link svg {
-    color: var(--color-cyan);
+    color: var(--color-dim);
+    transition: color 0.2s;
   }
   .mm-link:hover,
   .mm-link[aria-current="page"] {
-    background: rgb(0 229 255 / 0.07);
+    background: rgb(255 255 255 / 0.06);
   }
-  .mm-link[aria-current="page"] span {
+  .mm-link:hover svg,
+  .mm-link[aria-current="page"] svg {
     color: var(--color-cyan);
   }
 
@@ -197,11 +200,12 @@ const path = Astro.url.pathname;
     .mobile-menu {
       transition:
         opacity 0.25s ease,
-        transform 0.35s var(--ease-out-expo),
-        overlay 0.35s allow-discrete,
-        display 0.35s allow-discrete;
+        transform 0.4s var(--ease-out-expo),
+        overlay 0.4s allow-discrete,
+        display 0.4s allow-discrete;
       opacity: 0;
-      transform: translateY(-12px);
+      transform: translateY(-8px) scale(0.98);
+      transform-origin: top right;
     }
     .mobile-menu:popover-open {
       opacity: 1;
@@ -210,18 +214,18 @@ const path = Astro.url.pathname;
     @starting-style {
       .mobile-menu:popover-open {
         opacity: 0;
-        transform: translateY(-12px);
+        transform: translateY(-8px) scale(0.98);
       }
     }
     .mobile-menu:popover-open li {
       animation: mm-in 0.45s var(--ease-out-expo) both;
-      animation-delay: calc(0.04s + var(--i) * 0.035s);
+      animation-delay: calc(0.05s + var(--i) * 0.035s);
     }
   }
   @keyframes mm-in {
     from {
       opacity: 0;
-      transform: translateX(-10px);
+      transform: translateY(6px);
     }
   }
 </style>

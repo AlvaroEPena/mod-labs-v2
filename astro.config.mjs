@@ -26,17 +26,7 @@ export default defineConfig({
   ],
   fonts: [
     {
-      // Technical display face for headings, labels and prices (variable: one file for every weight)
-      provider: fontProviders.google(),
-      name: "Oxanium",
-      cssVariable: "--font-oxanium",
-      weights: ["500 800"],
-      styles: ["normal"],
-      subsets: ["latin"],
-      fallbacks: ["ui-sans-serif", "system-ui", "sans-serif"],
-    },
-    {
-      // Clean variable sans for body copy
+      // Display + body: one variable sans, tight tracking on headlines (spec §16)
       provider: fontProviders.google(),
       name: "Geist",
       cssVariable: "--font-geist",
@@ -44,6 +34,16 @@ export default defineConfig({
       styles: ["normal"],
       subsets: ["latin"],
       fallbacks: ["ui-sans-serif", "system-ui", "sans-serif"],
+    },
+    {
+      // Technical labels and prices: the "silkscreen" voice of the circuit theme
+      provider: fontProviders.google(),
+      name: "Geist Mono",
+      cssVariable: "--font-geist-mono",
+      weights: ["400 600"],
+      styles: ["normal"],
+      subsets: ["latin"],
+      fallbacks: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
     },
   ],
   vite: { plugins: [tailwindcss()] },

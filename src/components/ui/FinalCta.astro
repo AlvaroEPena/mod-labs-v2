@@ -1,44 +1,171 @@
 ---
+/**
+ * Closing call to action: a wide glass slab with circuit traces running in from both edges to the logo.
+ * `socials` adds a "follow the builds" row (live links, or "soon" for accounts that don't exist yet).
+ */
 import Icon from "./Icon.astro";
 import LogoMark from "../brand/LogoMark.astro";
+import { socials as socialLinks } from "../layout/socials";
 
 interface Props {
   title?: string;
   body?: string;
+  /** show the social links row (home page) */
+  socials?: boolean;
 }
 const {
   title = "Ready to mod your console?",
-  body = "Book a priced mod in a couple of minutes, or tell me what you have in mind and I'll get back to you with a clear quote.",
+  body = "Book a priced mod in a couple of minutes, or tell me what you have in mind and I'll come back with a clear quote.",
+  socials = false,
 } = Astro.props;
+
+/** traces enter from the slab edges and end at pads beside the logo (viewBox 1200×400, logo at 600,110) */
+const traces = [
+  "M0 44H300L350 94H535",
+  "M0 118H170L200 88H330",
+  "M1200 44H900L850 94H665",
+  "M1200 118H1030L1000 88H870",
+];
+const pads = [
+  [535, 94],
+  [330, 88],
+  [665, 94],
+  [870, 88],
+];
 ---
 
 <section class="section-y" aria-labelledby="final-cta-title">
   <div class="container-x">
-    <div class="final reveal relative isolate overflow-hidden rounded-[1.75rem] px-6 py-14 text-center sm:px-12 sm:py-20">
-      <div class="pcb absolute inset-0 -z-10" aria-hidden="true"></div>
-      <LogoMark size={64} id="cta-mk" class="final-mark mx-auto" />
-      <h2 id="final-cta-title" class="mx-auto mt-6 max-w-2xl text-3xl sm:text-5xl">{title}</h2>
-      <p class="lead mx-auto mt-4 max-w-xl">{body}</p>
-      <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-        <a href="/book" class="btn btn-primary btn-lg">Book a service <Icon name="arrow" size={18} /></a>
-        <a href="/quote" class="btn btn-ghost btn-lg">Get a quote</a>
+    <div class="slab card reveal">
+      <svg class="slab-traces" viewBox="0 0 1200 400" preserveAspectRatio="xMidYMin meet" aria-hidden="true" focusable="false">
+        <g fill="none" stroke="#4ee0ef" stroke-opacity=".35" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          {traces.map((d) => <path d={d} />)}
+        </g>
+        <g fill="none" stroke="#effdff" stroke-width="2" stroke-linecap="round" class="slab-pulses">
+          {traces.map((d, i) => <path d={d} pathLength="1" style={`--i:${i}`} />)}
+        </g>
+        <g fill="#0d1221" stroke="#4ee0ef" stroke-opacity=".6" stroke-width="1.5">
+          {pads.map(([x, y]) => <circle cx={x} cy={y} r="4" />)}
+        </g>
+      </svg>
+
+      <div class="relative px-6 py-16 text-center sm:px-12 sm:py-20">
+        <LogoMark size={60} id="cta-mk" class="mx-auto" />
+        <h2 id="final-cta-title" class="mx-auto mt-7 max-w-2xl text-4xl sm:text-5xl">{title}</h2>
+        <p class="lead mx-auto mt-5 max-w-xl">{body}</p>
+        <div class="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
+          <a href="/book" class="btn btn-primary btn-lg">Book a service <Icon name="arrow" size={18} /></a>
+          <a href="/quote" class="btn btn-ghost btn-lg">Get a quote</a>
+        </div>
       </div>
+
+      {
+        socials && (
+          <div class="slab-foot relative flex flex-col items-center justify-between gap-4 px-6 py-6 sm:flex-row sm:px-10">
+            <p class="font-semibold text-fg">Follow the builds</p>
+            <ul class="flex flex-wrap justify-center gap-2">
+              {socialLinks.map((s) =>
+                s.url ? (
+                  <li>
+                    <a href={s.url} target="_blank" rel="me noopener" class="social-pill">
+                      <Icon name={s.icon} size={18} /> {s.label}
+                      <span class="sr-only">(opens in a new tab)</span>
+                    </a>
+                  </li>
+                ) : (
+                  <li class="social-pill is-soon">
+                    <Icon name={s.icon} size={18} /> {s.label}
+                    <span class="mono text-[0.68rem] tracking-[0.12em] text-dim uppercase">Soon</span>
+                  </li>
+                ),
+              )}
+            </ul>
+          </div>
+        )
+      }
     </div>
   </div>
 </section>
 
 <style>
-  .final {
+  .slab {
+    overflow: hidden;
+    border-radius: 2rem;
     background:
-      radial-gradient(30rem 18rem at 15% 0%, rgb(0 229 255 / 0.2), transparent 70%),
-      radial-gradient(30rem 20rem at 90% 100%, rgb(168 85 247 / 0.3), transparent 70%),
-      linear-gradient(180deg, #11154a, #0b0d26);
-    border: 1px solid rgb(0 229 255 / 0.25);
-    box-shadow:
-      0 0 0 1px rgb(168 85 247 / 0.15) inset,
-      0 40px 100px -40px rgb(168 85 247 / 0.6);
+      radial-gradient(40rem 22rem at 50% -10%, rgb(78 224 239 / 0.14), transparent 70%),
+      radial-gradient(30rem 18rem at 85% 120%, rgb(139 124 246 / 0.12), transparent 70%),
+      linear-gradient(180deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.015) 60%),
+      rgb(12 17 31 / 0.75);
   }
-  .final :global(.final-mark) {
-    filter: drop-shadow(0 0 22px rgb(0 229 255 / 0.5));
+  .slab-traces {
+    display: none;
+    position: absolute;
+    inset: 0 0 auto;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1200 / 400;
+    pointer-events: none;
+    mask-image: linear-gradient(90deg, #000 30%, transparent 46%, transparent 54%, #000 70%);
+  }
+  @media (width >= 48rem) {
+    .slab-traces {
+      display: block;
+    }
+  }
+  .slab-pulses {
+    display: none;
+  }
+  .slab-foot {
+    border-top: 1px solid var(--color-line-soft);
+    background: rgb(255 255 255 / 0.02);
+  }
+  .social-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0.45rem 1rem;
+    border-radius: 999px;
+    font-size: 0.92rem;
+    font-weight: 500;
+    color: var(--color-fg);
+    text-decoration: none;
+    background: rgb(255 255 255 / 0.05);
+    border: 1px solid var(--color-line);
+    transition: border-color 0.2s;
+  }
+  a.social-pill:hover {
+    border-color: rgb(78 224 239 / 0.5);
+  }
+  .social-pill.is-soon {
+    color: var(--color-muted);
+    border-style: dashed;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .slab-pulses {
+      display: inline;
+    }
+    .slab-pulses path {
+      stroke-dasharray: 0.08 1;
+      stroke-dashoffset: 0.08;
+      opacity: 0;
+      animation: slab-flow 4.2s linear infinite;
+      animation-delay: calc(0.6s + var(--i) * 1.05s);
+    }
+  }
+  @keyframes slab-flow {
+    0% {
+      stroke-dashoffset: 0.08;
+      opacity: 0;
+    }
+    10%,
+    75% {
+      opacity: 1;
+    }
+    100% {
+      stroke-dashoffset: -0.92;
+      opacity: 0;
+    }
   }
 </style>

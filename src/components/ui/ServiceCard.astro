@@ -6,10 +6,9 @@ interface Props {
   service: Service;
   /** show the full "what's included" list */
   detailed?: boolean;
-  index?: number;
   headingLevel?: "h2" | "h3";
 }
-const { service, detailed = false, index = 0, headingLevel: H = "h3" } = Astro.props;
+const { service, detailed = false, headingLevel: H = "h3" } = Astro.props;
 const platformLabel = { xbox: "Xbox 360", switch: "Nintendo Switch", playstation: "PlayStation", other: "Any device" }[service.platform];
 const accent = { xbox: "#3dffb0", switch: "#ff5a6e", playstation: "#5aa8ff", other: "#c89bff" }[service.platform];
 const priced = service.price !== null;
@@ -21,7 +20,7 @@ const href = priced ? `/book?service=${service.id}` : "/quote";
     <p class="platform"><span class="dot" aria-hidden="true"></span>{platformLabel}</p>
     {
       priced ? (
-        <p class="price-tag text-3xl" style={`--shimmer-delay:${1.2 + index * 0.7}s`}>
+        <p class="price-tag text-3xl">
           <span class="sr-only">Price: </span>
           <span class="cur">$</span>
           {service.price}

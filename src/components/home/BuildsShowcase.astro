@@ -1,0 +1,21 @@
+---
+/** Home: the two commission builds as an asymmetric pair (wide GWii, taller offset Wii Miicro). */
+import BuildTeaser from "./BuildTeaser.astro";
+import { builds } from "../../data/builds";
+
+const gwii = builds.find((b) => b.slug === "gwii")!;
+const miicro = builds.find((b) => b.slug === "wii-miicro")!;
+---
+
+<section class="section-y ambient" style="--ax:78%;--ay:35%;--ac:rgb(139 124 246 / 0.16)" aria-labelledby="builds-title">
+  <div class="container-x">
+    <p class="eyebrow reveal">Commission builds</p>
+    <h2 id="builds-title" class="reveal mt-5 max-w-3xl text-4xl sm:text-5xl">Real Wii hardware, rebuilt into consoles you can't buy.</h2>
+    <p class="lead reveal mt-5 max-w-xl">Genuine Wii boards, trimmed, relocated and tuned by hand. No emulation, no compatibility lists.</p>
+
+    <div class="reveal-stagger mt-14 grid items-start gap-8 lg:mt-16 lg:grid-cols-12 lg:gap-6">
+      <BuildTeaser build={gwii} ratio="5 / 4" sizes="(min-width: 1024px) 700px, 100vw" class="lg:col-span-7" />
+      <BuildTeaser build={miicro} ratio="4 / 5" sizes="(min-width: 1024px) 500px, 100vw" class="lg:col-span-5 lg:mt-28" />
+    </div>
+  </div>
+</section>
