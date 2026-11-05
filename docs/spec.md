@@ -276,3 +276,41 @@ Phase 1 = home page, then owner review before other pages.
 - **Home layout families (no repeats):** asymmetric split hero → pricing bento (3 cells) → circuit timeline →
   asymmetric build pair → full-bleed gallery rail → photo + 2-col trust split → FAQ accordion → CTA slab with socials.
   Eyebrows: 2 (hero, builds) for 8 sections.
+
+## 17. Reviews (2026-11-05, owner decisions) + phase 2 redesign
+**Owner decisions:** anyone can submit; **nothing is published until the owner approves it** (email with
+Approve / Delete); fields: name, 1-5 stars, optional service, review text (no email collected); a free
+Cloudflare D1 database stores them (owner approved creating it; orchestrator creates it, confirming first).
+
+**Contract:** `src/lib/reviews/contract.ts` (schema, field names, `PublicReview`, `renderReviewItem`, slots).
+Only `renderReviewItem` produces review HTML, and it escapes every user string. No links allowed in reviews.
+
+**Flow**
+1. `/reviews` form → `POST /api/review` (multipart, `Accept: application/json`): same guards as book/quote
+   (origin, rate limit, body size, honeypot, Turnstile action `review`, zod) → row `status='pending'` in D1 →
+   moderation email to `LEAD_EMAIL_TO` (log mode prints the links) → `ApiResult` ok/errors.
+2. Moderation: signed links `GET /api/reviews/moderate?id&action=approve|delete&exp&sig` (HMAC-SHA256 with
+   secret `REVIEW_SIGNING_KEY`). GET only shows a confirmation page; the change happens on POST (email link
+   scanners prefetch GETs). Approve → `approved`, delete → row removed. Cached list purged.
+3. Publishing: the Worker runs first for `/` and `/reviews`, fetches the static page and HTMLRewriter-injects
+   approved reviews into `REVIEW_SLOTS` (home: latest 3; all: every approved, newest first), sets the summary
+   text and toggles `[data-reviews-when-empty]` / `[data-reviews-when-any]` via the `hidden` attribute.
+   Reviews are therefore in the HTML (crawlable, no client JS). Any DB error → page served untouched.
+   `GET /api/reviews` returns `{ ok, reviews, count, average }` (approved only).
+4. Markup contract (global CSS, not component-scoped, since it's injected):
+   `li.review-card > figure > span.review-stars[role=img] > span.star(.is-on)×5, blockquote.review-body > p,
+   figcaption.review-by > span.review-name + span.review-meta`.
+
+**Phase 2 redesign scope:** every remaining page in the lab-glass system (spec §16), allowed to deviate further
+from the original, more interactive (motivated motion only), mobile-first; refined logo mark + regenerated
+favicon / touch icon / OG image; new `/reviews` page + home reviews section; "Reviews" in nav and footer.
+**SEO (must hold by the final push):** unique titles/descriptions, one h1 per page, BreadcrumbList on inner
+pages, Service/Offer data on /services, Offer data for builds, FAQPage on /faq, LocalBusiness on home,
+descriptive photo alt text, sitemap incl. /reviews, OG image, Lighthouse mobile SEO 100 and perf ≥ 90.
+
+**Ownership (phase 2, parallel):**
+| Owner | May edit | Read-only |
+|---|---|---|
+| frontend-engineer | `src/pages/**`, `src/components/**` (incl. `layout/seo.ts`, `nav.ts`), `src/styles/**`, `src/scripts/**`, `src/assets/brand/**`, `public/**` except `_headers`/`_redirects`/`media/**`, `scripts/brand-assets.mjs`, `astro.config.mjs`, `package.json` dependencies, `tests/e2e/**` (update for new markup without weakening intent), delete `src/data/reviews.ts` | `src/lib/**`, other `src/data/**`, `worker/**`, `wrangler.jsonc`, `migrations/**`, `admin/**` |
+| backend-engineer | `worker/**`, `migrations/**`, `wrangler.jsonc`, `.dev.vars.example`, `public/_headers`, the `webServer` command in `playwright.config.ts` | everything else; no `package.json` edits (report needed scripts) |
+| orchestrator | `src/lib/**`, `src/data/**`, `docs/**`, `scripts/predeploy-check.mjs`, `package.json` scripts | |
