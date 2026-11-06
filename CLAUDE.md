@@ -10,14 +10,17 @@ Part of the web-dev-agent workspace; this folder is a fully independent project 
 - `docs/progress.md` — current phase and next step
 
 ## Stack
-Astro 7.3 (static) · Tailwind CSS 4.3 (`@tailwindcss/vite`) · PhotoSwipe 5 · Zod 4 ·
-Cloudflare Workers static assets + `worker/` for `/api/*` · Turnstile · Resend ·
+Astro 7.3 (static) · Tailwind CSS 4.3 (`@tailwindcss/vite`) · Geist + Geist Mono (Astro Fonts) · Phosphor icons ·
+PhotoSwipe 5 · Zod 4 · Cloudflare Workers static assets + `worker/` for `/api/*` · D1 (reviews) · Turnstile · Resend ·
 Vitest 4.1 · Playwright 1.63 + axe · TypeScript 6 strict.
 
 ## Commands (run from this folder)
 - `npm run dev` — Astro dev server, port 4321 (static pages only; /api not available)
-- `npm run dev:full` — build + `wrangler dev` on 8787 (site + form API; uses `.dev.vars`)
-- `npm run check` — typecheck (astro check + worker tsc + admin tsc) + lint + unit tests (incl. `admin/`)
+- `npm run dev:full` — build + local D1 migrations + `wrangler dev` on 8787 (site + form/review API; uses `.dev.vars`)
+- `npm run db:migrate:local` / `db:seed:local` — local reviews DB (seed adds sample reviews, local only)
+- `npm run db:migrate:remote` — apply `migrations/` to the production D1 (**only with the user's OK**)
+- `npm run reviews:pending` — list pending reviews in production (read-only)
+- `npm run check` — typecheck (astro check + worker tsc + admin tsc) + lint + unit tests (incl. `admin/`; `worker/reviews/runtime.test.ts` runs the Worker in Miniflare/workerd)
 - `npm run build` — production build to `dist/`
 - `npm run test:e2e` — Playwright e2e + axe (builds and serves on 8788 via wrangler)
 - `npm run admin` — local photo & video admin on http://127.0.0.1:4400 (`--port N` / `ADMIN_PORT`); spec §15.
@@ -25,14 +28,16 @@ Vitest 4.1 · Playwright 1.63 + axe · TypeScript 6 strict.
 - `npm run deploy` — build + `wrangler deploy` (**only with the user's explicit OK**)
 
 ## Conventions
-- Content lives in `src/data/*.ts` (services, builds, projects/gallery, faq, reviews, site). Pages read data; no copy hardcoded that belongs in data.
+- Content lives in `src/data/*.ts` (services, builds, projects/gallery, faq, site). Pages read data; no copy hardcoded that belongs in data.
+- Reviews are NOT content files: they live in D1 and the Worker injects approved ones into `/` and `/reviews` with HTMLRewriter (spec §17). Contract: `src/lib/reviews/contract.ts`; only `renderReviewItem` produces review HTML (escapes everything). Worker code: `worker/reviews/`; schema: `migrations/`.
+- Styles: tokens + primitives in `src/styles/global.css` (spec §16), plus `forms.css`, `reviews.css` (global on purpose: review markup is injected) and `lightbox.css`.
 - Shared form contract: `src/lib/forms/schema.ts` (client + Worker). Changes go through the orchestrator and spec §6.
-- Gallery photos: `src/data/photos.json` is the **source of truth** (ordered `{id,file,project,width,height}`; category derives from the project; contract + validation in `src/lib/gallery/records.ts`, checked at build). Files are `src/assets/gallery/photos/pNNNN.jpg`, ids never reused. Add photos only through `npm run admin` (it strips EXIF/GPS via `scripts/lib/process-photo.mjs`); never put photos in `public/`.
+- Gallery photos: `src/data/photos.json` is the **source of truth** (ordered `{id,file,project,width,height,alt?}`; `alt` is the hand-written description, else one is generated; category derives from the project; contract + validation in `src/lib/gallery/records.ts`, checked at build). Files are `src/assets/gallery/photos/pNNNN.jpg`, ids never reused. Add photos only through `npm run admin` (it strips EXIF/GPS via `scripts/lib/process-photo.mjs`); never put photos in `public/`.
 - Gallery videos: `src/data/videos.json` is the **source of truth** (ordered `{id,file,project,title,posterId?}`; contract + validation in `src/lib/gallery/video-records.ts`, checked at build incl. file exists and ≤24 MiB, since Cloudflare rejects assets >25 MiB). Files live in `public/media/` (`vNNNN.mp4`, ids never reused; `halo-xbox.mp4` keeps its legacy name). Add videos only through `npm run admin`: `scripts/lib/process-video.mjs` (ffmpeg-static) remuxes/transcodes to faststart H.264/AAC MP4 and verifies no metadata (GPS/dates) survives. `posterId` omitted = the project cover.
 - Photo picks (hero, covers, about) live in `src/components/media/picks.ts` by **id** and must never throw (fallback: project → category → first photo).
 - `admin/` is a local-only Node server (node:http, no framework, Node runs its `.ts` via type stripping: erasable syntax only, `.ts` import extensions). It is never built or deployed; keep it out of `src/`. `src/data/projects.ts`, `src/lib/gallery/records.ts` and `src/lib/gallery/video-records.ts` must stay import-free so the admin can load them.
 - Use `astro:assets` `<Picture>`/`<Image>` for every photo; only the hero image gets `priority`.
 - Motion: transform/opacity only; wrap in `prefers-reduced-motion: no-preference`; scroll-driven effects behind `@supports (animation-timeline: view())`.
 - Astro 7: invalid/unclosed HTML fails the build. Keep the Worker in `worker/` (not `src/`).
-- Owner decision (2026-09-25): Switch and Xbox 360 services list the line "Ask about games". Beyond that, never advertise game libraries/preloaded games. Never invent reviews.
+- Owner decision (2026-09-25): Switch and Xbox 360 services list the line "Ask about games". Beyond that, never advertise game libraries/preloaded games. Never invent reviews (`worker/reviews/dev-seed.sql` is local-only sample data; never run it against `--remote`).
 - Secrets only in `.dev.vars` (local) / `wrangler secret` (prod). Public values use `PUBLIC_*`.

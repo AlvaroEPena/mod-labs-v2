@@ -74,3 +74,13 @@
 - Done: global design system (global.css), floating glass header, footer + phone CTA pill, new home: hero (GWii #340 in glass frame + powered traces), pricing bento (Xbox #207 / Switch #52 / quote), circuit timeline steps (scroll-drawn), build pair, gallery rail, trust split (bench #254, 9+ yrs), FAQ, CTA slab with socials.
 - Checks (orchestrator, local dev): npm run check 0 errors / 196 unit; e2e 259 pass / 51 skip; no horizontal overflow at 1440/390; 0 em/en dashes; 2 eyebrows.
 - Other pages inherit the new tokens but are NOT redesigned yet (phase 2 after owner approves the home look).
+
+### 2026-11-05 — glass redesign, phase 2: every page + reviews (branch `redesign-glass`, NOT merged/pushed)
+- Owner approved the home look and asked for more: deviate further, interactive, mobile-first, refined icon, reviews (home + own page + form, secure), good SEO by the final push. Then Instagram + ads talk.
+- Owner decisions (reviews): approve each review by email; create a free D1 database (orchestrator confirms before running); fields name / stars / review, plus an optional "how did you find us" shown as subtext ("Found us on Google"). No email collected.
+- Backend (1ce4ab4): D1 store + migration, POST /api/review (guards, Turnstile action `review`, 2/60 s + 20/24 h cap), signed moderation links (GET confirms, POST acts; 30/365-day expiry), HTMLRewriter publishing on / and /reviews, GET /api/reviews. Predeploy blocks the placeholder D1 id.
+- Alt text: hand-written for all 166 photos, optional `alt` in photos.json (f84986e).
+- Frontend (95043f1): every page redesigned (services price board + spotlights + Switch tabs, builds spec explorer, gallery view-transition filter + glass lightbox, about trace, book live estimate, quote photo picker, FAQ live filter, legal TOC, 404 oscilloscope), /reviews page + star picker, refined logo/favicons/OG, breadcrumbs + structured data.
+- Orchestrator QA fixes before commit: review star picker SVGs had no fill (rendered black), "How did you find us?" label (was wrapping), denser panel over the services photos.
+- Gates (orchestrator): check 0 errors / 344 unit; build 17 pages; e2e 341 pass / 61 skip / 0 fail (full run before the small fixes; reviews + interactive specs rerun after: 59 pass / 3 skip).
+- Pending: security code review (running), Lighthouse/SEO check, owner OK on the new Reviews section of the privacy policy, D1 creation (waiting for owner "go"), owner sets `REVIEW_SIGNING_KEY` secret, merge to main for the owner to push.

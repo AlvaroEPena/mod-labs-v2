@@ -2,13 +2,14 @@
 
 Website for **Mod Labs**, Alvaro's console modding and electronics repair shop in Seattle.
 It covers the services and prices, the custom build commissions (GWii and Wii Miicro), a
-categorized gallery, and the booking and quote forms, which email Alvaro.
+categorized gallery, customer reviews, and the booking and quote forms, which email Alvaro.
 
 **Stack:**
 - Astro 7 (static site)
 - Tailwind CSS 4
 - PhotoSwipe
 - Cloudflare Workers (static assets, plus a small Worker for `/api/*`)
+- Cloudflare D1 (stores reviews)
 - Cloudflare Turnstile
 - Resend
 - Zod
@@ -29,7 +30,10 @@ Needs Node ≥ 22.12. It's built and tested on Node 24 with npm 11 on Windows.
 | Command | What it does |
 |---|---|
 | `npm run dev` | Astro dev server on http://localhost:4321. Pages only; the forms can't submit here. |
-| `npm run dev:full` | Builds the site, then runs it with the form API via `wrangler dev` on http://localhost:8787. |
+| `npm run dev:full` | Builds the site, sets up the local reviews database, then runs it with the form and review API via `wrangler dev` on http://localhost:8787. |
+| `npm run db:seed:local` | Adds sample reviews to the **local** database only, to see the review wall during development. |
+| `npm run db:migrate:remote` | Creates or updates the tables in the live reviews database. |
+| `npm run reviews:pending` | Lists reviews waiting for your approval on the live site. |
 | `npm run check` | Type checks, lint and unit tests |
 | `npm run build` | Production build to `dist/` |
 | `npm run test:e2e` | Playwright end-to-end, accessibility and responsive tests |
@@ -44,8 +48,19 @@ All the text lives in `src/data/`:
 - `photos.json`: the gallery photos and their order (use `npm run admin` rather than editing by hand)
 - `videos.json`: the gallery videos, their titles, posters and order (also managed with `npm run admin`)
 - `faq.ts`: the FAQ
-- `reviews.ts`: **real** reviews only. The section stays hidden while this is empty.
 - `site.ts`: social links. Empty links stay hidden.
+
+Reviews are not in `src/data/`. Customers write them on `/reviews` and they're stored in the D1 database (see below).
+
+## Reviews
+1. A customer fills in the form on `/reviews` (name, stars, optional service and where they found you, the review).
+   Links aren't allowed, there's a spam check, and each visitor can only send a few.
+2. The review is saved as **pending**. Nothing shows on the site yet.
+3. You get an email with **Approve** and **Delete** buttons. Each button opens a page that asks you to confirm,
+   so a mail app opening links in the background can't approve anything. Approve links last 30 days, delete links a year.
+4. Approved reviews appear on the home page (latest 3) and on `/reviews` straight away, in the page HTML, so Google sees them too.
+
+Lost the email? Run `npm run reviews:pending` to see what's waiting. No email addresses or IP addresses are stored.
 
 ## Managing photos & videos
 Gallery photos and videos are managed with a small admin page that runs **only on your computer**.
@@ -117,6 +132,7 @@ Good to know:
 | `LEAD_EMAIL_TO` | Worker secret | The inbox that receives requests |
 | `EMAIL_FROM` | Worker var (optional) | The sender address, once a domain is verified in Resend |
 | `EMAIL_MODE` | Worker var | `send` in production (set in `wrangler.jsonc`), `log` locally |
+| `REVIEW_SIGNING_KEY` | Worker secret | Signs the Approve/Delete links in review emails. Random, 32+ characters. Changing it breaks links already sent. |
 
 ## How this site is deployed (current setup)
 - **Live URL:** https://modlabs.store (domain from Namecheap, nameservers on Cloudflare).
@@ -129,7 +145,9 @@ Good to know:
   test values). Deploy command: `npx wrangler deploy`.
 - **Public build values** live in the committed `.env.production` (site URL and Turnstile *site* key). They
   are public by design. **Never put secrets there.**
-- **Secrets** (`TURNSTILE_SECRET_KEY`, `RESEND_API_KEY`, `LEAD_EMAIL_TO`) are stored on the Worker with
+- **Reviews database:** Cloudflare D1 `mod-labs-reviews`, bound as `DB` in `wrangler.jsonc`. The build refuses to
+  run while `database_id` is still the placeholder.
+- **Secrets** (`TURNSTILE_SECRET_KEY`, `RESEND_API_KEY`, `LEAD_EMAIL_TO`, `REVIEW_SIGNING_KEY`) are stored on the Worker with
   `npx wrangler secret put <NAME>` and survive every redeploy.
 - `npm run deploy` still works as a manual deploy from this computer.
 

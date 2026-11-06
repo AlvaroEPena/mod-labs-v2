@@ -86,7 +86,9 @@ None. Public site.
 ## 8. Integrations & env vars
 - Cloudflare (hosting, Worker API, Turnstile) · Resend (email to Alvaro's inbox).
 - Secrets (Worker, via `.dev.vars` locally / `wrangler secret` in prod): `TURNSTILE_SECRET_KEY`,
-  `RESEND_API_KEY`, `LEAD_EMAIL_TO`. Public: `PUBLIC_TURNSTILE_SITE_KEY`, `PUBLIC_SITE_URL`.
+  `RESEND_API_KEY`, `LEAD_EMAIL_TO`, `REVIEW_SIGNING_KEY` (≥ 32 chars, signs moderation links). Public: `PUBLIC_TURNSTILE_SITE_KEY`, `PUBLIC_SITE_URL`.
+- Bindings: `DB` (D1 `mod-labs-reviews`, schema in `migrations/`), `FORM_RATE_LIMITER` (5 / 60 s),
+  `REVIEW_RATE_LIMITER` (2 / 60 s) + a global rolling cap of 20 new reviews / 24 h in `worker/reviews/submit.ts`.
 - Dev without keys: API returns a clear "email not configured" error and logs the payload;
   Turnstile uses Cloudflare's official always-pass test keys.
 - Worker CPU (10 ms free): client downsizes photos to ≤1600px JPEG before upload.
@@ -302,6 +304,9 @@ Only `renderReviewItem` produces review HTML, and it escapes every user string. 
    `li.review-card > figure > span.review-stars[role=img] > span.star(.is-on)×5, blockquote.review-body > p,
    figcaption.review-by > span.review-name + span.review-source (optional) + span.review-meta`.
    D1 row stores `source` too.
+5. Limits (as built): 2 reviews / 60 s per IP (binding) plus the global 20 / 24 h cap; approve links expire
+   after 30 days, delete links after 365 days; moderation pages send a strict CSP and `noindex`.
+   No email, IP or user agent is stored.
 
 **Phase 2 redesign scope:** every remaining page in the lab-glass system (spec §16), allowed to deviate further
 from the original, more interactive (motivated motion only), mobile-first; refined logo mark + regenerated
