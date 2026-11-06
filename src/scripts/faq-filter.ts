@@ -1,5 +1,6 @@
 /**
- * Live FAQ filter for /faq. The search box ships hidden and is revealed here (no JS = no dead control).
+ * Live FAQ filter for /faq. The search box is hidden by CSS when JS is off (`html:not(.js)`), so there is no
+ * dead control and no layout shift when it appears.
  * Typing hides non-matching questions, reports the count in a polite live region and shows an empty
  * state with a way to ask directly. Esc clears. Matching rules live in faq-match.ts.
  */
@@ -13,7 +14,6 @@ const empty = document.querySelector<HTMLElement>("[data-faq-empty]");
 const emptyQuery = empty?.querySelector<HTMLElement>("[data-faq-query]");
 
 if (root && input && items.length) {
-  root.hidden = false;
   const texts = items.map((d) => d.textContent ?? "");
 
   const apply = () => {

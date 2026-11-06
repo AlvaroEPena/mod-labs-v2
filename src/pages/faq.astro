@@ -11,6 +11,7 @@ import FinalCta from "../components/ui/FinalCta.astro";
 import Icon from "../components/ui/Icon.astro";
 import { faqLd } from "../components/layout/seo";
 import { faqs } from "../data/faq";
+import { resultText } from "../scripts/faq-match";
 ---
 
 <BaseLayout
@@ -25,13 +26,13 @@ import { faqs } from "../data/faq";
     intro="New to modding? Start here. If your question isn't covered, ask me and I'll explain it in plain English."
     compact
   >
-    <div class="search" data-faq-search hidden>
+    <div class="search" data-faq-search>
       <label for="faq-q" class="sr-only">Search the questions</label>
       <div class="search-box glass">
         <Icon name="search" size={20} class="shrink-0 text-cyan" />
         <input id="faq-q" type="search" class="search-input" placeholder="Try “online” or “mail-in”" autocomplete="off" enterkeyhint="search" aria-describedby="faq-count" />
       </div>
-      <p id="faq-count" class="mono mt-3 text-sm text-dim" data-faq-count aria-live="polite"></p>
+      <p id="faq-count" class="mono mt-3 text-sm text-dim" data-faq-count aria-live="polite">{resultText(faqs.length, faqs.length, false)}</p>
     </div>
   </PageHero>
 
@@ -68,6 +69,10 @@ import { faqs } from "../data/faq";
   .search {
     margin-top: 1.75rem;
     max-width: 34rem;
+  }
+  /* Laid out from the first paint when JS is on (no layout shift); without JS there's nothing to filter with. */
+  :global(html:not(.js)) .search {
+    display: none;
   }
   .search-box {
     display: flex;

@@ -16,7 +16,10 @@ interface Props {
   eager?: number;
 }
 const { photos, group, eager = 0 } = Astro.props;
-/** a tile is ~200 CSS px on phones and ~290 on desktop: 360/560 cover 1x-2.6x screens without shipping 800px files */
+/**
+ * A tile is ~180 CSS px on phones and ~290 on desktop: 360/560 cover 1x-2.6x screens without shipping 800px files.
+ * `sizes` subtracts the page gutters and column gap; plain 50vw overshoots 360w on common phones and pulls 560w.
+ */
 const TILE_WIDTHS = [360, 560];
 
 const LIGHTBOX_EDGE = 1600;
@@ -40,7 +43,7 @@ const items = await Promise.all(
             photo={photo}
             eager={i < eager}
             widths={TILE_WIDTHS}
-            sizes="(min-width: 1280px) 290px, (min-width: 1024px) 23vw, (min-width: 640px) 31vw, 50vw"
+            sizes="(min-width: 1280px) 290px, (min-width: 1024px) 23vw, (min-width: 640px) calc(33vw - 2rem), calc(50vw - 1.5rem)"
             class="gl-photo"
           />
           <span class="gl-zoom" aria-hidden="true">

@@ -95,8 +95,13 @@ const posters = new Map(
         const projectVideos = videosFor(p.slug);
         const build = p.build ? builds.find((b) => b.slug === p.build) : undefined;
         return (
-          <section id={p.slug} class="project scroll-mt-36" aria-labelledby={`${p.slug}-title`}>
-            <header class="project-head reveal">
+          <section
+            id={p.slug}
+            class="project scroll-mt-36"
+            aria-labelledby={`${p.slug}-title`}
+            style={`--rows-2:${Math.ceil(list.length / 2)};--rows-3:${Math.ceil(list.length / 3)};--rows-4:${Math.ceil(list.length / 4)};--videos:${projectVideos.length ? 1 : 0}`}
+          >
+            <header class={pi === 0 ? "project-head" : "project-head reveal"}>
               <div class="max-w-3xl">
                 <h2 id={`${p.slug}-title`} class="text-2xl sm:text-[2rem]">
                   {p.title}
@@ -160,11 +165,26 @@ const posters = new Map(
 </script>
 
 <style>
-  /* skip layout/paint for off-screen projects until they scroll near (big win on phones) */
+  /*
+   * Skip layout/paint for off-screen projects until they scroll near (big win on phones). The placeholder
+   * height is estimated from the photo rows (--rows-N set per section) so long projects don't overflow it
+   * (that made tiles report overlapping boxes and the scrollbar jump); `auto` then remembers the real size.
+   * The first project's header skips the reveal: it is the LCP element on phones and should paint at once.
+   */
   .project + .project {
     content-visibility: auto;
-    contain-intrinsic-block-size: auto 1400px;
+    contain-intrinsic-block-size: auto calc(var(--rows-2, 6) * 16rem + 16rem + var(--videos, 0) * 34rem);
     min-width: 0;
+  }
+  @media (width >= 40rem) {
+    .project + .project {
+      contain-intrinsic-block-size: auto calc(var(--rows-3, 4) * 16rem + 16rem + var(--videos, 0) * 34rem);
+    }
+  }
+  @media (width >= 64rem) {
+    .project + .project {
+      contain-intrinsic-block-size: auto calc(var(--rows-4, 3) * 22rem + 16rem + var(--videos, 0) * 34rem);
+    }
   }
 
   /* --- filter bar: a floating glass pill under the header --- */
