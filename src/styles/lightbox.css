@@ -1,0 +1,148 @@
+/*
+ * Glass skin for PhotoSwipe 5, imported by the components that host a lightbox (GalleryView, Carousel).
+ * Round frosted buttons, a mono counter pill and a caption pill with the photo's description.
+ * Selectors are prefixed with .pswp so they win over photoswipe/style.css whatever the load order.
+ */
+.pswp {
+  --pswp-bg: #05070e;
+  --pswp-placeholder-bg: #0d1221;
+  --pswp-icon-color: #eef2fa;
+  --pswp-icon-color-secondary: #05070e;
+  --pswp-icon-stroke-color: #05070e;
+  --pswp-icon-stroke-width: 1px;
+  --pswp-error-text-color: #ff9aa8;
+  --glass-bg: linear-gradient(180deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.03)), rgb(10 14 26 / 0.62);
+}
+
+.pswp .pswp__top-bar {
+  top: env(safe-area-inset-top);
+  height: 4.5rem;
+  padding: 0 0.6rem;
+  align-items: center;
+}
+
+/* round glass buttons (close, zoom) */
+.pswp .pswp__top-bar .pswp__button {
+  position: relative;
+  width: 2.875rem;
+  height: 2.875rem;
+  margin: 0 0.25rem;
+  border-radius: 999px;
+  background: var(--glass-bg);
+  border: 1px solid rgb(255 255 255 / 0.14);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.1);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  opacity: 1;
+  transition:
+    border-color 0.2s,
+    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.pswp .pswp__top-bar .pswp__button:hover {
+  border-color: rgb(78 224 239 / 0.55);
+}
+.pswp .pswp__top-bar .pswp__button:active {
+  transform: scale(0.94);
+}
+.pswp .pswp__top-bar .pswp__icn {
+  top: 50%;
+  left: 50%;
+  width: 1.75rem;
+  height: 1.75rem;
+  transform: translate(-50%, -50%);
+}
+
+/* arrows: larger glass circles at the edges (PhotoSwipe hides them on touch-only devices) */
+.pswp .pswp__button--arrow {
+  width: 3.25rem;
+  height: 3.25rem;
+  margin-top: -1.625rem;
+  border-radius: 999px;
+  background: var(--glass-bg);
+  border: 1px solid rgb(255 255 255 / 0.14);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  transition:
+    border-color 0.2s,
+    opacity 0.2s;
+}
+.pswp .pswp__button--arrow--prev {
+  left: 1rem;
+}
+.pswp .pswp__button--arrow--next {
+  right: 1rem;
+}
+.pswp .pswp__button--arrow:hover {
+  border-color: rgb(78 224 239 / 0.55);
+}
+.pswp .pswp__button--arrow .pswp__icn {
+  top: 50%;
+  left: 50%;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin: 0;
+  transform: translate(-50%, -50%);
+}
+.pswp .pswp__button--arrow--next .pswp__icn {
+  transform: translate(-50%, -50%) scale(-1, 1);
+}
+
+.pswp .pswp__button:focus-visible {
+  outline: 2px solid #4ee0ef;
+  outline-offset: 3px;
+}
+
+/* counter: mono pill on the left of the top bar */
+.pswp .pswp__counter {
+  height: auto;
+  margin: 0 auto 0 0.25rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.85rem;
+  line-height: 1.2;
+  color: #eef2fa;
+  text-shadow: none;
+  opacity: 1;
+  background: var(--glass-bg);
+  border: 1px solid rgb(255 255 255 / 0.12);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* caption: what's in the photo (its alt text), centred at the bottom */
+.pswp .pswp__caption {
+  position: absolute;
+  left: 50%;
+  bottom: calc(1rem + env(safe-area-inset-bottom));
+  width: max-content;
+  max-width: min(40rem, calc(100% - 2rem));
+  transform: translateX(-50%);
+  padding: 0.75rem 1.1rem;
+  border-radius: 1.1rem;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  text-align: center;
+  color: #eef2fa;
+  background: var(--glass-bg);
+  border: 1px solid rgb(255 255 255 / 0.12);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  pointer-events: none;
+  transition: opacity 0.25s;
+}
+.pswp .pswp__caption:empty {
+  display: none;
+}
+/* the caption and buttons fade with PhotoSwipe's UI (tap to hide controls) */
+.pswp:not(.pswp--ui-visible) .pswp__caption {
+  opacity: 0;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .pswp {
+    --glass-bg: #121a2d;
+  }
+}

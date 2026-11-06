@@ -1,0 +1,170 @@
+---
+/**
+ * "Getting it to me": the two routes to the bench (local drop-off, mail-in) wired to one pad in the
+ * middle, the Mod Labs mark. Side by side from lg (horizontal trace), stacked on phones (vertical trace).
+ * The trace draws in as the section scrolls into view (CSS scroll-driven, motion-gated).
+ */
+import Icon from "../ui/Icon.astro";
+import LogoMark from "../brand/LogoMark.astro";
+import { site } from "../../data/site";
+
+const routes = [
+  {
+    icon: "pin",
+    title: "Local drop-off",
+    tag: site.location.city,
+    body: site.serviceArea.local,
+    steps: ["We pick a drop-off time that works for you", "Most mods are finished the same or next day", "Walkthrough of your setup at pickup"],
+  },
+  {
+    icon: "truck",
+    title: "Mail-in",
+    tag: "Let's talk first",
+    body: site.serviceArea.mailIn,
+    steps: ['Send a request and choose "Mail-in"', "We agree on packing, shipping and timing first", "Don't ship anything until we've talked"],
+  },
+] as const;
+---
+
+<section id="delivery" class="section-y scroll-mt-24" aria-labelledby="delivery-title">
+  <div class="container-x">
+    <h2 id="delivery-title" class="reveal max-w-2xl text-4xl sm:text-5xl">Two ways to get it to the bench.</h2>
+
+    <div class="routes mt-12 lg:mt-16">
+      {
+        routes.map((r, i) => (
+          <div class:list={["route card reveal", i === 1 && "is-second"]}>
+            <div class="flex items-center gap-4">
+              <span class="icon-pad" aria-hidden="true">
+                <Icon name={r.icon} size={22} />
+              </span>
+              <div>
+                <h3 class="text-2xl">{r.title}</h3>
+                <p class="mono mt-0.5 text-sm text-cyan-soft">{r.tag}</p>
+              </div>
+            </div>
+            <p class="mt-5 leading-relaxed text-muted">{r.body}</p>
+            <ul class="solder-list mt-5">
+              {r.steps.map((s) => (
+                <li>{s}</li>
+              ))}
+            </ul>
+          </div>
+        ))
+      }
+      <div class="hub" aria-hidden="true">
+        <span class="wire wire-a"></span>
+        <span class="hub-pad"><LogoMark size={44} id="dlv-mk" /></span>
+        <span class="wire wire-b"></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .routes {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    view-timeline-name: --routes;
+  }
+  .route {
+    padding: 1.6rem;
+  }
+  @media (width >= 40rem) {
+    .route {
+      padding: 2.25rem;
+    }
+  }
+  /* phones: card, wire down to the hub, wire down to card */
+  .hub {
+    grid-row: 2;
+    display: grid;
+    justify-items: center;
+  }
+  .route.is-second {
+    grid-row: 3;
+  }
+  .wire {
+    display: block;
+    width: 2px;
+    height: 2rem;
+    background: linear-gradient(180deg, rgb(78 224 239 / 0.2), var(--color-cyan), rgb(78 224 239 / 0.2));
+  }
+  .hub-pad {
+    display: grid;
+    place-items: center;
+    width: 4.5rem;
+    height: 4.5rem;
+    border-radius: 1.4rem;
+    background:
+      radial-gradient(closest-side, rgb(78 224 239 / 0.22), transparent),
+      var(--color-panel);
+    border: 1px solid rgb(78 224 239 / 0.4);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.1),
+      0 0 0 8px var(--color-ink),
+      0 0 40px -6px rgb(78 224 239 / 0.5);
+  }
+
+  @media (width >= 64rem) {
+    .routes {
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+    }
+    .hub {
+      grid-row: 1;
+      grid-column: 2;
+      grid-auto-flow: column;
+      align-items: center;
+    }
+    .route.is-second {
+      grid-row: 1;
+      grid-column: 3;
+    }
+    .wire {
+      width: 2.5rem;
+      height: 2px;
+      background: linear-gradient(90deg, rgb(78 224 239 / 0.2), var(--color-cyan));
+    }
+    .wire-b {
+      background: linear-gradient(90deg, var(--color-cyan), rgb(78 224 239 / 0.2));
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .wire {
+        animation: wire-y linear both;
+        animation-timeline: --routes;
+        animation-range: entry 30% cover 45%;
+      }
+      .wire-a {
+        transform-origin: top;
+      }
+      .wire-b {
+        transform-origin: top;
+      }
+      @media (width >= 64rem) {
+        .wire {
+          animation-name: wire-x;
+        }
+        .wire-a {
+          transform-origin: left;
+        }
+        .wire-b {
+          transform-origin: right;
+        }
+      }
+    }
+  }
+  @keyframes wire-y {
+    from {
+      transform: scaleY(0);
+    }
+  }
+  @keyframes wire-x {
+    from {
+      transform: scaleX(0);
+    }
+  }
+</style>

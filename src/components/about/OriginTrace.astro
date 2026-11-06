@@ -1,0 +1,173 @@
+---
+/**
+ * How Alvaro got here, as one trace with four stops. With CSS scroll-driven animations the trace draws
+ * down as you read and each stop's pad powers on when the current reaches it (storytelling: the order
+ * is the story). Without support, or with reduced motion, the trace is simply lit. On wide screens the
+ * stops alternate sides of a centre trace; on phones the trace runs down the left.
+ * Facts come from Alvaro's about text; nothing here is dated or counted beyond what he wrote.
+ */
+import Icon from "../ui/Icon.astro";
+import type { IconName } from "../ui/icons";
+
+const stops: { icon: IconName; title: string; body: string }[] = [
+  { icon: "wrench", title: "Learned in the shop", body: "Mechanical and electrical troubleshooting, picked up growing up next to my dad, a senior mechanic for buses." },
+  { icon: "chip", title: "Computer science and IT", body: "A background in computer science and IT support, so the software side of every mod gets set up properly too." },
+  { icon: "microscope", title: "Nine-plus years at the bench", body: "Repairing, modifying and bringing hardware back to life: game consoles, PCs, custom electronics and even cars." },
+  { icon: "flask", title: "Mod Labs, Seattle", body: "A one-person, mod-first shop with room for repair work, for local drop-offs and mail-ins." },
+];
+---
+
+<section class="section-y" aria-labelledby="origin-title">
+  <div class="container-x">
+    <h2 id="origin-title" class="reveal max-w-2xl text-4xl sm:text-5xl">How I ended up with a soldering iron.</h2>
+    <ol class="trace mt-14 lg:mt-20">
+      {
+        stops.map((s, i) => (
+          <li class="stop" style={`--i:${i}`}>
+            <span class="pad" aria-hidden="true">
+              <Icon name={s.icon} size={22} />
+            </span>
+            <div class="stop-card card">
+              <h3 class="text-xl">{s.title}</h3>
+              <p class="mt-2 leading-relaxed text-muted">{s.body}</p>
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</section>
+
+<style>
+  .trace {
+    --pad: 3.25rem;
+    position: relative;
+    display: grid;
+    gap: 1.5rem;
+    view-timeline-name: --origin;
+  }
+  .trace::before {
+    content: "";
+    position: absolute;
+    top: calc(var(--pad) / 2);
+    bottom: calc(var(--pad) / 2);
+    left: calc(var(--pad) / 2 - 1px);
+    width: 2px;
+    border-radius: 2px;
+    background: linear-gradient(180deg, var(--color-cyan), rgb(78 224 239 / 0.25));
+    transform-origin: top;
+  }
+  .stop {
+    position: relative;
+    display: grid;
+    grid-template-columns: var(--pad) minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+  }
+  .pad {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: var(--pad);
+    height: var(--pad);
+    border-radius: 1rem;
+    color: var(--color-cyan);
+    background:
+      linear-gradient(180deg, rgb(255 255 255 / 0.08), rgb(255 255 255 / 0.02)),
+      var(--color-panel);
+    border: 1px solid rgb(78 224 239 / 0.45);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.1),
+      0 0 0 6px var(--color-ink);
+  }
+  .pad::before {
+    content: "";
+    position: absolute;
+    inset: -10px;
+    z-index: -1;
+    border-radius: 1.4rem;
+    background: radial-gradient(closest-side, rgb(78 224 239 / 0.4), transparent);
+  }
+  .pad::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    background: rgb(13 18 33 / 0.82);
+    opacity: 0;
+  }
+  .stop-card {
+    padding: 1.25rem 1.35rem;
+  }
+
+  @media (width >= 64rem) {
+    .trace {
+      gap: 0;
+    }
+    .trace::before {
+      left: calc(50% - 1px);
+    }
+    .stop {
+      grid-template-columns: minmax(0, 1fr) var(--pad) minmax(0, 1fr);
+      gap: 2rem;
+      align-items: center;
+      min-height: 9rem;
+    }
+    .pad {
+      grid-column: 2;
+      grid-row: 1;
+    }
+    .stop-card {
+      grid-row: 1;
+      grid-column: 3;
+      max-width: 26rem;
+      padding: 1.6rem 1.75rem;
+    }
+    .stop:nth-child(odd) .stop-card {
+      grid-column: 1;
+      justify-self: end;
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      .trace::before {
+        animation: origin-draw linear both;
+        animation-timeline: --origin;
+        animation-range: entry 20% cover 65%;
+      }
+      .pad::after,
+      .pad::before {
+        animation-timeline: --origin;
+        animation-range: entry calc(20% + var(--i) * 18%) entry calc(36% + var(--i) * 18%);
+        animation-timing-function: linear;
+        animation-fill-mode: both;
+      }
+      .pad::after {
+        animation-name: origin-veil-off;
+      }
+      .pad::before {
+        animation-name: origin-glow-on;
+      }
+    }
+  }
+  @keyframes origin-draw {
+    from {
+      transform: scaleY(0);
+    }
+  }
+  @keyframes origin-veil-off {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes origin-glow-on {
+    from {
+      opacity: 0;
+    }
+  }
+</style>

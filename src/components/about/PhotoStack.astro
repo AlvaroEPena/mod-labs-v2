@@ -1,0 +1,92 @@
+---
+/**
+ * /about hero visual: two bench photos as glass-framed prints, dealt onto the page at slight angles
+ * (entrance animation, motion-gated), with the one real number pinned between them.
+ */
+import Photo from "../media/Photo.astro";
+import { aboutPhotos } from "../media/picks";
+
+const { bench, board } = aboutPhotos();
+---
+
+<div class="stack">
+  <div class="print print-a glass">
+    <Photo photo={bench} ratio="4 / 5" sizes="(min-width: 1024px) 380px, 70vw" widths={[400, 800]} priority class="print-photo" />
+  </div>
+  <div class="print print-b glass">
+    <Photo photo={board} ratio="1 / 1" sizes="(min-width: 1024px) 230px, 42vw" widths={[400]} class="print-photo" />
+  </div>
+  <p class="stat glass">
+    <span class="mono text-3xl text-fg">9+</span>
+    <span class="text-sm leading-snug text-muted">years repairing and modding hardware</span>
+  </p>
+</div>
+
+<style>
+  .stack {
+    position: relative;
+    width: 100%;
+    max-width: 27rem;
+    margin-inline: auto;
+    padding-bottom: 4.5rem;
+  }
+  .print {
+    padding: 0.45rem;
+    border-radius: 1.6rem;
+  }
+  .print :global(.print-photo) {
+    border-radius: 1.2rem;
+  }
+  .print-a {
+    width: 78%;
+    transform: rotate(-2.5deg);
+  }
+  .print-b {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 48%;
+    transform: rotate(4deg);
+  }
+  .stat {
+    position: absolute;
+    left: 4%;
+    bottom: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    max-width: 13.5rem;
+    padding: 0.8rem 1rem;
+    border-radius: 1.15rem;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .print-a {
+      animation: deal-a 1.1s var(--ease-out-expo) 0.1s both;
+    }
+    .print-b {
+      animation: deal-b 1.1s var(--ease-out-expo) 0.3s both;
+    }
+    .stat {
+      animation: stat-in 0.8s var(--ease-out-expo) 0.75s both;
+    }
+  }
+  @keyframes deal-a {
+    from {
+      opacity: 0.01;
+      transform: translateY(18px) rotate(-7deg) scale(0.97);
+    }
+  }
+  @keyframes deal-b {
+    from {
+      opacity: 0;
+      transform: translate(24px, 24px) rotate(12deg) scale(0.95);
+    }
+  }
+  @keyframes stat-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+  }
+</style>

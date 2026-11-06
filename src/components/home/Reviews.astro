@@ -1,31 +1,112 @@
 ---
-/** Real reviews only (src/data/reviews.ts). Renders nothing while the list is empty. */
-import { reviews } from "../../data/reviews";
-import SectionHead from "../ui/SectionHead.astro";
+/**
+ * Home reviews (spec §17). Static HTML ships the empty state (an invitation to leave the first review);
+ * the Worker injects up to HOME_REVIEW_LIMIT approved reviews into the slot, sets the summary text and
+ * flips [data-reviews-when-empty] / [data-reviews-when-any] (hidden attribute). Full: the newest review
+ * is featured large with the next two stacked beside it. Review markup + styles: lib/reviews/contract.ts
+ * renderReviewItem() and styles/reviews.css (global, since it's injected).
+ */
+import "../../styles/reviews.css";
+import Icon from "../ui/Icon.astro";
 ---
 
-{
-  reviews.length > 0 && (
-    <section class="section-y" aria-labelledby="reviews-title">
-      <div class="container-x">
-        <SectionHead id="reviews-title" eyebrow="Reviews" title="What customers say" highlight="customers" />
-        <ul class="reveal-stagger mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {reviews.map((r) => (
-            <li class="card p-6">
-              <figure>
-                <blockquote class="leading-relaxed text-fg">
-                  <p>{r.text}</p>
-                </blockquote>
-                <figcaption class="mt-4 text-sm text-muted">
-                  <span class="font-semibold text-fg">{r.name}</span>
-                  {r.service && <span> · {r.service}</span>}
-                  {r.source && <span> · {r.source}</span>}
-                </figcaption>
-              </figure>
-            </li>
-          ))}
-        </ul>
+<section class="section-y" aria-labelledby="reviews-title">
+  <div class="container-x">
+    <div class="head">
+      <h2 id="reviews-title" class="reveal text-4xl sm:text-5xl">What customers say.</h2>
+      <div class="reveal flex flex-wrap items-center gap-3" data-reviews-when-any hidden>
+        <p class="summary">
+          <Icon name="star-fill" size={16} class="text-cyan" />
+          <span data-reviews-summary>Approved customer reviews</span>
+        </p>
+        <a href="/reviews" class="link-arrow">Read all reviews <Icon name="arrow" size={18} /></a>
       </div>
-    </section>
-  )
-}
+    </div>
+
+    <div data-reviews-when-any hidden>
+      <ul class="review-list is-teaser home-wall mt-10" data-reviews-slot="home" aria-label="Latest reviews"></ul>
+      <a href="/reviews#write" class="btn btn-ghost mt-8">Leave a review <Icon name="pencil" size={16} /></a>
+    </div>
+
+    <div class="invite card glow-edge reveal mt-10" data-reviews-when-empty>
+      <span class="invite-stars" aria-hidden="true">
+        {[1, 2, 3, 4, 5].map(() => <Icon name="star" size={26} />)}
+      </span>
+      <div class="min-w-0 flex-1">
+        <h3 class="text-2xl">Be the first to leave a review</h3>
+        <p class="mt-2 max-w-xl leading-relaxed text-muted">
+          Had a console modded or repaired here? A few honest words help the next person decide. No email needed.
+        </p>
+      </div>
+      <a href="/reviews#write" class="btn btn-primary shrink-0">Leave a review <Icon name="pencil" size={16} /></a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .head {
+    display: grid;
+    gap: 1.25rem;
+  }
+  @media (width >= 64rem) {
+    .head {
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: end;
+    }
+  }
+  .summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    color: var(--color-fg);
+    background: rgb(78 224 239 / 0.07);
+    border: 1px solid rgb(78 224 239 / 0.3);
+  }
+
+  /* featured newest review + the next two stacked beside it (only as many cells as there are reviews) */
+  @media (width >= 64rem) {
+    .home-wall {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .home-wall > :global(li:first-child:not(:only-child)) {
+      grid-row: span 2;
+    }
+    .home-wall > :global(li:first-child:not(:only-child) .review-body) {
+      font-size: 1.2rem;
+      line-height: 1.6;
+    }
+    .home-wall > :global(li:only-child) {
+      grid-column: 1 / -1;
+    }
+  }
+
+  .invite {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1.5rem;
+    padding: 1.75rem;
+    background:
+      radial-gradient(30rem 14rem at 0% 0%, rgb(78 224 239 / 0.12), transparent 70%),
+      linear-gradient(180deg, rgb(255 255 255 / 0.055), rgb(255 255 255 / 0.015) 60%),
+      rgb(12 17 31 / 0.64);
+  }
+  @media (width >= 48rem) {
+    .invite {
+      flex-direction: row;
+      align-items: center;
+      gap: 2rem;
+      padding: 2.25rem 2.5rem;
+    }
+  }
+  .invite-stars {
+    display: flex;
+    gap: 0.2rem;
+    color: rgb(78 224 239 / 0.6);
+  }
+</style>

@@ -1,0 +1,134 @@
+---
+/**
+ * Shared shell for every enhanced form (book, quote, review): a real multipart POST to the Worker that
+ * works without JS (native required/minlength checks, 303 back with ?sent=1 / ?error=code), plus the
+ * status line, honeypot, lazy Turnstile slot, submit row and success panel. The fields go in the default
+ * slot. src/scripts/forms/controller.ts takes over when JS runs (see kinds.ts for per-form behaviour).
+ */
+import "../../styles/forms.css";
+import Icon from "../ui/Icon.astro";
+import Turnstile from "./Turnstile.astro";
+import type { FormKind } from "../../scripts/forms/kinds";
+
+interface Props {
+  kind: FormKind;
+  /** Worker endpoint, e.g. "/api/book" */
+  action: string;
+  submitLabel: string;
+  /** honeypot field name from the form's contract */
+  honeypot: string;
+  /** extra data-* for the controller (limits, JSON maps...) */
+  data?: Record<string, string | number>;
+  success: { title: string; message: string; next: string[]; again: string; link: { href: string; label: string } };
+}
+const { kind, action, submitLabel, honeypot, data = {}, success } = Astro.props;
+const id = kind;
+const dataAttrs = Object.fromEntries(Object.entries(data).map(([k, v]) => [`data-${k}`, String(v)]));
+---
+
+<div class="form-shell" data-form-shell>
+  <form
+    id={id}
+    class="lab-form"
+    method="post"
+    action={action}
+    enctype="multipart/form-data"
+    data-lab-form={kind}
+    aria-describedby={`${id}-status`}
+    {...dataAttrs}
+  >
+    <div id={`${id}-status`} class="form-status" role="status" aria-live="polite" tabindex="-1"></div>
+
+    <div class="grid gap-7">
+      <slot />
+
+      <!-- Honeypot: off-screen, not focusable, hidden from assistive tech; bots tend to fill it. -->
+      <div class="hp" aria-hidden="true">
+        <label for={`${id}-${honeypot}`}>Field 7f3</label>
+        <input id={`${id}-${honeypot}`} type="text" name={honeypot} tabindex="-1" autocomplete="new-password" />
+      </div>
+
+      <Turnstile action={kind} />
+
+      <div class="submit-row">
+        <button type="submit" class="btn btn-primary btn-lg submit" data-submit>
+          <span class="spinner" aria-hidden="true"></span>
+          <span data-submit-label>{submitLabel}</span>
+          <Icon name="arrow" size={18} class="submit-arrow" />
+        </button>
+        <p class="flex items-center gap-2 text-sm text-dim">
+          <Icon name="shield" size={16} class="shrink-0 text-cyan" />
+          <slot name="note">No spam, no mailing lists. Just a reply from me.</slot>
+        </p>
+      </div>
+      <noscript>
+        <p class="rounded-xl border border-line p-4 text-sm text-muted">
+          JavaScript is off, so the spam check can't run and the form may not go through. If it doesn't, please turn JavaScript on for
+          this site.
+        </p>
+      </noscript>
+    </div>
+  </form>
+
+  <div class="form-success" data-success hidden tabindex="-1" role="region" aria-labelledby={`${id}-success-title`}>
+    <div class="success-icon" aria-hidden="true"><Icon name="check" size={34} /></div>
+    <h2 id={`${id}-success-title`} class="mt-6 text-3xl">{success.title}</h2>
+    <p class="lead mx-auto mt-3 max-w-md" data-success-message>{success.message}</p>
+    <ul class="solder-list mx-auto mt-6 max-w-sm text-left">
+      {success.next.map((n) => <li>{n}</li>)}
+    </ul>
+    <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+      <button type="button" class="btn btn-ghost" data-again>{success.again}</button>
+      <a href={success.link.href} class="btn btn-primary">{success.link.label}</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  import "../../scripts/forms/controller";
+</script>
+
+<style>
+  .submit-row {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    padding-top: 0.25rem;
+  }
+  @media (width >= 40rem) {
+    .submit-row {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+  }
+  .form-success {
+    padding: 2.5rem 0.5rem;
+    text-align: center;
+    outline: none;
+  }
+  .success-icon {
+    display: grid;
+    place-items: center;
+    width: 4.5rem;
+    height: 4.5rem;
+    margin-inline: auto;
+    border-radius: 50%;
+    color: #04131a;
+    background: radial-gradient(circle at 30% 30%, var(--color-cyan-soft), var(--color-cyan));
+    box-shadow:
+      0 0 0 8px rgb(78 224 239 / 0.12),
+      0 0 44px rgb(78 224 239 / 0.45);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .form-success:not([hidden]) .success-icon {
+      animation: success-pop 0.6s var(--ease-out-expo) both;
+    }
+  }
+  @keyframes success-pop {
+    from {
+      transform: scale(0.6);
+      opacity: 0;
+    }
+  }
+</style>

@@ -1,0 +1,105 @@
+---
+/**
+ * /services hero visual: the whole price list on one glass board, like a lab's rate card. Each row jumps
+ * to its service below (the Switch rows open the matching tab), so on phones it doubles as the page index.
+ */
+import Icon from "../ui/Icon.astro";
+import { services } from "../../data/services";
+---
+
+<nav class="board glass" aria-label="Prices at a glance">
+  <ul>
+    {
+      services.map((s) => (
+        <li>
+          <a href={`#${s.id}`} class="row">
+            <span class="name">{s.name}</span>
+            <span class="leader" aria-hidden="true" />
+            <span class="mono price">
+              <span class="sr-only">: </span>${s.price}
+            </span>
+          </a>
+        </li>
+      ))
+    }
+    <li>
+      <a href="#by-quote" class="row">
+        <span class="name">Repairs &amp; custom work</span>
+        <span class="leader" aria-hidden="true"></span>
+        <span class="quote">By quote</span>
+      </a>
+    </li>
+  </ul>
+  <p class="foot">
+    <Icon name="check" size={16} class="shrink-0 text-cyan" />
+    Every priced mod includes a deep clean, fresh thermal paste and software setup.
+  </p>
+</nav>
+
+<style>
+  .board {
+    position: relative;
+    width: 100%;
+    max-width: 30rem;
+    margin-inline: auto;
+    padding: 0.6rem;
+    border-radius: 1.75rem;
+  }
+  ul {
+    display: grid;
+  }
+  .row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    min-height: 3.25rem;
+    padding: 0.85rem 0.9rem;
+    border-radius: 1.1rem;
+    text-decoration: none;
+    transition: background-color 0.2s;
+  }
+  @media (width >= 40rem) {
+    .row {
+      padding: 1rem;
+    }
+  }
+  .row:hover {
+    background: rgb(255 255 255 / 0.045);
+  }
+  .name {
+    font-weight: 600;
+    color: var(--color-fg);
+  }
+  /* menu-style dotted leader between the item and its price */
+  .leader {
+    flex: 1;
+    min-width: 1rem;
+    border-bottom: 1px dotted rgb(255 255 255 / 0.2);
+    transform: translateY(-0.3em);
+  }
+  .price,
+  .quote {
+    flex: none;
+    white-space: nowrap;
+  }
+  .price {
+    font-size: 1.5rem;
+    color: var(--color-fg);
+  }
+  .quote {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    color: var(--color-cyan-soft);
+  }
+  .foot {
+    display: flex;
+    gap: 0.6rem;
+    align-items: flex-start;
+    margin: 0.4rem 0.4rem 0;
+    padding: 0.9rem 0.75rem 0.6rem;
+    border-top: 1px solid var(--color-line-soft);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--color-muted);
+  }
+</style>

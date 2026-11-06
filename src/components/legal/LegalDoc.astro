@@ -1,0 +1,160 @@
+---
+/**
+ * Long-form legal page body (privacy, terms): the document in a readable column with a table of contents
+ * built from the same section list. Desktop: a sticky TOC whose current section lights up as you read
+ * (src/scripts/toc.ts). Phones: the TOC is an "On this page" disclosure above the text.
+ * Section bodies are trusted, hand-written HTML strings from the page (links + emphasis only).
+ */
+import Icon from "../ui/Icon.astro";
+
+export type LegalSection = { id: string; title: string; html: string };
+
+interface Props {
+  sections: LegalSection[];
+  /** e.g. "September 2026" */
+  updated: string;
+}
+const { sections, updated } = Astro.props;
+---
+
+<section class="pb-20 sm:pb-28">
+  <div class="container-x doc-grid">
+    <nav class="toc" aria-label="On this page">
+      <details class="toc-box glass" data-toc>
+        <summary class="toc-head">
+          <span>On this page</span>
+          <Icon name="caret-down" size={16} class="toc-caret" />
+        </summary>
+        <ol class="toc-list">
+          {
+            sections.map((s) => (
+              <li>
+                <a href={`#${s.id}`} class="toc-link">
+                  {s.title}
+                </a>
+              </li>
+            ))
+          }
+        </ol>
+      </details>
+    </nav>
+
+    <article class="doc card">
+      <p class="mono text-sm text-dim">Last updated {updated}</p>
+      <div class="prose-lab mt-2">
+        {
+          sections.map((s) => (
+            <section id={s.id} class="doc-section scroll-mt-28" data-toc-section>
+              <h2>{s.title}</h2>
+              <Fragment set:html={s.html} />
+            </section>
+          ))
+        }
+      </div>
+    </article>
+  </div>
+</section>
+
+<script>
+  import "../../scripts/toc";
+</script>
+
+<style>
+  .doc-grid {
+    display: grid;
+    gap: 1.25rem;
+  }
+  @media (width >= 64rem) {
+    .doc-grid {
+      grid-template-columns: 17rem minmax(0, 1fr);
+      gap: 2.5rem;
+      align-items: start;
+    }
+    .toc {
+      position: sticky;
+      top: calc(var(--header-h) + 1.5rem);
+    }
+  }
+  .toc-box {
+    border-radius: 1.4rem;
+    padding: 0.4rem;
+  }
+  .toc-head {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 2.75rem;
+    padding: 0 0.85rem;
+    font-weight: 600;
+    color: var(--color-fg);
+  }
+  .toc-head::-webkit-details-marker {
+    display: none;
+  }
+  .toc-box :global(.toc-caret) {
+    color: var(--color-cyan);
+    transition: transform 0.3s var(--ease-out-expo);
+  }
+  .toc-box[open] :global(.toc-caret) {
+    transform: rotate(180deg);
+  }
+  .toc-list {
+    display: grid;
+    padding: 0 0 0.35rem;
+  }
+  .toc-link {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0.35rem 0.85rem 0.35rem 1.35rem;
+    border-radius: 0.9rem;
+    font-size: 0.92rem;
+    line-height: 1.35;
+    color: var(--color-muted);
+    text-decoration: none;
+    transition:
+      color 0.2s,
+      background-color 0.2s;
+  }
+  /* a small pad that lights for the section in view */
+  .toc-link::before {
+    content: "";
+    position: absolute;
+    left: 0.6rem;
+    top: 50%;
+    width: 0.35rem;
+    height: 0.35rem;
+    border-radius: 999px;
+    background: var(--color-line);
+    transform: translateY(-50%);
+    transition:
+      background-color 0.2s,
+      box-shadow 0.3s;
+  }
+  .toc-link:hover {
+    color: var(--color-fg);
+    background: rgb(255 255 255 / 0.04);
+  }
+  .toc-link[aria-current="location"] {
+    color: var(--color-fg);
+    background: rgb(78 224 239 / 0.07);
+  }
+  .toc-link[aria-current="location"]::before {
+    background: var(--color-cyan);
+    box-shadow: 0 0 10px rgb(78 224 239 / 0.8);
+  }
+
+  .doc {
+    padding: 1.6rem 1.35rem 2rem;
+  }
+  @media (width >= 40rem) {
+    .doc {
+      padding: 2.5rem 3rem 3rem;
+    }
+  }
+  .doc-section:first-child :global(h2) {
+    margin-top: 1.5rem;
+  }
+</style>

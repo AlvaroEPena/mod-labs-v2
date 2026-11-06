@@ -1,0 +1,271 @@
+/*
+ * Form controls (book, quote, review). Imported by FormShell.astro, so only form pages ship it.
+ * Native inputs are kept (keyboard, autofill, screen readers, validation) and redrawn with
+ * appearance: none. The layer order is restated so this file can never land below Tailwind's base
+ * layer, whatever order the CSS chunks end up in.
+ */
+@layer theme, base, components, utilities;
+
+@layer components {
+  .field-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--color-fg);
+  }
+  .field-hint {
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--color-dim);
+  }
+  .optional {
+    margin-left: 0.35rem;
+    font-weight: 400;
+    font-size: 0.82rem;
+    color: var(--color-dim);
+  }
+
+  /* ----- Text inputs (12px radius) ----- */
+  .input {
+    width: 100%;
+    min-height: 3.125rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    background: rgb(5 7 14 / 0.62);
+    border: 1px solid var(--color-line);
+    box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.35);
+    color: var(--color-fg);
+    font-size: 1rem; /* ≥16px: no iOS zoom */
+    transition:
+      border-color 0.2s,
+      background-color 0.2s,
+      box-shadow 0.25s;
+  }
+  .input::placeholder {
+    color: #7a8399; /* 5.1:1 */
+  }
+  .input:hover {
+    border-color: rgb(255 255 255 / 0.22);
+  }
+  .input:focus-visible {
+    outline: 2px solid var(--color-cyan);
+    outline-offset: 1px;
+    border-color: transparent;
+    border-radius: 0.75rem;
+    background: rgb(5 7 14 / 0.92);
+    box-shadow:
+      inset 0 1px 2px rgb(0 0 0 / 0.35),
+      0 0 0 6px rgb(78 224 239 / 0.1);
+  }
+  .input[aria-invalid="true"] {
+    border-color: var(--color-bad);
+  }
+  textarea.input {
+    min-height: 9rem;
+    resize: vertical;
+    line-height: 1.6;
+  }
+  select.input {
+    appearance: none;
+    padding-right: 2.75rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%234ee0ef' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+  }
+  select.input option {
+    background: var(--color-panel);
+    color: var(--color-fg);
+  }
+
+  .field-error {
+    display: flex;
+    gap: 0.4rem;
+    align-items: flex-start;
+    margin-top: 0.45rem;
+    font-size: 0.88rem;
+    color: var(--color-bad);
+  }
+  .field-error:empty {
+    display: none;
+  }
+
+  /* ----- Checkboxes and radios, redrawn (a lit pad when checked) ----- */
+  .check {
+    appearance: none;
+    display: grid;
+    place-content: center;
+    flex: none;
+    width: 1.375rem;
+    height: 1.375rem;
+    margin: 0;
+    border-radius: 0.45rem;
+    border: 1.5px solid rgb(255 255 255 / 0.3);
+    background: rgb(5 7 14 / 0.6);
+    cursor: pointer;
+    transition:
+      background-color 0.2s,
+      border-color 0.2s,
+      box-shadow 0.3s;
+  }
+  .check[type="radio"] {
+    border-radius: 999px;
+  }
+  .check::before {
+    content: "";
+    width: 0.85rem;
+    height: 0.85rem;
+    background: #04131a;
+    mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3.2 8.4 3 3 6.6-6.8'/%3E%3C/svg%3E")
+      center / contain no-repeat;
+    transform: scale(0);
+    transition: transform 0.3s var(--ease-snap);
+  }
+  .check[type="radio"]::before {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 999px;
+    mask: none;
+  }
+  .check:checked {
+    background: var(--color-cyan);
+    border-color: var(--color-cyan);
+    box-shadow: 0 0 0 4px rgb(78 224 239 / 0.14);
+  }
+  .check:checked::before {
+    transform: scale(1);
+  }
+  .check[aria-invalid="true"] {
+    border-color: var(--color-bad);
+  }
+  .check:focus-visible {
+    outline: none;
+  }
+
+  /* Tiles: a whole row is the hit area for its checkbox/radio */
+  .tile {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    min-height: 3.5rem;
+    padding: 0.9rem 1rem;
+    border-radius: 1rem;
+    background: rgb(255 255 255 / 0.03);
+    border: 1px solid var(--color-line);
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      border-color 0.2s,
+      background-color 0.25s,
+      box-shadow 0.3s,
+      transform 0.25s var(--ease-out-expo);
+  }
+  .tile:hover {
+    border-color: rgb(255 255 255 / 0.24);
+  }
+  .tile:active {
+    transform: scale(0.985);
+  }
+  .tile:has(input:checked) {
+    border-color: rgb(78 224 239 / 0.65);
+    background:
+      radial-gradient(18rem 8rem at 0% 0%, rgb(78 224 239 / 0.12), transparent 70%),
+      rgb(78 224 239 / 0.05);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06);
+  }
+  .tile:has(input:focus-visible) {
+    outline: 2px solid var(--color-cyan);
+    outline-offset: 2px;
+  }
+  .tile:has(input[aria-invalid="true"]) {
+    border-color: rgb(255 154 168 / 0.6);
+  }
+
+  /* ----- Status line + submit ----- */
+  .form-status:empty {
+    display: none;
+  }
+  .form-status {
+    margin-bottom: 1.75rem;
+    padding: 0.95rem 1.1rem;
+    border-radius: 0.9rem;
+    font-weight: 500;
+    line-height: 1.5;
+    outline: none;
+  }
+  .form-status[data-tone="error"] {
+    color: #ffd9df;
+    background: rgb(255 154 168 / 0.1);
+    border: 1px solid rgb(255 154 168 / 0.5);
+  }
+  .form-status[data-tone="success"] {
+    color: #d4fff6;
+    background: rgb(94 234 212 / 0.08);
+    border: 1px solid rgb(94 234 212 / 0.45);
+  }
+  .form-status[data-tone="info"] {
+    color: var(--color-fg);
+    background: rgb(78 224 239 / 0.07);
+    border: 1px solid rgb(78 224 239 / 0.4);
+  }
+
+  .submit {
+    min-width: 13rem;
+  }
+  .submit .spinner {
+    display: none;
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 50%;
+    border: 2px solid rgb(4 19 26 / 0.25);
+    border-top-color: #04131a;
+  }
+  .submit[aria-busy="true"] {
+    cursor: progress;
+    opacity: 0.88;
+  }
+  .submit[aria-busy="true"] .spinner {
+    display: inline-block;
+    animation: form-spin 0.8s linear infinite;
+  }
+  .submit[aria-busy="true"] .submit-arrow {
+    display: none;
+  }
+
+  /* Off-screen honeypot */
+  .hp {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+}
+
+@media (forced-colors: active) {
+  .check {
+    appearance: auto;
+  }
+  .check::before {
+    content: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .check:checked::before {
+    animation: form-pop 0.35s var(--ease-snap);
+  }
+}
+
+@keyframes form-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes form-pop {
+  from {
+    transform: scale(0.3);
+  }
+}

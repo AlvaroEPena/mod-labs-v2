@@ -1,29 +1,34 @@
 ---
+/**
+ * Book a service (spec §16 phase 2). Job: a priced mod request in two minutes. Layout: compact hero →
+ * glass form (tactile mod tiles with a live total) beside a sticky "what happens next" trace. The phone
+ * CTA pill is hidden here so it can never cover the submit button.
+ */
 import BaseLayout from "../layouts/BaseLayout.astro";
 import PageHero from "../components/ui/PageHero.astro";
 import BookForm from "../components/forms/BookForm.astro";
 import FormAside from "../components/forms/FormAside.astro";
-import { services, formatPrice } from "../data/services";
+import Icon from "../components/ui/Icon.astro";
 ---
 
 <BaseLayout
   title="Book a Service"
   description="Book a console mod in Seattle: Xbox 360 RGH, Switch OLED Kamikaze, Switch V1/V2 or Switch Lite modchip. Local drop-off or mail-in."
   ctaBar={false}
+  breadcrumbs={[{ name: "Book a service", path: "/book" }]}
 >
   <PageHero
-    eyebrow="Book a service"
-    title="Let's get your console modded"
-    highlight="modded"
+    title="Let's get your console modded."
+    highlight="modded."
     intro="Pick your mod, tell me a bit about your console, and I'll reply to confirm the price and a drop-off time. Takes about two minutes."
     compact
   />
-  <section class="section-y pt-10 sm:pt-12">
-    <div class="container-x grid items-start gap-8 lg:grid-cols-[1.6fr_1fr] lg:gap-12">
-      <div class="card p-5 sm:p-8">
+  <section class="pb-20 sm:pb-28">
+    <div class="container-x grid items-start gap-6 lg:grid-cols-12 lg:gap-10">
+      <div class="form-card card p-5 sm:p-9 lg:col-span-8">
         <BookForm />
       </div>
-      <div class="grid gap-5 lg:sticky lg:top-24">
+      <div class="grid gap-4 lg:sticky lg:top-24 lg:col-span-4">
         <FormAside
           title="What happens next"
           steps={[
@@ -32,25 +37,25 @@ import { services, formatPrice } from "../data/services";
             { icon: "sparkle", text: "You get it back cleaned, tested and set up, with a walkthrough." },
           ]}
         />
-        <div class="card p-6 sm:p-7">
-          <h2 class="text-xl">Prices</h2>
-          <ul class="mt-4 grid gap-2.5">
-            {
-              services.map((s) => (
-                <li class="flex items-center justify-between gap-4 border-b border-line-soft pb-2.5 last:border-0 last:pb-0">
-                  <span class="text-muted">{s.name}</span>
-                  <span class="font-display text-lg font-bold text-fg">{formatPrice(s.price)}</span>
-                </li>
-              ))
-            }
-          </ul>
-          <p class="mt-4 text-sm text-dim">
-            Need a repair or something custom? <a href="/quote" class="font-semibold text-cyan underline-offset-2 hover:underline"
-              >Get a quote instead</a
-            >.
-          </p>
-        </div>
+        <a href="/quote" class="alt card glow-edge">
+          <span class="icon-pad is-sm" aria-hidden="true"><Icon name="wrench" size={18} /></span>
+          <span class="min-w-0 flex-1">
+            <span class="block font-semibold text-fg">Repair or something custom?</span>
+            <span class="block text-sm text-muted">Get a quote instead</span>
+          </span>
+          <Icon name="arrow" size={18} class="shrink-0 text-cyan" />
+        </a>
       </div>
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  .alt {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 1.1rem 1.25rem;
+    text-decoration: none;
+  }
+</style>

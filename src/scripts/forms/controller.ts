@@ -1,36 +1,39 @@
 /**
- * Progressive enhancement for [data-lab-form] (book + quote).
- * - validates with the SAME zod schemas as the Worker (lazy-loaded on first interaction)
- * - inline field errors (aria-invalid + aria-describedby), focus first invalid, polite summary
- * - fetch with Accept: application/json, friendly copy for every ApiResult code
+ * Progressive enhancement for every form[data-lab-form] (book, quote, review; see kinds.ts):
+ * - validates with the SAME zod schema as the Worker (lazy-loaded on first interaction)
+ * - inline field errors (aria-invalid + aria-describedby), focus on the first invalid control, polite summary
+ * - fetch with Accept: application/json, friendly copy for every ApiResult code (per-kind CopySet)
  * - Turnstile loaded + rendered on first interaction (not page load), reset after failures
- * - quote photos: pick/drop, downscale to ≤1600px JPEG, thumbnails with remove buttons
+ * - live character counters ([data-count-for="<textarea id>"]), URL prefill, quote photos (photo-picker.ts)
  * - no-JS round trip: shows ?sent=1 / ?error=code status on load
+ * Markup comes from components/forms/FormShell.astro.
  */
-import { errorCopy, fieldErrorsFromIssues, outcomeFromQuery, outcomeFromResponse, summaryText, withoutHoneypot, type Outcome } from "./messages";
-import { checkFiles, DecodeError, decodeErrorMessage, formatBytes, prepareImage } from "./photos";
+import { fieldErrorsFromIssues, outcomeFromQuery, outcomeFromResponse, summaryText, withoutHoneypot, type Outcome } from "./messages";
+import { formKinds, isFormKind, type FormKind, type Validator } from "./kinds";
+import { attachPhotoPicker } from "./photo-picker";
+import { prefillFromUrl } from "./prefill";
 import { FIRST_INTERACTION_EVENTS, loadTurnstile } from "./turnstile";
 
-type Kind = "book" | "quote";
-let validation: Promise<typeof import("../../lib/forms/schema")> | undefined;
-const loadValidation = () => (validation ??= import("../../lib/forms/schema"));
+for (const form of document.querySelectorAll<HTMLFormElement>("form[data-lab-form]")) {
+  const kind = form.dataset.labForm;
+  if (isFormKind(kind)) enhance(form, kind);
+}
 
-for (const form of document.querySelectorAll<HTMLFormElement>("form[data-lab-form]")) enhance(form);
-
-function enhance(form: HTMLFormElement) {
-  const kind = form.dataset.labForm as Kind;
-  const shell = form.closest<HTMLElement>("[data-form-shell]")!;
-  const status = form.querySelector<HTMLElement>(".form-status")!;
-  const success = shell.querySelector<HTMLElement>("[data-success]")!;
-  const submit = form.querySelector<HTMLButtonElement>("[data-submit]")!;
-  const submitLabel = submit.querySelector<HTMLElement>("[data-submit-label]")!;
+function enhance(form: HTMLFormElement, kind: FormKind) {
+  const { copy, loadValidator } = formKinds[kind];
+  const shell = form.closest<HTMLElement>("[data-form-shell]");
+  const status = form.querySelector<HTMLElement>(".form-status");
+  const success = shell?.querySelector<HTMLElement>("[data-success]");
+  const submit = form.querySelector<HTMLButtonElement>("[data-submit]");
+  const submitLabel = submit?.querySelector<HTMLElement>("[data-submit-label]");
+  if (!shell || !status || !success || !submit || !submitLabel) return;
   const idleLabel = submitLabel.textContent ?? "Send";
-  const maxFiles = Number(form.dataset.maxFiles) || 3;
-  const maxBytes = Number(form.dataset.maxBytes) || 2_000_000;
   let busy = false;
 
+  let validator: Promise<Validator> | undefined;
+  const getValidator = () => (validator ??= loadValidator());
   form.noValidate = true; // our validation replaces the native bubbles when JS runs
-  form.addEventListener("focusin", () => void loadValidation(), { once: true });
+  form.addEventListener("focusin", () => void getValidator().catch(() => undefined), { once: true });
 
   /* ---------- status + errors ---------- */
   const setStatus = (tone: "error" | "success" | "info" | null, text = "") => {
@@ -38,25 +41,23 @@ function enhance(form: HTMLFormElement) {
     if (tone) status.dataset.tone = tone;
     else delete status.dataset.tone;
   };
-
+  const errorSlot = (name: string) => form.querySelector<HTMLElement>(`[data-error-for="${CSS.escape(name)}"]`);
   const controlsFor = (name: string) => Array.from(form.querySelectorAll<HTMLElement>(`[name="${CSS.escape(name)}"]`));
 
   const clearField = (name: string) => {
-    const el = form.querySelector<HTMLElement>(`[data-error-for="${CSS.escape(name)}"]`);
+    const el = errorSlot(name);
     if (el) el.textContent = "";
     controlsFor(name).forEach((c) => c.removeAttribute("aria-invalid"));
   };
-
   const clearErrors = () => {
     form.querySelectorAll<HTMLElement>("[data-error-for]").forEach((el) => (el.textContent = ""));
     form.querySelectorAll("[aria-invalid]").forEach((el) => el.removeAttribute("aria-invalid"));
   };
-
   const showFieldErrors = (errors: Record<string, string[]>) => {
     clearErrors();
     let first: HTMLElement | undefined;
     for (const [name, msgs] of Object.entries(errors)) {
-      const el = form.querySelector<HTMLElement>(`[data-error-for="${CSS.escape(name)}"]`);
+      const el = errorSlot(name);
       if (el) el.textContent = msgs[0] ?? "";
       for (const c of controlsFor(name)) {
         c.setAttribute("aria-invalid", "true");
@@ -69,24 +70,27 @@ function enhance(form: HTMLFormElement) {
 
   const onFieldEdit = (e: Event) => {
     const t = e.target as HTMLInputElement;
-    if (t.name && t.getAttribute("aria-invalid")) clearField(t.name);
-    if (t.name === "services" || t.name === "delivery") clearField(t.name);
+    if (!t.name) return;
+    // grouped controls (checkbox/radio sets) clear on any change; single fields once they were flagged
+    if (t.getAttribute("aria-invalid") || t.type === "checkbox" || t.type === "radio") clearField(t.name);
   };
   form.addEventListener("input", onFieldEdit);
   form.addEventListener("change", onFieldEdit);
 
-  /* ---------- message counter ---------- */
-  const message = form.querySelector<HTMLTextAreaElement>('textarea[name="message"]');
-  const counter = form.querySelector<HTMLElement>("[data-count]");
-  const count = () => counter && message && (counter.textContent = String(message.value.length));
-  message?.addEventListener("input", count);
-  count();
+  /* ---------- live character counters ---------- */
+  const counters = Array.from(form.querySelectorAll<HTMLElement>("[data-count-for]")).flatMap((out) => {
+    const field = form.querySelector<HTMLTextAreaElement | HTMLInputElement>(`#${CSS.escape(out.dataset.countFor ?? "")}`);
+    return field ? [{ out, field }] : [];
+  });
+  const updateCounters = () => counters.forEach(({ out, field }) => (out.textContent = String(field.value.length)));
+  counters.forEach(({ field }) => field.addEventListener("input", updateCounters));
+  updateCounters();
 
   /* ---------- Turnstile ---------- */
   const tsSlot = form.querySelector<HTMLElement>("[data-turnstile]");
   let tsWidget: string | undefined;
   const showTurnstileError = () => {
-    const el = form.querySelector<HTMLElement>('[data-error-for="cf-turnstile-response"]');
+    const el = errorSlot("cf-turnstile-response");
     if (el) el.textContent = "The spam check couldn't load. Refresh the page, or try another browser.";
   };
   /** Load + render the widget once, on the first interaction (see turnstile.ts for why). */
@@ -109,28 +113,42 @@ function enhance(form: HTMLFormElement) {
       "error-callback": showTurnstileError,
     });
   };
-  for (const type of FIRST_INTERACTION_EVENTS) {
-    form.addEventListener(type, () => void startTurnstile(), { once: true });
-  }
+  for (const type of FIRST_INTERACTION_EVENTS) form.addEventListener(type, () => void startTurnstile(), { once: true });
   const resetTurnstile = () => {
     if (window.turnstile && tsWidget !== undefined) window.turnstile.reset(tsWidget);
   };
 
-  /* ---------- prefill from the URL ---------- */
+  /* ---------- prefill + photos ---------- */
   const params = new URLSearchParams(location.search);
-  if (kind === "book") {
-    const id = params.get("service");
-    const box = id ? form.querySelector<HTMLInputElement>(`input[data-service-id="${CSS.escape(id)}"]`) : null;
-    if (box) box.checked = true;
-  } else {
-    const build = params.get("build");
-    const map = JSON.parse(form.dataset.buildMap ?? "{}") as Record<string, string>;
-    const select = form.querySelector<HTMLSelectElement>('select[name="requestType"]');
-    if (build && select && map[build]) select.value = map[build];
-  }
+  prefillFromUrl(form, kind, params);
+  const photos = attachPhotoPicker(form, (text) => setStatus("info", text));
+
+  /* ---------- success / reset ---------- */
+  const showSuccess = (message: string) => {
+    const msg = success.querySelector<HTMLElement>("[data-success-message]");
+    if (msg) msg.textContent = message;
+    form.hidden = true;
+    success.hidden = false;
+    success.focus();
+    success.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  };
+  const resetAll = () => {
+    form.reset(); // also fires "reset" for widgets like the star rating
+    photos?.reset();
+    clearErrors();
+    setStatus(null);
+    requestAnimationFrame(updateCounters);
+    resetTurnstile();
+  };
+  shell.querySelector("[data-again]")?.addEventListener("click", () => {
+    resetAll();
+    success.hidden = true;
+    form.hidden = false;
+    form.querySelector<HTMLElement>("input:not([type=hidden]), select, textarea")?.focus();
+  });
 
   /* ---------- no-JS round trip result ---------- */
-  const fromQuery = outcomeFromQuery(location.search);
+  const fromQuery = outcomeFromQuery(location.search, copy);
   if (fromQuery) {
     if (fromQuery.kind === "success") showSuccess(fromQuery.message);
     else setStatus("error", fromQuery.message);
@@ -138,105 +156,6 @@ function enhance(form: HTMLFormElement) {
     params.delete("error");
     const qs = params.toString();
     history.replaceState(history.state, "", `${location.pathname}${qs ? `?${qs}` : ""}${location.hash}`);
-  }
-
-  /* ---------- photos (quote only) ---------- */
-  const photoInput = form.querySelector<HTMLInputElement>('input[type="file"][name="photos"]');
-  const thumbs = form.querySelector<HTMLUListElement>("[data-thumbs]");
-  const dropzone = form.querySelector<HTMLElement>("[data-dropzone]");
-  type Attached = { id: number; file: File; url: string };
-  let attached: Attached[] = [];
-  let pendingPhotos = 0;
-  let nextId = 1;
-
-  const photoError = (msgs: string[]) => {
-    const el = form.querySelector<HTMLElement>('[data-error-for="photos"]');
-    if (el) el.textContent = msgs.join(" ");
-  };
-
-  const renderThumb = (a: Attached) => {
-    const li = document.createElement("li");
-    li.dataset.id = String(a.id);
-    const img = document.createElement("img");
-    img.src = a.url;
-    img.alt = `Attached photo: ${a.file.name}`;
-    const meta = document.createElement("span");
-    meta.className = "thumb-meta";
-    meta.textContent = formatBytes(a.file.size);
-    const rm = document.createElement("button");
-    rm.type = "button";
-    rm.className = "thumb-remove";
-    rm.setAttribute("aria-label", `Remove ${a.file.name}`);
-    rm.innerHTML =
-      '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
-    rm.addEventListener("click", () => {
-      URL.revokeObjectURL(a.url);
-      attached = attached.filter((x) => x.id !== a.id);
-      const next = li.nextElementSibling?.querySelector("button") ?? li.previousElementSibling?.querySelector("button");
-      li.remove();
-      photoError([]);
-      setStatus("info", `Removed ${a.file.name}. ${attached.length} of ${maxFiles} photos attached.`);
-      if (next instanceof HTMLElement) next.focus();
-      else photoInput?.focus();
-    });
-    li.append(img, meta, rm);
-    return li;
-  };
-
-  /** Photos are processed strictly one at a time (phone memory); submit waits on this chain. */
-  let photoQueue: Promise<void> = Promise.resolve();
-
-  const processOne = async (file: File, errors: string[]) => {
-    if (!thumbs) return;
-    const placeholder = document.createElement("li");
-    placeholder.innerHTML = '<span class="thumb-busy">Preparing…</span>';
-    thumbs.append(placeholder);
-    try {
-      const ready = await prepareImage(file, maxBytes);
-      const a = { id: nextId++, file: ready, url: URL.createObjectURL(ready) };
-      attached.push(a);
-      placeholder.replaceWith(renderThumb(a));
-    } catch (err) {
-      placeholder.remove();
-      errors.push(err instanceof DecodeError ? err.message : decodeErrorMessage(file.name));
-      photoError(errors);
-    } finally {
-      pendingPhotos--;
-    }
-  };
-
-  const addFiles = (files: File[]) => {
-    if (!thumbs || !files.length) return photoQueue;
-    const { accept, errors } = checkFiles(files, attached.length + pendingPhotos, maxFiles);
-    photoError(errors);
-    pendingPhotos += accept.length;
-    photoQueue = photoQueue.then(async () => {
-      for (const file of accept) await processOne(file, errors);
-      if (accept.length) setStatus("info", `${attached.length} of ${maxFiles} photos attached.`);
-    });
-    return photoQueue;
-  };
-
-  const takeInputFiles = () => {
-    if (!photoInput) return;
-    const files = Array.from(photoInput.files ?? []);
-    photoInput.value = ""; // processed copies are sent instead of the originals
-    void addFiles(files);
-  };
-  photoInput?.addEventListener("change", takeInputFiles);
-  // Files picked before this script loaded (slow connection): adopt them instead of dropping them.
-  takeInputFiles();
-  if (dropzone) {
-    dropzone.addEventListener("dragover", (e) => {
-      e.preventDefault();
-      dropzone.dataset.drag = "";
-    });
-    dropzone.addEventListener("dragleave", () => delete dropzone.dataset.drag);
-    dropzone.addEventListener("drop", (e) => {
-      e.preventDefault();
-      delete dropzone.dataset.drag;
-      void addFiles(Array.from(e.dataTransfer?.files ?? []));
-    });
   }
 
   /* ---------- submit ---------- */
@@ -247,85 +166,59 @@ function enhance(form: HTMLFormElement) {
     submitLabel.textContent = on ? label : idleLabel;
   };
 
-  function showSuccess(message: string) {
-    const msg = success.querySelector<HTMLElement>("[data-success-message]");
-    if (msg) msg.textContent = message;
-    form.hidden = true;
-    success.hidden = false;
-    success.focus();
-    success.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
-  }
+  /** Validate, then send. Returns undefined when the form stopped itself (invalid, captcha pending). */
+  const send = async (): Promise<Outcome | undefined> => {
+    if (photos) await photos.ready(); // never send while photos are still being prepared
+    const fd = new FormData(form);
+    if (photos) {
+      fd.delete("photos");
+      photos.files().forEach((f) => fd.append("photos", f, f.name));
+    }
 
-  const resetAll = () => {
-    form.reset();
-    attached.forEach((a) => URL.revokeObjectURL(a.url));
-    attached = [];
-    if (thumbs) thumbs.textContent = "";
+    let validate: Validator | undefined;
+    try {
+      validate = await getValidator();
+    } catch {
+      validate = undefined; // validation chunk failed to load: let the server validate
+    }
+    const issues = validate?.(fd);
+    // honeypot errors are never shown: a person can't see that field
+    const errors = issues ? withoutHoneypot(fieldErrorsFromIssues(issues)) : null;
+    if (errors) {
+      showFieldErrors(errors);
+      return undefined;
+    }
+
+    if (tsSlot && !fd.get("cf-turnstile-response")) {
+      void startTurnstile(); // no-op once started
+      setStatus("info", "One sec: the spam check above the button is still finishing. Try again in a moment.");
+      return undefined;
+    }
+
     clearErrors();
     setStatus(null);
-    count();
-    resetTurnstile();
+    submitLabel.textContent = "Sending…";
+    try {
+      const res = await fetch(form.action, { method: "POST", body: fd, headers: { Accept: "application/json" } });
+      let body: unknown = null;
+      try {
+        body = await res.json();
+      } catch {
+        body = null;
+      }
+      return outcomeFromResponse(res.status, body, copy);
+    } catch {
+      return { kind: "error", code: "network", message: copy.errors.network };
+    }
   };
-
-  shell.querySelector("[data-again]")?.addEventListener("click", () => {
-    resetAll();
-    success.hidden = true;
-    form.hidden = false;
-    form.querySelector<HTMLElement>("input, select, textarea")?.focus();
-  });
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (busy) return;
-    setBusy(true, pendingPhotos > 0 ? "Preparing photos…" : "Sending…"); // before any await: no double submits
+    setBusy(true, photos?.isBusy() ? "Preparing photos…" : "Sending…"); // before any await: no double submits
     let outcome: Outcome | undefined;
     try {
-      // never send while photos are still being prepared
-      await photoQueue;
-
-      const fd = new FormData(form);
-      fd.delete("photos");
-      if (kind === "quote") attached.forEach((a) => fd.append("photos", a.file, a.file.name));
-
-      let schema;
-      try {
-        schema = await loadValidation();
-      } catch {
-        schema = undefined; // validation chunk failed to load: let the server validate
-      }
-      if (schema) {
-        const parsed = (kind === "book" ? schema.bookSchema : schema.quoteSchema).safeParse(schema.formDataToObject(fd));
-        if (!parsed.success) {
-          // honeypot errors are never shown: a person can't see that field
-          const errors = withoutHoneypot(fieldErrorsFromIssues(parsed.error.issues));
-          if (errors) {
-            showFieldErrors(errors);
-            return;
-          }
-        }
-      }
-
-      if (tsSlot && !fd.get("cf-turnstile-response")) {
-        void startTurnstile(); // no-op once started
-        setStatus("info", "One sec: the spam check above the button is still finishing. Try again in a moment.");
-        return;
-      }
-
-      clearErrors();
-      setStatus(null);
-      submitLabel.textContent = "Sending…";
-      try {
-        const res = await fetch(form.action, { method: "POST", body: fd, headers: { Accept: "application/json" } });
-        let body: unknown = null;
-        try {
-          body = await res.json();
-        } catch {
-          body = null;
-        }
-        outcome = outcomeFromResponse(res.status, body);
-      } catch {
-        outcome = { kind: "error", code: "network", message: errorCopy.network };
-      }
+      outcome = await send();
     } finally {
       setBusy(false);
     }

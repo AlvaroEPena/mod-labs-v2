@@ -6,6 +6,7 @@
    Tokens → base → layout utilities → primitives → backdrop → motion.
    Motion is opt-in via prefers-reduced-motion: no-preference. Transform/opacity only.
    Shape lock: panels 24px (--radius-card), buttons + chips full pill, inputs 12px.
+   Form controls live in forms.css (shipped only with the forms); injected review markup in reviews.css.
    ========================================================================== */
 
 @theme {
@@ -319,11 +320,6 @@
     background: rgb(255 255 255 / 0.045);
     border: 1px solid var(--color-line-soft);
   }
-  /* kept for API compatibility; the pulsing status dot is retired (decorative dots are an AI tell) */
-  .chip-dot::before {
-    content: none;
-  }
-
   /* ----- Glass ----- */
   /* Frosted panel for anything that sits over imagery or the page (header, overlays, floating cards). */
   .glass {
@@ -387,32 +383,6 @@
     }
   }
 
-  /* ----- Price: mono pill ----- */
-  .price-tag {
-    display: inline-flex;
-    align-items: baseline;
-    justify-content: center;
-    flex: none; /* never let a neighbouring label squeeze it */
-    gap: 0.12rem;
-    white-space: nowrap;
-    line-height: 1.1;
-    padding: 0.32rem 0.8rem;
-    border-radius: 999px;
-    font-family: var(--font-mono);
-    font-weight: 500;
-    letter-spacing: -0.02em;
-    color: var(--color-fg);
-    background: rgb(78 224 239 / 0.08);
-    border: 1px solid rgb(78 224 239 / 0.3);
-    font-variant-numeric: tabular-nums;
-  }
-  .price-tag .cur {
-    font-size: 0.62em;
-    color: var(--color-cyan);
-    align-self: flex-start;
-    margin-top: 0.2em;
-  }
-
   /* ----- Solder-pad bullets ----- */
   .solder-list {
     display: grid;
@@ -438,21 +408,6 @@
   .solder-list.is-muted > li::before {
     border-color: var(--color-dim);
     background: none;
-  }
-
-  /* Faint PCB grid used behind page heroes and bands */
-  .pcb {
-    --pcb-line: rgb(255 255 255 / 0.035);
-    background-image:
-      radial-gradient(circle at 1px 1px, rgb(78 224 239 / 0.18) 1px, transparent 1.6px),
-      linear-gradient(var(--pcb-line) 1px, transparent 1px),
-      linear-gradient(90deg, var(--pcb-line) 1px, transparent 1px);
-    background-size:
-      40px 40px,
-      40px 40px,
-      40px 40px;
-    background-position: -1px -1px;
-    mask-image: radial-gradient(ellipse 75% 65% at 50% 35%, #000 25%, transparent 75%);
   }
 
   /* Long-form text (privacy, terms, about) */
@@ -526,105 +481,21 @@
     opacity: 0;
   }
 
-  /* ----- Form controls (inputs 12px radius) ----- */
-  .field-label {
-    display: block;
-    margin-bottom: 0.45rem;
-    font-weight: 600;
-    font-size: 0.95rem;
-    color: var(--color-fg);
-  }
-  .field-hint {
-    font-size: 0.85rem;
-    color: var(--color-dim);
-  }
-  .input {
-    width: 100%;
-    min-height: 3rem;
-    padding: 0.7rem 0.95rem;
-    border-radius: 0.75rem;
-    background: rgb(5 7 14 / 0.6);
-    border: 1px solid var(--color-line);
-    color: var(--color-fg);
-    font-size: 1rem; /* ≥16px: no iOS zoom */
-    transition:
-      border-color 0.2s,
-      background-color 0.2s;
-  }
-  .input::placeholder {
-    color: #7a8399; /* 5.1:1 */
-  }
-  .input:hover {
-    border-color: rgb(255 255 255 / 0.22);
-  }
-  .input:focus-visible {
-    outline: 2px solid var(--color-cyan);
-    outline-offset: 1px;
-    border-color: transparent;
-    border-radius: 0.75rem;
-    background: rgb(5 7 14 / 0.9);
-  }
-  .input[aria-invalid="true"] {
-    border-color: var(--color-bad);
-  }
-  textarea.input {
-    min-height: 9rem;
-    resize: vertical;
-    line-height: 1.6;
-  }
-  select.input {
-    appearance: none;
-    padding-right: 2.5rem;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%234ee0ef' stroke-width='2'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 0.9rem center;
-  }
-  .field-error {
-    display: flex;
-    gap: 0.4rem;
-    align-items: flex-start;
-    margin-top: 0.4rem;
-    font-size: 0.88rem;
-    color: var(--color-bad);
-  }
-  .field-error:empty {
-    display: none;
-  }
-
-  /* Checkbox / radio tiles */
-  .tile {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-    min-height: 3.25rem;
-    padding: 0.8rem 1rem;
-    border-radius: 0.9rem;
-    background: rgb(255 255 255 / 0.03);
-    border: 1px solid var(--color-line);
-    cursor: pointer;
-    transition:
-      border-color 0.2s,
-      background-color 0.2s;
-  }
-  .tile:hover {
-    border-color: rgb(255 255 255 / 0.24);
-  }
-  .tile:has(input:checked) {
-    border-color: rgb(78 224 239 / 0.7);
-    background: rgb(78 224 239 / 0.07);
-  }
-  .tile:has(input:focus-visible) {
-    outline: 2px solid var(--color-cyan);
-    outline-offset: 2px;
-  }
-  .tile input {
-    width: 1.2rem;
-    height: 1.2rem;
+  /* ----- Icon pad: a round, cyan-lit holder for one Phosphor icon (feature lists, steps, notes) ----- */
+  .icon-pad {
+    display: grid;
+    place-items: center;
     flex: none;
+    width: 2.9rem;
+    height: 2.9rem;
+    border-radius: 999px;
+    color: var(--color-cyan);
+    background: rgb(78 224 239 / 0.08);
+    border: 1px solid rgb(78 224 239 / 0.25);
   }
-  .tile input:focus-visible {
-    outline: none;
+  .icon-pad.is-sm {
+    width: 2.25rem;
+    height: 2.25rem;
   }
 
   /* ----- FAQ accordion (<details>) ----- */

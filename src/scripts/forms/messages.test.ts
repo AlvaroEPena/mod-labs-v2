@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { bookSchema, formDataToObject } from "../../lib/forms/schema";
-import { errorCopy, fieldErrorsFromIssues, outcomeFromQuery, outcomeFromResponse, successCopy, summaryText } from "./messages";
+import { reviewFormToObject, reviewSchema } from "../../lib/reviews/contract";
+import { errorCopy, fieldErrorsFromIssues, outcomeFromQuery, outcomeFromResponse, reviewCopy, successCopy, summaryText } from "./messages";
 
 describe("outcomeFromResponse", () => {
   it("maps ok:true to the success copy", () => {
@@ -89,5 +90,28 @@ describe("honeypot errors are never shown", () => {
     const o = outcomeFromResponse(400, { ok: false, error: "validation", fieldErrors: { hp: ["Must be empty"] } });
     expect(o).toMatchObject({ kind: "error", code: "server" });
     expect("fieldErrors" in o && o.fieldErrors).toBeFalsy();
+  });
+});
+
+describe("review copy", () => {
+  it("says reviews appear once approved, for the API and the no-JS round trip", () => {
+    expect(outcomeFromResponse(200, { ok: true, message: "x" }, reviewCopy)).toEqual({ kind: "success", message: reviewCopy.success });
+    expect(reviewCopy.success).toMatch(/once I've approved it/);
+    expect(outcomeFromQuery("?sent=1", reviewCopy)?.message).toBe(reviewCopy.success);
+  });
+
+  it.each(["captcha", "rate_limited", "too_large", "not_configured", "server"] as const)("has its own wording for %s", (code) => {
+    expect(outcomeFromResponse(500, { ok: false, error: code, message: "raw" }, reviewCopy)).toEqual({ kind: "error", code, message: reviewCopy.errors[code] });
+    expect(reviewCopy.errors[code]).not.toMatch(/request/i);
+  });
+
+  it("labels review fields in the error summary", () => {
+    const fd = new FormData();
+    fd.set("name", "Sam");
+    fd.set("body", "too short");
+    const r = reviewSchema.safeParse(reviewFormToObject(fd));
+    expect(r.success).toBe(false);
+    if (r.success) return;
+    expect(summaryText(fieldErrorsFromIssues(r.error.issues))).toBe("3 fields need attention: Rating, Review, Consent.");
   });
 });

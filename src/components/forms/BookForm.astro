@@ -1,35 +1,52 @@
 ---
+/**
+ * /book form: the priced mods as tactile tiles (each option string from the shared contract, price from
+ * services.ts) with a live "selected + estimated total" readout, then the shared request fields.
+ */
 import LabForm from "./LabForm.astro";
 import { bookServiceOptions, fieldNames as F } from "../../lib/forms/schema";
-import { serviceIds } from "../../data/services";
+import { serviceIds, services } from "../../data/services";
 
-/** "Switch Lite modchip ($140)" → { name: "Switch Lite modchip", price: "$140" } */
-const split = (opt: string) => {
-  const m = opt.match(/^(.*)\s\((\$\d+)\)$/);
-  return m ? { name: m[1], price: m[2] } : { name: opt, price: "" };
-};
+/** "Switch Lite modchip ($140)" → "Switch Lite modchip" (the price is shown from the data) */
+const nameOf = (opt: string) => opt.replace(/\s\(\$\d+\)$/, "");
+const options = bookServiceOptions.map((opt, i) => {
+  const id = serviceIds[i];
+  return { opt, id, name: nameOf(opt), price: services.find((s) => s.id === id)?.price ?? null };
+});
 ---
 
 <LabForm kind="book" submitLabel="Send booking request" messagePlaceholder="Which console and model, anything wrong with it, and when you'd like to drop it off.">
-  <fieldset slot="top" class="grid gap-3" aria-describedby="book-services-error">
-    <legend class="field-label">Which mod? <span class="font-normal text-dim">Pick one or more</span></legend>
+  <fieldset slot="top" class="grid gap-3" aria-describedby="book-services-error book-total">
+    <legend class="field-label">Which mod? <span class="optional">pick one or more</span></legend>
     <div class="grid gap-3 sm:grid-cols-2">
       {
-        bookServiceOptions.map((opt, i) => {
-          const s = split(opt);
-          return (
-            <label class="tile">
-              <input type="checkbox" name={F.services} value={opt} data-service-id={serviceIds[i]} />
-              <span class="flex flex-1 items-center justify-between gap-3">
-                <span class="font-semibold text-fg">{s.name}</span>
-                {s.price && <span class="font-display text-lg font-bold text-cyan">{s.price}</span>}
-              </span>
-            </label>
-          );
-        })
+        options.map((o) => (
+          <label class="tile mod-tile">
+            <input type="checkbox" class="check" name={F.services} value={o.opt} data-service-id={o.id} data-price={o.price ?? 0} />
+            <span class="flex min-w-0 flex-1 items-center justify-between gap-3">
+              <span class="font-semibold text-fg">{o.name}</span>
+              {o.price !== null && <span class="mono shrink-0 text-lg text-fg">${o.price}</span>}
+            </span>
+          </label>
+        ))
       }
     </div>
+    <p id="book-total" class="total mono" data-book-total aria-live="polite">Nothing selected yet.</p>
     <p class="field-error" id="book-services-error" data-error-for={F.services}></p>
   </fieldset>
   <Fragment slot="message-hint">At least 20 characters. The console model helps (e.g. "OLED, white joy-cons").</Fragment>
 </LabForm>
+
+<script>
+  import "../../scripts/forms/book-total";
+</script>
+
+<style>
+  .mod-tile {
+    min-height: 4rem;
+  }
+  .total {
+    font-size: 0.85rem;
+    color: var(--color-dim);
+  }
+</style>

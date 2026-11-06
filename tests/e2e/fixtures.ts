@@ -43,6 +43,7 @@ export const ROUTES = [
   "/builds",
   "/gallery",
   "/gallery/switch",
+  "/reviews",
   "/about",
   "/book",
   "/quote",
@@ -63,7 +64,9 @@ export async function makeJpeg(width = 1200, height = 900): Promise<Buffer> {
 }
 
 /** Wait for the Turnstile widget (Cloudflare always-pass test key) to write its token into the form. */
-export async function waitForTurnstileToken(page: Page, formId: "book" | "quote") {
+export type FormId = "book" | "quote" | "review";
+
+export async function waitForTurnstileToken(page: Page, formId: FormId) {
   // Turnstile only loads on the first interaction with the form (src/scripts/forms/turnstile.ts).
   await page.locator(`#${formId} [name="name"]`).focus();
   await expect
@@ -79,7 +82,7 @@ export async function waitForTurnstileToken(page: Page, formId: "book" | "quote"
 }
 
 /** The form controller sets form.noValidate once it has enhanced the form (listeners attached). */
-export async function waitForFormReady(page: Page, formId: "book" | "quote") {
+export async function waitForFormReady(page: Page, formId: FormId) {
   await page.waitForFunction((id) => document.querySelector<HTMLFormElement>(`form#${id}`)?.noValidate === true, formId);
 }
 

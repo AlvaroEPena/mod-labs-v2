@@ -64,6 +64,7 @@ test.describe("J5 FAQ + navigation", () => {
       ["Services", "/services"],
       ["Builds", "/builds"],
       ["Gallery", "/gallery"],
+      ["Reviews", "/reviews"],
       ["About", "/about"],
       ["FAQ", "/faq"],
     ] as const) {

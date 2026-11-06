@@ -1,0 +1,101 @@
+---
+/**
+ * The /reviews form (spec §17). Fields, limits and option lists come from the review contract
+ * (src/lib/reviews/contract.ts), in its order: name, rating, service?, source?, review, consent, honeypot,
+ * Turnstile (action "review"). Posts multipart to /api/review; the shared controller validates with
+ * reviewSchema and shows the approval-pending success state. No email is collected.
+ */
+import FormShell from "./FormShell.astro";
+import StarRating from "./StarRating.astro";
+import { REVIEW_BODY_MAX, REVIEW_BODY_MIN, REVIEW_NAME_MAX, REVIEW_SERVICES, REVIEW_SOURCES, reviewFields as F } from "../../lib/reviews/contract";
+import { reviewCopy } from "../../scripts/forms/messages";
+
+const id = "review";
+const e = (name: string) => `${id}-${name}-error`;
+---
+
+<FormShell
+  kind="review"
+  action="/api/review"
+  submitLabel="Send my review"
+  honeypot={F.honeypot}
+  success={{
+    title: "Thanks for the review!",
+    message: reviewCopy.success,
+    next: ["I read every review before it goes live", "Once approved, it shows up here and on the home page", "No email needed, so there's nothing to confirm"],
+    again: "Write another review",
+    link: { href: "/gallery", label: "Browse the gallery" },
+  }}
+>
+  <div>
+    <label class="field-label" for={`${id}-name`}>Your name</label>
+    <input
+      class="input"
+      id={`${id}-name`}
+      name={F.name}
+      type="text"
+      autocomplete="name"
+      required
+      minlength="2"
+      maxlength={REVIEW_NAME_MAX}
+      aria-describedby={`${id}-name-hint ${e("name")}`}
+    />
+    <p class="field-hint mt-1.5" id={`${id}-name-hint`}>Shown with your review. First name and last initial is fine.</p>
+    <p class="field-error" id={e("name")} data-error-for={F.name}></p>
+  </div>
+
+  <StarRating id={id} name={F.rating} />
+
+  <div class="grid gap-5 sm:grid-cols-2 sm:items-end">
+    <div>
+      <label class="field-label" for={`${id}-service`}>What did I work on? <span class="optional">optional</span></label>
+      <select class="input" id={`${id}-service`} name={F.service} aria-describedby={e("service")}>
+        <option value="">Choose a service</option>
+        {REVIEW_SERVICES.map((s) => <option value={s}>{s}</option>)}
+      </select>
+      <p class="field-error" id={e("service")} data-error-for={F.service}></p>
+    </div>
+    <div>
+      <label class="field-label" for={`${id}-source`}>How did you find us? <span class="optional">optional</span></label>
+      <select class="input" id={`${id}-source`} name={F.source} aria-describedby={e("source")}>
+        <option value="">Choose one</option>
+        {REVIEW_SOURCES.map((s) => <option value={s}>{s}</option>)}
+      </select>
+      <p class="field-error" id={e("source")} data-error-for={F.source}></p>
+    </div>
+  </div>
+
+  <div>
+    <div class="flex items-baseline justify-between gap-3">
+      <label class="field-label" for={`${id}-body`}>Your review</label>
+      <span class="field-hint mono" aria-hidden="true"><span data-count-for={`${id}-body`}>0</span> / {REVIEW_BODY_MAX}</span>
+    </div>
+    <textarea
+      class="input"
+      id={`${id}-body`}
+      name={F.body}
+      required
+      minlength={REVIEW_BODY_MIN}
+      maxlength={REVIEW_BODY_MAX}
+      rows="6"
+      placeholder="What did you bring in, how did it go, and how is it running now?"
+      aria-describedby={`${id}-body-hint ${e("body")}`}></textarea>
+    <p class="field-hint mt-1.5" id={`${id}-body-hint`}>At least {REVIEW_BODY_MIN} characters. Please leave out links.</p>
+    <p class="field-error" id={e("body")} data-error-for={F.body}></p>
+  </div>
+
+  <div>
+    <label class="tile items-start">
+      <input type="checkbox" class="check mt-0.5" name={F.consent} value="yes" required aria-describedby={e("consent")} />
+      <span class="text-sm leading-relaxed text-muted">
+        Once it's approved, my name, rating, review and service, plus where I heard about Mod Labs, can be shown publicly on this site. See the <a
+          href="/privacy#reviews"
+          class="text-cyan underline underline-offset-2">privacy policy</a
+        >.
+      </span>
+    </label>
+    <p class="field-error" id={e("consent")} data-error-for={F.consent}></p>
+  </div>
+
+  <Fragment slot="note">No email needed. Reviews go live after I check them.</Fragment>
+</FormShell>

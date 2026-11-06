@@ -58,11 +58,11 @@ import { quoteRequestTypes, buildRequestType, fieldNames as F, PHOTO_MAX_FILES }
     display: flex;
     align-items: center;
     gap: 1rem;
-    min-height: 4.5rem;
+    min-height: 4.75rem;
     padding: 1rem 1.1rem;
     border-radius: 1rem;
-    border: 1.5px dashed rgb(0 229 255 / 0.4);
-    background: rgb(0 229 255 / 0.04);
+    border: 1.5px dashed rgb(78 224 239 / 0.4);
+    background: rgb(78 224 239 / 0.04);
     cursor: pointer;
     transition:
       border-color 0.2s,
@@ -71,7 +71,7 @@ import { quoteRequestTypes, buildRequestType, fieldNames as F, PHOTO_MAX_FILES }
   .dz-inner:hover,
   .dropzone[data-drag] .dz-inner {
     border-color: var(--color-cyan);
-    background: rgb(0 229 255 / 0.08);
+    background: rgb(78 224 239 / 0.08);
   }
   .dropzone:has(input:focus-visible) .dz-inner {
     outline: 2px solid var(--color-cyan);
@@ -81,11 +81,12 @@ import { quoteRequestTypes, buildRequestType, fieldNames as F, PHOTO_MAX_FILES }
     flex: none;
     display: grid;
     place-items: center;
-    width: 2.75rem;
-    height: 2.75rem;
-    border-radius: 0.8rem;
+    width: 2.9rem;
+    height: 2.9rem;
+    border-radius: 999px;
     color: var(--color-cyan);
-    border: 1px solid rgb(0 229 255 / 0.4);
+    background: rgb(78 224 239 / 0.08);
+    border: 1px solid rgb(78 224 239 / 0.4);
   }
   .thumbs {
     display: grid;
@@ -115,7 +116,7 @@ import { quoteRequestTypes, buildRequestType, fieldNames as F, PHOTO_MAX_FILES }
     padding: 0.3rem 0.45rem;
     font-size: 0.7rem;
     color: var(--color-fg);
-    background: linear-gradient(transparent, rgb(7 8 21 / 0.9));
+    background: linear-gradient(transparent, rgb(5 7 14 / 0.9));
   }
   .thumbs :global(.thumb-remove) {
     position: absolute;
@@ -127,7 +128,7 @@ import { quoteRequestTypes, buildRequestType, fieldNames as F, PHOTO_MAX_FILES }
     height: 2.75rem;
     border-radius: 0.7rem;
     color: var(--color-fg);
-    background: rgb(7 8 21 / 0.8);
+    background: rgb(5 7 14 / 0.8);
     border: 1px solid var(--color-line);
     cursor: pointer;
   }

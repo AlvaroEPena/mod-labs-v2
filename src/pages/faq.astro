@@ -1,43 +1,119 @@
 ---
+/**
+ * FAQ (spec §16 phase 2). Job: answer the nervous first-timer fast. Layout: compact hero with a live
+ * question filter (interactive: state + count feedback + empty state) → accordion beside a sticky
+ * "ask me" card → CTA slab. FAQPage JSON-LD from the same data.
+ */
 import BaseLayout from "../layouts/BaseLayout.astro";
 import PageHero from "../components/ui/PageHero.astro";
 import FaqList from "../components/ui/FaqList.astro";
 import FinalCta from "../components/ui/FinalCta.astro";
 import Icon from "../components/ui/Icon.astro";
+import { faqLd } from "../components/layout/seo";
 import { faqs } from "../data/faq";
-
-const faqLd = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: faqs.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
-};
 ---
 
 <BaseLayout
   title="FAQ"
   description="Answers about console modding with Mod Labs: safety, online play, turnaround time, mail-in, data, warranty and what to bring."
-  jsonLd={[faqLd]}
+  jsonLd={[faqLd(faqs)]}
+  breadcrumbs={[{ name: "FAQ", path: "/faq" }]}
 >
   <PageHero
-    eyebrow="FAQ"
-    title="Questions, answered honestly"
-    highlight="answered honestly"
-    intro="New to modding? Start here. If your question isn't covered, send me a message and I'll explain it in plain English."
+    title="Questions, answered honestly."
+    highlight="answered honestly."
+    intro="New to modding? Start here. If your question isn't covered, ask me and I'll explain it in plain English."
     compact
-  />
-  <section class="section-y pt-10 sm:pt-14" aria-label="Frequently asked questions">
-    <div class="container-x grid gap-10 lg:grid-cols-[1.6fr_1fr] lg:gap-16">
-      <div class="reveal">
-        <FaqList items={faqs} openFirst />
+  >
+    <div class="search" data-faq-search hidden>
+      <label for="faq-q" class="sr-only">Search the questions</label>
+      <div class="search-box glass">
+        <Icon name="search" size={20} class="shrink-0 text-cyan" />
+        <input id="faq-q" type="search" class="search-input" placeholder="Try “online” or “mail-in”" autocomplete="off" enterkeyhint="search" aria-describedby="faq-count" />
       </div>
-      <aside class="card reveal h-fit p-7 lg:sticky lg:top-24" aria-labelledby="ask-title">
-        <Icon name="chat" size={28} class="text-cyan" />
-        <h2 id="ask-title" class="mt-4 text-2xl">Still wondering?</h2>
+      <p id="faq-count" class="mono mt-3 text-sm text-dim" data-faq-count aria-live="polite"></p>
+    </div>
+  </PageHero>
+
+  <section class="pb-20 sm:pb-28" aria-label="Frequently asked questions">
+    <div class="container-x grid gap-10 lg:grid-cols-12 lg:gap-12">
+      <div class="lg:col-span-8">
+        <div class="card px-5 py-1 sm:px-8" data-faq-list>
+          <FaqList items={faqs} openFirst />
+          <div class="empty" data-faq-empty hidden>
+            <p class="font-semibold text-fg">Nothing about “<span data-faq-query></span>” yet.</p>
+            <p class="mt-1.5 text-muted">Ask me directly and I'll answer it, probably within a day.</p>
+            <a href="/quote" class="btn btn-ghost btn-sm mt-5">Ask a question</a>
+          </div>
+        </div>
+      </div>
+      <aside class="ask glass lg:col-span-4" aria-labelledby="ask-title">
+        <span class="icon-pad" aria-hidden="true"><Icon name="chat" size={22} /></span>
+        <h2 id="ask-title" class="mt-5 text-2xl">Still wondering?</h2>
         <p class="mt-2 leading-relaxed text-muted">Ask me anything about your console, a repair or a custom idea. No question is too basic.</p>
-        <a href="/quote" class="btn btn-primary mt-6 w-full">Ask a question</a>
-        <a href="/services" class="btn btn-ghost mt-3 w-full">See prices</a>
+        <a href="/quote" class="btn btn-primary mt-6 w-full">Ask a question <Icon name="arrow" size={18} /></a>
+        <a href="/services" class="link-arrow mt-3 w-full justify-center">See prices <Icon name="arrow" size={16} /></a>
       </aside>
     </div>
   </section>
+
   <FinalCta />
 </BaseLayout>
+
+<script>
+  import "../scripts/faq-filter";
+</script>
+
+<style>
+  .search {
+    margin-top: 1.75rem;
+    max-width: 34rem;
+  }
+  .search-box {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-height: 3.5rem;
+    padding: 0 1.15rem;
+    border-radius: 999px;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.25s;
+  }
+  .search-box:focus-within {
+    border-color: rgb(78 224 239 / 0.6);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.1),
+      0 0 0 6px rgb(78 224 239 / 0.1);
+  }
+  .search-input {
+    flex: 1;
+    min-width: 0;
+    height: 3.25rem;
+    font-size: 1rem;
+    color: var(--color-fg);
+    background: transparent;
+    border: 0;
+    outline: 0;
+  }
+  .search-input::placeholder {
+    color: #7a8399;
+  }
+  .search-input::-webkit-search-cancel-button {
+    filter: invert(0.8);
+  }
+  .empty {
+    padding: 2rem 0 2.25rem;
+  }
+  .ask {
+    align-self: start;
+    padding: 1.85rem;
+    border-radius: var(--radius-card);
+  }
+  @media (width >= 64rem) {
+    .ask {
+      position: sticky;
+      top: calc(var(--header-h) + 1.5rem);
+    }
+  }
+</style>

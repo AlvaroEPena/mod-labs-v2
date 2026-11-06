@@ -1,0 +1,141 @@
+---
+/**
+ * Accessible 1-5 star picker: a fieldset of five native radios (name from the review contract) drawn as
+ * stars. Arrow keys move and select (native radio group), every star is a 44px target, stars up to the
+ * chosen one light up, and on fine pointers hovering previews a rating. Nothing depends on hover.
+ * The live text is updated by src/scripts/forms/star-rating.ts.
+ */
+import { iconBody } from "../ui/icons";
+import { RATING_PROMPT, starLabel } from "../../scripts/forms/rating";
+
+interface Props {
+  /** form id prefix, e.g. "review" */
+  id: string;
+  name: string;
+}
+const { id, name } = Astro.props;
+const values = [1, 2, 3, 4, 5];
+const star = iconBody("star-fill");
+const errorId = `${id}-${name}-error`;
+---
+
+<fieldset class="rating" aria-describedby={errorId}>
+  <legend class="field-label">Your rating</legend>
+  <div class="rating-row" data-star-rating>
+    <div class="stars">
+      {
+        values.map((v) => (
+          <>
+            <input class="star-input" type="radio" name={name} id={`${id}-${name}-${v}`} value={v} required />
+            <label for={`${id}-${name}-${v}`} class="star">
+              <svg viewBox="0 0 256 256" width="30" height="30" fill="currentColor" aria-hidden="true" focusable="false" set:html={star} />
+              <span class="sr-only">{starLabel(v)}</span>
+            </label>
+          </>
+        ))
+      }
+    </div>
+    <span class="star-text mono" aria-hidden="true" data-star-text>{RATING_PROMPT}</span>
+  </div>
+  <p class="field-error" id={errorId} data-error-for={name}></p>
+</fieldset>
+
+<script>
+  import "../../scripts/forms/star-rating";
+</script>
+
+<style>
+  .rating-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+  }
+  .stars {
+    position: relative;
+    display: flex;
+    gap: 0.15rem;
+    padding: 0.3rem;
+    border-radius: 999px;
+    background: rgb(5 7 14 / 0.55);
+    border: 1px solid var(--color-line);
+    box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.35);
+  }
+  /* the radios stay in the tab order and the accessibility tree; only their box is hidden */
+  .star-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .star {
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 999px;
+    color: rgb(255 255 255 / 0.38);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition:
+      color 0.2s,
+      transform 0.25s var(--ease-out-expo);
+  }
+  .star svg {
+    transition: filter 0.25s;
+  }
+  .star:active {
+    transform: scale(0.9);
+  }
+  .star-input:focus-visible + .star {
+    outline: 2px solid var(--color-cyan);
+    outline-offset: -2px;
+  }
+  .star-input[aria-invalid="true"] + .star {
+    color: rgb(255 154 168 / 0.45);
+  }
+
+  /* chosen: every star up to the checked one is lit, the ones after it go dark again */
+  .stars:has(.star-input:checked) .star {
+    color: var(--color-cyan);
+  }
+  .stars:has(.star-input:checked) .star svg {
+    filter: drop-shadow(0 0 6px rgb(78 224 239 / 0.55));
+  }
+  .star-input:checked + .star ~ .star {
+    color: rgb(255 255 255 / 0.38);
+  }
+  .star-input:checked + .star ~ .star svg {
+    filter: none;
+  }
+
+  /* hover preview, fine pointers only (on touch a tap simply selects) */
+  @media (hover: hover) and (pointer: fine) {
+    .stars:has(.star:hover) .star {
+      color: var(--color-cyan-soft);
+    }
+    .stars .star:hover ~ .star {
+      color: rgb(255 255 255 / 0.38);
+    }
+    .stars .star:hover ~ .star svg {
+      filter: none;
+    }
+  }
+
+  .star-text {
+    font-size: 0.85rem;
+    color: var(--color-muted);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .star-input:checked + .star svg {
+      animation: star-pop 0.4s var(--ease-snap);
+    }
+  }
+  @keyframes star-pop {
+    40% {
+      transform: scale(1.25);
+    }
+  }
+</style>

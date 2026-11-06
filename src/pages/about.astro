@@ -1,87 +1,91 @@
 ---
+/**
+ * About (spec §16 phase 2). Job: put a person behind the bench and earn trust. Layout families: split hero
+ * with dealt photo prints → story with a sticky pull quote and a toolkit → scroll-drawn origin trace
+ * (interactive storytelling) → asymmetric principles pair with a drop-off/mail-in strip → CTA slab.
+ */
 import BaseLayout from "../layouts/BaseLayout.astro";
 import PageHero from "../components/ui/PageHero.astro";
-import SectionHead from "../components/ui/SectionHead.astro";
+import PhotoStack from "../components/about/PhotoStack.astro";
+import OriginTrace from "../components/about/OriginTrace.astro";
 import FinalCta from "../components/ui/FinalCta.astro";
-import Photo from "../components/media/Photo.astro";
 import Icon from "../components/ui/Icon.astro";
-import { aboutPhotos } from "../components/media/picks";
 import { site } from "../data/site";
 
-const { bench, board } = aboutPhotos();
+const toolkit = ["Soldering", "PCB rework", "Component-level diagnostics", "Wiring", "System-level troubleshooting"];
 ---
 
 <BaseLayout
   title="About Alvaro"
   description="Meet Alvaro, the hardware modder and electronics tech behind Mod Labs in Seattle: 9+ years of repair, micro-soldering and custom builds, with local drop-off and mail-in."
+  breadcrumbs={[{ name: "About", path: "/about" }]}
 >
   <PageHero
-    eyebrow="About"
     title="Hi, I'm Alvaro. This is my lab."
     highlight="my lab."
     intro="Mod Labs is a one-person, mod-first shop in Seattle, with room for repair work when a board needs help beyond the usual install."
-  />
+  >
+    <PhotoStack slot="aside" />
+  </PageHero>
 
-  <section class="section-y" aria-labelledby="me-title">
-    <div class="container-x grid items-start gap-12 lg:grid-cols-[1fr_1.1fr] lg:gap-16">
-      <div class="reveal relative mx-auto w-full max-w-md lg:sticky lg:top-24">
-        <div class="about-frame">
-          <Photo photo={bench} ratio="4 / 5" sizes="(min-width: 1024px) 440px, 90vw" widths={[400, 800]} class="rounded-[1.4rem]" alt="Alvaro's workbench: a digital microscope showing a Switch board mid-install" />
+  <section class="section-y" aria-labelledby="story-title">
+    <div class="container-x grid gap-12 lg:grid-cols-12 lg:gap-16">
+      <div class="lg:col-span-7">
+        <h2 id="story-title" class="reveal max-w-xl text-4xl sm:text-5xl">A lifelong tinkerer, doing the job right.</h2>
+        <div class="prose-lab reveal mt-7 text-[1.06rem]">
+          <p>
+            I'm a hardware modder, electronics tech and lifelong tinkerer based in {site.location.city}. Whether it's a simple fix or a
+            full custom mod, I focus on doing the job right, with transparency and craftsmanship you can trust.
+          </p>
+          <p>You'll always know what I'm doing to your console and why. These are the skills behind every job:</p>
         </div>
-        <div class="about-inset">
-          <Photo photo={board} ratio="1 / 1" sizes="160px" widths={[400]} class="rounded-2xl" alt="A trimmed Wii motherboard with relocated chips, part of a GWii build" />
-        </div>
+        <ul class="reveal-stagger mt-6 flex flex-wrap gap-2" aria-label="Skills">
+          {toolkit.map((t) => <li class="chip">{t}</li>)}
+        </ul>
       </div>
+      <figure class="quote glass reveal lg:col-span-5">
+        <Icon name="quotes" size={34} class="text-cyan" />
+        <blockquote class="mt-4">
+          <p>If it has wires, chips or moving parts, I can probably fix it, improve it or make it cooler.</p>
+        </blockquote>
+        <figcaption class="mt-6 text-sm text-muted">{site.owner}, Mod Labs</figcaption>
+      </figure>
+    </div>
+  </section>
 
-      <div>
-        <SectionHead id="me-title" eyebrow="Who am I?" title="A lifelong tinkerer with a soldering iron" highlight="soldering iron" />
-        <div class="prose-lab reveal mt-6 text-[1.05rem]">
-          <p>
-            I'm Alvaro, a hardware modder, electronics tech and lifelong tinkerer based in {site.location.city}. I've spent over nine
-            years repairing, modifying and bringing hardware back to life, from game consoles and PCs to custom electronics and even
-            cars.
-          </p>
-          <p>
-            My background blends computer science, IT support and deep hands-on repair work. I grew up learning mechanical and
-            electrical troubleshooting from my dad, a senior mechanic for buses.
-          </p>
-          <p>
-            Over the years I've built strong skills in soldering, PCB rework, component-level diagnostics, wiring and system-level
-            troubleshooting. Whether it's a simple fix or a full custom mod, I focus on doing the job right, with transparency and
-            craftsmanship you can trust. <strong>If it has wires, chips or moving parts, I can probably fix it, improve it or make it cooler.</strong>
+  <OriginTrace />
+
+  <section class="section-y" aria-labelledby="work-title">
+    <div class="container-x">
+      <h2 id="work-title" class="reveal max-w-2xl text-4xl sm:text-5xl">How I treat your console.</h2>
+      <div class="reveal-stagger mt-12 grid gap-4 lg:grid-cols-12">
+        <div class="note-lead card glow-edge p-7 sm:p-9 lg:col-span-7">
+          <span class="icon-pad" aria-hidden="true"><Icon name="hand" size={22} /></span>
+          <h3 class="mt-5 text-2xl">Like it's staying in my own collection</h3>
+          <p class="mt-3 leading-relaxed text-muted">
+            Clean flux habits, careful torque on screws, strain relief on flex cables, and a full test before it goes back to you. Everything
+            is personalized and noob-friendly. Questions are always welcome, and I'll keep you posted on progress.
           </p>
         </div>
-
-        <div class="reveal-stagger mt-12 grid gap-5 sm:grid-cols-2">
-          <div class="card p-6">
-            <Icon name="hand" size={26} class="text-cyan" />
-            <h2 class="mt-4 text-xl">How I work</h2>
-            <p class="mt-2 leading-relaxed text-muted">
-              Every build is treated like it's staying in my own collection: clean flux habits, careful torque on screws, strain relief
-              on flex cables, and a full test before it goes back to you. Everything is personalized and noob-friendly. Questions are
-              always welcome, and I'll keep you posted on progress.
-            </p>
-          </div>
-          <div class="card p-6">
-            <Icon name="shield" size={26} class="text-purple-soft" />
-            <h2 class="mt-4 text-xl">Devices & data</h2>
-            <p class="mt-2 leading-relaxed text-muted">
-              Your device may hold personal data. Back up anything important before dropping off or shipping, just in case. Storage
-              isn't wiped for typical mod installs unless you ask. If a device turns out to be unrepairable, I'll contact you with next
-              steps.
-            </p>
-          </div>
-          <div class="card p-6">
-            <Icon name="pin" size={26} class="text-cyan" />
-            <h2 class="mt-4 text-xl">Local drop-off</h2>
-            <p class="mt-2 leading-relaxed text-muted">{site.serviceArea.local}</p>
-          </div>
-          <div class="card p-6">
-            <Icon name="truck" size={26} class="text-purple-soft" />
-            <h2 class="mt-4 text-xl">Mail-in</h2>
-            <p class="mt-2 leading-relaxed text-muted">{site.serviceArea.mailIn}</p>
-          </div>
+        <div class="card glow-edge p-7 sm:p-9 lg:col-span-5">
+          <span class="icon-pad" aria-hidden="true"><Icon name="shield" size={22} /></span>
+          <h3 class="mt-5 text-2xl">Your devices and data</h3>
+          <p class="mt-3 leading-relaxed text-muted">
+            Your device may hold personal data, so back up anything important before dropping it off or shipping it. Storage isn't wiped
+            for typical mod installs unless you ask. If a device turns out to be unrepairable, I'll contact you with next steps.
+          </p>
         </div>
+        <a href="/services#delivery" class="strip card glow-edge lg:col-span-12">
+          <span class="strip-item">
+            <Icon name="pin" size={20} class="shrink-0 text-cyan" />
+            <span>{site.serviceArea.local}</span>
+          </span>
+          <span class="strip-item">
+            <Icon name="truck" size={20} class="shrink-0 text-cyan" />
+            <span>{site.serviceArea.mailIn}</span>
+          </span>
+          <span class="strip-go">How drop-off and mail-in work <Icon name="arrow" size={16} /></span>
+        </a>
       </div>
     </div>
   </section>
@@ -90,26 +94,63 @@ const { bench, board } = aboutPhotos();
 </BaseLayout>
 
 <style>
-  .about-frame {
-    padding: 4px;
-    border-radius: 1.6rem;
-    background: linear-gradient(150deg, rgb(0 229 255 / 0.8), rgb(168 85 247 / 0.5) 55%, rgb(255 61 242 / 0.6));
-    box-shadow: 0 40px 80px -40px rgb(168 85 247 / 0.9);
+  .quote {
+    align-self: start;
+    padding: 2rem;
+    border-radius: var(--radius-card);
   }
-  .about-inset {
-    position: absolute;
-    right: -0.75rem;
-    bottom: -1.5rem;
-    width: 38%;
-    padding: 3px;
-    border-radius: 1.1rem;
-    background: var(--color-ink);
-    border: 1px solid rgb(0 229 255 / 0.5);
-    box-shadow: 0 20px 40px -10px rgb(0 0 0 / 0.9);
-  }
-  @media (width >= 48rem) {
-    .about-inset {
-      right: -2rem;
+  @media (width >= 64rem) {
+    .quote {
+      position: sticky;
+      top: calc(var(--header-h) + 1.5rem);
+      margin-top: 0.5rem;
+      padding: 2.5rem;
     }
+  }
+  .quote blockquote p {
+    font-size: clamp(1.5rem, 1.2rem + 1.1vw, 2rem);
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.025em;
+    color: var(--color-fg);
+    text-wrap: balance;
+  }
+  .note-lead {
+    background:
+      radial-gradient(28rem 16rem at 0% 0%, rgb(78 224 239 / 0.1), transparent 70%),
+      linear-gradient(180deg, rgb(255 255 255 / 0.055), rgb(255 255 255 / 0.015) 60%),
+      rgb(12 17 31 / 0.64);
+  }
+  .strip {
+    display: grid;
+    gap: 1rem;
+    padding: 1.4rem 1.6rem;
+    text-decoration: none;
+    color: var(--color-muted);
+  }
+  @media (width >= 64rem) {
+    .strip {
+      grid-template-columns: 1fr 1fr auto;
+      align-items: center;
+      gap: 2rem;
+      padding: 1.5rem 2rem;
+    }
+  }
+  .strip-item {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    line-height: 1.5;
+  }
+  .strip-go {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-weight: 600;
+    color: var(--color-cyan-soft);
+    white-space: nowrap;
+  }
+  .strip:hover .strip-go {
+    color: var(--color-cyan);
   }
 </style>

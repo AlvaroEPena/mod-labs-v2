@@ -8,7 +8,7 @@
   "scripts": {
     "prebuild": "node scripts/predeploy-check.mjs --ci-only",
     "dev": "astro dev",
-    "dev:full": "astro build && wrangler dev --port 8787 --local-upstream localhost:8787",
+    "dev:full": "astro build && wrangler d1 migrations apply mod-labs-reviews --local && wrangler dev --port 8787 --local-upstream localhost:8787",
     "build": "astro build",
     "preview": "wrangler dev --port 8787 --local-upstream localhost:8787",
     "admin": "node admin/server.ts",
@@ -18,7 +18,11 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "check": "npm run typecheck && npm run lint && npm test",
-    "deploy": "node scripts/predeploy-check.mjs && astro build && node scripts/predeploy-check.mjs && wrangler deploy"
+    "deploy": "node scripts/predeploy-check.mjs && astro build && node scripts/predeploy-check.mjs && wrangler deploy",
+    "db:migrate:local": "wrangler d1 migrations apply mod-labs-reviews --local",
+    "db:migrate:remote": "wrangler d1 migrations apply mod-labs-reviews --remote",
+    "db:seed:local": "wrangler d1 execute mod-labs-reviews --local --file worker/reviews/dev-seed.sql",
+    "reviews:pending": "wrangler d1 execute mod-labs-reviews --remote --command \"SELECT id, name, rating, datetime(created_at / 1000, 'unixepoch') AS submitted FROM reviews WHERE status = 'pending' ORDER BY created_at DESC\""
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
@@ -42,11 +46,13 @@
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.63.0",
     "@types/node": "^24.13.6",
+    "esbuild": "^0.28.2",
     "eslint": "^10.11.0",
     "eslint-plugin-astro": "^3.2.1",
+    "miniflare": "5.20260923.0-alpha",
     "prettier": "^3.9.9",
     "prettier-plugin-astro": "^1.1.0",
-    "sharp": "^0.35.4",
+    "sharp": "^0.35.5",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.70.1",
     "vitest": "~4.1.11",

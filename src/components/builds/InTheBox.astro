@@ -1,0 +1,75 @@
+---
+/** What ships with a build, as one packing-slip panel: in the box (lit) beside not included (dimmed). */
+import Icon from "../ui/Icon.astro";
+import type { Build } from "../../data/builds";
+
+interface Props {
+  build: Build;
+}
+const { build } = Astro.props;
+const hasExclusions = build.notIncluded.length > 0;
+---
+
+<div class:list={["box card reveal", hasExclusions && "has-two"]}>
+  <div class="box-col">
+    <h3 class="box-title"><span class="icon-pad is-sm" aria-hidden="true"><Icon name="package" size={18} /></span> In the box</h3>
+    <ul class="solder-list mt-4">
+      {build.included.map((i) => <li>{i}</li>)}
+    </ul>
+  </div>
+  {
+    hasExclusions && (
+      <div class="box-col is-out">
+        <h3 class="box-title">
+          <span class="icon-pad is-sm is-dim" aria-hidden="true">
+            <Icon name="x" size={18} />
+          </span>
+          Not included
+        </h3>
+        <ul class="solder-list is-muted mt-4">
+          {build.notIncluded.map((i) => (
+            <li>{i}</li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
+</div>
+
+<style>
+  .box {
+    display: grid;
+    margin-top: 1rem;
+  }
+  .box-col {
+    padding: 1.5rem;
+  }
+  @media (width >= 40rem) {
+    .box-col {
+      padding: 1.85rem 2rem;
+    }
+  }
+  .box-col.is-out {
+    border-top: 1px dashed var(--color-line);
+  }
+  @media (width >= 48rem) {
+    .box.has-two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .box-col.is-out {
+      border-top: 0;
+      border-left: 1px dashed var(--color-line);
+    }
+  }
+  .box-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.2rem;
+  }
+  .icon-pad.is-dim {
+    color: var(--color-dim);
+    background: rgb(255 255 255 / 0.03);
+    border-color: var(--color-line);
+  }
+</style>

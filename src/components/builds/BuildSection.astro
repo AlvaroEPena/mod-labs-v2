@@ -1,0 +1,91 @@
+---
+/**
+ * One commission build on /builds: the photo carousel (lightbox on tap) beside a sticky glass info
+ * panel (price, story, the one CTA), then the spec explorer and the box contents. `flip` mirrors the
+ * top row so the two builds don't read as the same block twice.
+ */
+import Carousel from "../ui/Carousel.astro";
+import Icon from "../ui/Icon.astro";
+import FeatureExplorer from "./FeatureExplorer.astro";
+import InTheBox from "./InTheBox.astro";
+import { buildCover } from "../media/picks";
+import { photosFor } from "../../data/gallery";
+import type { Build } from "../../data/builds";
+
+interface Props {
+  build: Build;
+  flip?: boolean;
+}
+const { build: b, flip = false } = Astro.props;
+
+/** carousel order: lead with the beauty shot, then the rest of the build log */
+const cover = buildCover(b.slug);
+const slides = [cover, ...photosFor(b.project).filter((p) => p.id !== cover.id)];
+---
+
+<section id={b.slug} class:list={["build section-y ambient scroll-mt-16", flip && "is-flip"]} aria-labelledby={`${b.slug}-title`}>
+  <div class="container-x">
+    <div class="top">
+      <div class="media reveal min-w-0">
+        <Carousel photos={slides} label={`${b.name} photos`} group={`build-${b.slug}`} />
+      </div>
+      <div class="info glass min-w-0">
+        <h2 id={`${b.slug}-title`} class="text-3xl sm:text-4xl">{b.name}</h2>
+        <p class="mt-3 text-lg leading-snug font-medium text-fg">{b.tagline}</p>
+        <div class="mt-6 flex flex-wrap items-center gap-3">
+          <p class="mono text-5xl leading-none text-fg"><span class="sr-only">Price: </span>${b.price}</p>
+          <span class="chip">Made to order</span>
+        </div>
+        <p class="mt-6 leading-relaxed text-muted">{b.description}</p>
+        <a href={`/quote?build=${b.slug}`} class="btn btn-primary btn-lg mt-8 w-full">
+          Request this build<span class="sr-only">: {b.name}</span>
+          <Icon name="arrow" size={18} />
+        </a>
+        <p class="mt-4 flex items-start gap-2 text-sm leading-relaxed text-dim">
+          <Icon name="clock" size={16} class="mt-0.5 shrink-0 text-cyan" /> Hand-built to order. Timeline and details are confirmed with your quote.
+        </p>
+      </div>
+    </div>
+
+    <FeatureExplorer build={b} />
+    <InTheBox build={b} />
+  </div>
+</section>
+
+<style>
+  .build {
+    --ax: 20%;
+    --ay: 18%;
+  }
+  .build.is-flip {
+    --ax: 80%;
+    --ac: rgb(139 124 246 / 0.14);
+  }
+  .top {
+    display: grid;
+    gap: 1.25rem;
+    align-items: start;
+  }
+  .info {
+    padding: 1.6rem;
+    border-radius: var(--radius-card);
+  }
+  @media (width >= 40rem) {
+    .info {
+      padding: 2.25rem;
+    }
+  }
+  @media (width >= 64rem) {
+    .top {
+      grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+      gap: 2.5rem;
+    }
+    .is-flip .media {
+      order: 2;
+    }
+    .info {
+      position: sticky;
+      top: calc(var(--header-h) + 1.25rem);
+    }
+  }
+</style>

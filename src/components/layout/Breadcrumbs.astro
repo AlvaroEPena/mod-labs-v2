@@ -1,0 +1,73 @@
+---
+/**
+ * "You are here" trail, shown quietly at the foot of inner pages (above the footer, like a store's
+ * product pages) so heroes stay clean. Mirrors the BreadcrumbList JSON-LD from the same crumbs.
+ */
+import Icon from "../ui/Icon.astro";
+import { withHome, type Crumb } from "./seo";
+
+interface Props {
+  crumbs: Crumb[];
+}
+const trail = withHome(Astro.props.crumbs);
+---
+
+<nav aria-label="Breadcrumb" class="crumbs container-x">
+  <ol>
+    {
+      trail.map((c, i) => {
+        const isLast = i === trail.length - 1;
+        return (
+          <li>
+            {i > 0 && <Icon name="caret-right" size={12} class="sep" />}
+            {isLast ? (
+              <span aria-current="page">{c.name}</span>
+            ) : (
+              <a href={c.path}>
+                {i === 0 && <Icon name="home" size={15} />}
+                {c.name}
+              </a>
+            )}
+          </li>
+        );
+      })
+    }
+  </ol>
+</nav>
+
+<style>
+  .crumbs {
+    padding-block: 1.25rem 0.5rem;
+  }
+  ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.15rem 0.35rem;
+    font-size: 0.88rem;
+    color: var(--color-dim);
+  }
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2.75rem;
+    color: var(--color-muted);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  a:hover {
+    color: var(--color-cyan);
+  }
+  [aria-current="page"] {
+    color: var(--color-fg);
+  }
+  li :global(.sep) {
+    color: var(--color-dim);
+  }
+</style>

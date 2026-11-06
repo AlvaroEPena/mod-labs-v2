@@ -1,4 +1,9 @@
 ---
+/**
+ * Request a quote (spec §16 phase 2). Job: describe a repair, custom job or commission (with photos).
+ * Layout: compact hero → glass form (request type, photo dropzone) beside a sticky "how quotes work"
+ * trace. ?build=<slug> preselects the commission. No phone CTA pill on form pages.
+ */
 import BaseLayout from "../layouts/BaseLayout.astro";
 import PageHero from "../components/ui/PageHero.astro";
 import QuoteForm from "../components/forms/QuoteForm.astro";
@@ -10,20 +15,20 @@ import Icon from "../components/ui/Icon.astro";
   title="Request a Quote"
   description="Request a quote from Mod Labs in Seattle: electronics and controller repair, custom shells and RGB, or a GWii / Wii Miicro commission build."
   ctaBar={false}
+  breadcrumbs={[{ name: "Get a quote", path: "/quote" }]}
 >
   <PageHero
-    eyebrow="Get a quote"
-    title="Tell me what you've got"
-    highlight="what you've got"
+    title="Tell me what you've got."
+    highlight="what you've got."
     intro="Repairs, custom shells, commission builds or just a question. Add a few photos and I'll come back with a clear price before any work starts."
     compact
   />
-  <section class="section-y pt-10 sm:pt-12">
-    <div class="container-x grid items-start gap-8 lg:grid-cols-[1.6fr_1fr] lg:gap-12">
-      <div class="card p-5 sm:p-8">
+  <section class="pb-20 sm:pb-28">
+    <div class="container-x grid items-start gap-6 lg:grid-cols-12 lg:gap-10">
+      <div class="form-card card p-5 sm:p-9 lg:col-span-8">
         <QuoteForm />
       </div>
-      <div class="grid gap-5 lg:sticky lg:top-24">
+      <div class="grid gap-4 lg:sticky lg:top-24 lg:col-span-4">
         <FormAside
           title="How quotes work"
           steps={[
@@ -32,12 +37,25 @@ import Icon from "../components/ui/Icon.astro";
             { icon: "check", text: "Nothing happens until you say go." },
           ]}
         />
-        <div class="card p-6 sm:p-7">
-          <h2 class="flex items-center gap-2 text-xl"><Icon name="bolt" size={20} class="text-cyan" /> Want a priced mod?</h2>
-          <p class="mt-2 leading-relaxed text-muted">Xbox 360 RGH and Switch modchips have fixed prices, so you can book them directly.</p>
-          <a href="/book" class="btn btn-ghost mt-5 w-full">Book a service</a>
-        </div>
+        <a href="/book" class="alt card glow-edge">
+          <span class="icon-pad is-sm" aria-hidden="true"><Icon name="bolt" size={18} /></span>
+          <span class="min-w-0 flex-1">
+            <span class="block font-semibold text-fg">Want a priced mod?</span>
+            <span class="block text-sm text-muted">Xbox 360 RGH and Switch modchips have fixed prices. Book a service directly.</span>
+          </span>
+          <Icon name="arrow" size={18} class="shrink-0 text-cyan" />
+        </a>
       </div>
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  .alt {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 1.1rem 1.25rem;
+    text-decoration: none;
+  }
+</style>

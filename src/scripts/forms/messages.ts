@@ -1,6 +1,7 @@
 /**
  * Pure helpers for form UX: API result → friendly copy, no-JS redirect status (?sent / ?error),
  * zod issues → per-field errors. No DOM access here, so everything is unit-testable.
+ * Each form kind has a CopySet (requests: book/quote; reviews), chosen in kinds.ts.
  */
 import type { ApiResult } from "../../lib/forms/schema";
 
@@ -19,6 +20,27 @@ export const errorCopy: Record<ErrorCode, string> = {
 
 export const successCopy = "Got it! Your request is on my bench. I'll reply by email, usually within a day.";
 
+/** What a form says on success and for each error code. */
+export type CopySet = { success: string; errors: Record<ErrorCode, string>; noJsValidation: string };
+
+export const requestCopy: CopySet = {
+  success: successCopy,
+  errors: errorCopy,
+  noJsValidation: "Some fields were missing or invalid. Please check the form and send it again.",
+};
+
+export const reviewCopy: CopySet = {
+  success: "Thanks! Your review is in. It'll show up on the site once I've approved it.",
+  errors: {
+    ...errorCopy,
+    rate_limited: "That's a lot of reviews in a short time. Please wait a minute, then try again.",
+    too_large: "That review is too long to send. Please trim it a little and try again.",
+    not_configured: "Reviews aren't switched on yet, so yours couldn't be saved. Please DM me instead, or try again later.",
+    server: "Something went wrong on my end and your review wasn't saved. Please try again in a moment.",
+  },
+  noJsValidation: "Some fields were missing or invalid. Please check your review and send it again.",
+};
+
 const known = new Set<string>(Object.keys(errorCopy));
 export const isErrorCode = (v: unknown): v is ErrorCode => typeof v === "string" && known.has(v);
 
@@ -27,31 +49,31 @@ export type Outcome =
   | { kind: "error"; code: ErrorCode; message: string; fieldErrors?: Record<string, string[]> };
 
 /** Interpret a parsed JSON body (or its absence) + HTTP status from /api/book or /api/quote. */
-export function outcomeFromResponse(status: number, body: unknown): Outcome {
+export function outcomeFromResponse(status: number, body: unknown, copy: CopySet = requestCopy): Outcome {
   const r = body as Partial<ApiResult> | null;
-  if (r && r.ok === true) return { kind: "success", message: successCopy };
+  if (r && r.ok === true) return { kind: "success", message: copy.success };
   if (r && r.ok === false) {
     if (r.error === "validation" && "fieldErrors" in r && r.fieldErrors) {
       const fieldErrors = withoutHoneypot(r.fieldErrors);
-      if (!fieldErrors) return { kind: "error", code: "server", message: errorCopy.server };
-      return { kind: "error", code: "validation", message: errorCopy.validation, fieldErrors };
+      if (!fieldErrors) return { kind: "error", code: "server", message: copy.errors.server };
+      return { kind: "error", code: "validation", message: copy.errors.validation, fieldErrors };
     }
-    if (isErrorCode(r.error)) return { kind: "error", code: r.error, message: errorCopy[r.error] };
+    if (isErrorCode(r.error)) return { kind: "error", code: r.error, message: copy.errors[r.error] };
   }
   // No usable JSON: fall back on the HTTP status
   const code: ErrorCode =
     status === 413 ? "too_large" : status === 429 ? "rate_limited" : status === 403 ? "captcha" : status === 503 ? "not_configured" : "server";
-  return { kind: "error", code, message: errorCopy[code] };
+  return { kind: "error", code, message: copy.errors[code] };
 }
 
 /** Status for the no-JS fallback: the Worker 303-redirects back with ?sent=1 or ?error=<code>. */
-export function outcomeFromQuery(search: string): Outcome | null {
+export function outcomeFromQuery(search: string, copy: CopySet = requestCopy): Outcome | null {
   const q = new URLSearchParams(search);
-  if (q.get("sent") === "1") return { kind: "success", message: successCopy };
+  if (q.get("sent") === "1") return { kind: "success", message: copy.success };
   const err = q.get("error");
   if (err === null) return null;
   const code = isErrorCode(err) && err !== "network" ? err : "server";
-  const message = code === "validation" ? "Some fields were missing or invalid. Please check the form and send it again." : errorCopy[code];
+  const message = code === "validation" ? copy.noJsValidation : copy.errors[code];
   return { kind: "error", code, message };
 }
 
@@ -78,6 +100,10 @@ export const fieldLabels: Record<string, string> = {
   delivery: "Delivery",
   message: "Message",
   photos: "Photos",
+  rating: "Rating",
+  service: "Service",
+  source: "How you heard about Mod Labs",
+  body: "Review",
   consent: "Consent",
 };
 

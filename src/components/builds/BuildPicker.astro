@@ -1,0 +1,98 @@
+---
+/**
+ * /builds hero visual: both commissions as two product cards side by side (even on phones), each jumping
+ * to its section. The second card sits lower, so the pair reads as a composition, not a grid.
+ */
+import Photo from "../media/Photo.astro";
+import Icon from "../ui/Icon.astro";
+import { buildCover } from "../media/picks";
+import { builds } from "../../data/builds";
+---
+
+<ul class="picker" aria-label="The builds">
+  {
+    builds.map((b, i) => (
+      <li class:list={["pick", i === 1 && "is-low"]}>
+        <a href={`#${b.slug}`} class="pick-link">
+          <span class="pick-frame glass">
+            <Photo
+              photo={buildCover(b.slug)}
+              ratio="4 / 5"
+              sizes="(min-width: 1024px) 260px, 45vw"
+              widths={[320, 640]}
+              priority={i === 0}
+              class="pick-photo"
+            />
+          </span>
+          <span class="pick-cap glass">
+            <span class="min-w-0">
+              <span class="block text-sm leading-tight font-semibold text-fg sm:text-base">{b.name}</span>
+              <span class="mono mt-0.5 block text-base text-cyan-soft sm:text-lg">
+                <span class="sr-only">Price: </span>${b.price}
+              </span>
+            </span>
+            <Icon name="arrow-down" size={18} class="pick-go shrink-0" />
+          </span>
+        </a>
+      </li>
+    ))
+  }
+</ul>
+
+<style>
+  .picker {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    max-width: 34rem;
+    margin-inline: auto;
+  }
+  @media (width >= 40rem) {
+    .picker {
+      gap: 1.25rem;
+    }
+  }
+  .pick.is-low {
+    margin-top: 2.5rem;
+  }
+  .pick-link {
+    position: relative;
+    display: block;
+    text-decoration: none;
+  }
+  .pick-frame {
+    display: block;
+    padding: 0.4rem;
+    border-radius: 1.5rem;
+  }
+  .pick-frame :global(.pick-photo) {
+    border-radius: 1.15rem;
+  }
+  .pick-frame :global(.pick-photo img) {
+    transition: transform 1s var(--ease-out-expo);
+  }
+  .pick-cap {
+    position: absolute;
+    left: 0.6rem;
+    right: 0.6rem;
+    bottom: 0.6rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.6rem 0.8rem;
+    border-radius: 1rem;
+  }
+  .pick-cap :global(.pick-go) {
+    color: var(--color-cyan);
+    transition: transform 0.35s var(--ease-out-expo);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .pick-link:hover :global(.pick-photo img) {
+      transform: scale(1.04);
+    }
+    .pick-link:hover :global(.pick-go) {
+      transform: translateY(2px);
+    }
+  }
+</style>

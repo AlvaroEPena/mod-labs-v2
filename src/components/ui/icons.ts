@@ -35,6 +35,24 @@ import image from "@phosphor-icons/core/regular/image.svg?raw";
 import refresh from "@phosphor-icons/core/regular/arrow-clockwise.svg?raw";
 import circuitry from "@phosphor-icons/core/regular/circuitry.svg?raw";
 import packageIcon from "@phosphor-icons/core/regular/package.svg?raw";
+import caretRight from "@phosphor-icons/core/regular/caret-right.svg?raw";
+import caretDown from "@phosphor-icons/core/regular/caret-down.svg?raw";
+import star from "@phosphor-icons/core/regular/star.svg?raw";
+import starFill from "@phosphor-icons/core/fill/star-fill.svg?raw";
+import search from "@phosphor-icons/core/regular/magnifying-glass.svg?raw";
+import monitor from "@phosphor-icons/core/regular/monitor.svg?raw";
+import speaker from "@phosphor-icons/core/regular/speaker-high.svg?raw";
+import sliders from "@phosphor-icons/core/regular/sliders-horizontal.svg?raw";
+import battery from "@phosphor-icons/core/regular/battery-charging.svg?raw";
+import usb from "@phosphor-icons/core/regular/usb.svg?raw";
+import hardDrive from "@phosphor-icons/core/regular/hard-drive.svg?raw";
+import bluetooth from "@phosphor-icons/core/regular/bluetooth.svg?raw";
+import tv from "@phosphor-icons/core/regular/television-simple.svg?raw";
+import cube from "@phosphor-icons/core/regular/cube.svg?raw";
+import pencil from "@phosphor-icons/core/regular/pencil-simple.svg?raw";
+import sealCheck from "@phosphor-icons/core/regular/seal-check.svg?raw";
+import arrowDown from "@phosphor-icons/core/regular/arrow-down.svg?raw";
+import quotes from "@phosphor-icons/core/regular/quotes.svg?raw";
 
 const icons = {
   arrow: arrowRight,
@@ -69,6 +87,24 @@ const icons = {
   refresh,
   circuit: circuitry,
   package: packageIcon,
+  "caret-right": caretRight,
+  "caret-down": caretDown,
+  star,
+  "star-fill": starFill,
+  search,
+  monitor,
+  speaker,
+  sliders,
+  battery,
+  usb,
+  "hard-drive": hardDrive,
+  bluetooth,
+  tv,
+  cube,
+  pencil,
+  "seal-check": sealCheck,
+  "arrow-down": arrowDown,
+  quotes,
 } as const;
 
 export type IconName = keyof typeof icons;

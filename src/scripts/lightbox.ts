@@ -3,7 +3,10 @@
  * on first intent (hover/touch/focus on a tile) and opened on click. Tiles are plain links to the
  * 1600px WebP, so everything still works without JS.
  * Swipe, pinch-zoom, keyboard arrows, Esc and focus return come from PhotoSwipe; we add
- * "back button closes the lightbox" via a history entry.
+ * "back button closes the lightbox" via a history entry and a caption showing the photo's description
+ * (its alt text). The glass skin (styles/lightbox.css) is imported by the components that host a gallery:
+ * Astro hoists CSS imported from client scripts into the page CSS, and inlines small files, which would
+ * leave a dynamic import pointing at a file that was never emitted.
  */
 import type PhotoSwipeType from "photoswipe";
 import type { SlideData } from "photoswipe";
@@ -70,6 +73,22 @@ async function open(gallery: Element, index: number) {
   pswp.on("destroy", () => {
     removeEventListener("popstate", onPop);
     if (!closedByHistory && history.state?.pswp) history.back();
+  });
+
+  // caption: the current photo's description, announced politely as the visitor moves through them
+  pswp.on("uiRegister", () => {
+    pswp.ui?.registerElement({
+      name: "caption",
+      order: 9,
+      isButton: false,
+      appendTo: "root",
+      onInit: (el) => {
+        el.setAttribute("aria-live", "polite");
+        const update = () => (el.textContent = String(pswp.currSlide?.data.alt ?? ""));
+        pswp.on("change", update);
+        update();
+      },
+    });
   });
 
   pswp.init();

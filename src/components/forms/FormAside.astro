@@ -1,4 +1,5 @@
 ---
+/** Form-page sidebar: "what happens next" as a short lit trace through icon pads, plus an optional slot. */
 import Icon from "../ui/Icon.astro";
 import type { IconName } from "../ui/icons";
 
@@ -9,16 +10,16 @@ interface Props {
 const { title, steps } = Astro.props;
 ---
 
-<aside class="card p-6 sm:p-7" aria-labelledby="aside-title">
+<aside class="aside glass" aria-labelledby="aside-title">
   <h2 id="aside-title" class="text-xl">{title}</h2>
-  <ol class="mt-5 grid gap-4">
+  <ol class="aside-steps mt-6">
     {
       steps.map((s, i) => (
-        <li class="flex gap-3.5">
-          <span class="aside-step" aria-hidden="true">
+        <li class="aside-step">
+          <span class="icon-pad is-sm" aria-hidden="true">
             <Icon name={s.icon} size={18} />
           </span>
-          <span class="pt-1 leading-relaxed text-muted">
+          <span class="pt-1.5 leading-relaxed text-muted">
             <span class="sr-only">Step {i + 1}: </span>
             {s.text}
           </span>
@@ -30,15 +31,38 @@ const { title, steps } = Astro.props;
 </aside>
 
 <style>
-  .aside-step {
-    flex: none;
+  .aside {
+    padding: 1.6rem;
+    border-radius: var(--radius-card);
+  }
+  @media (width >= 40rem) {
+    .aside {
+      padding: 1.9rem;
+    }
+  }
+  .aside-steps {
+    position: relative;
     display: grid;
-    place-items: center;
-    width: 2.25rem;
-    height: 2.25rem;
-    border-radius: 0.7rem;
-    color: var(--color-cyan);
-    border: 1px solid rgb(0 229 255 / 0.4);
-    background: rgb(0 229 255 / 0.06);
+    gap: 1.1rem;
+  }
+  /* the trace linking the pads */
+  .aside-steps::before {
+    content: "";
+    position: absolute;
+    top: 1.125rem;
+    bottom: 1.125rem;
+    left: calc(1.125rem - 1px);
+    width: 2px;
+    background: linear-gradient(180deg, var(--color-cyan), rgb(78 224 239 / 0.2));
+  }
+  .aside-step {
+    position: relative;
+    display: flex;
+    gap: 0.9rem;
+  }
+  .aside-step :global(.icon-pad) {
+    background:
+      linear-gradient(rgb(78 224 239 / 0.08), rgb(78 224 239 / 0.08)),
+      var(--color-panel);
   }
 </style>

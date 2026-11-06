@@ -1,22 +1,28 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Mod Labs">
   <defs>
-    <linearGradient id="ml-edge" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#00e5ff"/>
-      <stop offset="1" stop-color="#a855f7"/>
+    <linearGradient id="ml-e" x1="12" y1="6" x2="52" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#b8f6fc"/>
+      <stop offset=".5" stop-color="#4ee0ef"/>
+      <stop offset="1" stop-color="#8b7cf6"/>
     </linearGradient>
-    <linearGradient id="ml-liquid" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ff3df2"/>
-      <stop offset="1" stop-color="#a855f7"/>
+    <linearGradient id="ml-l" x1="0" y1="35" x2="0" y2="44.5" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#a9f2fa"/>
+      <stop offset=".55" stop-color="#4ee0ef"/>
+      <stop offset="1" stop-color="#7f8cf6"/>
     </linearGradient>
+    <radialGradient id="ml-g" cx="32" cy="40" r="20" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4ee0ef" stop-opacity=".2"/>
+      <stop offset="1" stop-color="#4ee0ef" stop-opacity="0"/>
+    </radialGradient>
   </defs>
-  <g stroke="url(#ml-edge)" stroke-width="3.2" stroke-linecap="round" fill="none">
-    <path d="M4 23h7M4 32h7M4 41h7M53 23h7M53 32h7M53 41h7M23 60v-7M32 60v-7M41 60v-7M23 4v7M41 4v7"/>
+  <g fill="none" stroke="url(#ml-e)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 24h8M5 32h8M5 40h8M51 24h8M51 32h8M51 40h8M24 51v8M32 51v8M40 51v8M24 5v8M40 5v8M32 7.5v7"/>
+    <path d="M21 13h22l8 8v22l-8 8H21l-8-8V21z" fill="#0b101d"/>
   </g>
-  <path d="M19 11h26l8 8v26l-8 8H19l-8-8V19z" fill="#0f1230" stroke="url(#ml-edge)" stroke-width="3.2" stroke-linejoin="round"/>
-  <path d="M25.2 42.6 29.4 34h5.2l4.2 8.6c.5 1.1-.3 2.4-1.5 2.4H26.7c-1.2 0-2-1.3-1.5-2.4z" fill="url(#ml-liquid)"/>
-  <path d="M28.4 20.5v8.8l-6.3 13c-1.2 2.5.6 5.2 3.3 5.2h13.2c2.7 0 4.5-2.7 3.3-5.2l-6.3-13v-8.8M26.2 20.5h11.6" fill="none" stroke="#f2f5ff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M32 4v12.2" stroke="#00e5ff" stroke-width="3.2" stroke-linecap="round"/>
-  <circle cx="32" cy="4.5" r="2.6" fill="#00e5ff"/>
-  <circle cx="30.4" cy="39.6" r="1.5" fill="#fff"/>
-  <circle cx="34.2" cy="36.6" r="1" fill="#fff" opacity=".8"/>
+  <path d="M21 13h22l8 8v22l-8 8H21l-8-8V21z" fill="url(#ml-g)"/>
+  <circle cx="32" cy="6" r="3" fill="#b8f6fc"/>
+  <path d="M27.3 35.5h9.4l3.8 7.1c.5.9-.2 1.9-1.2 1.9H24.7c-1 0-1.7-1-1.2-1.9z" fill="url(#ml-l)"/>
+  <path d="M28.6 19.5v8.2l-7.2 13.6c-1.1 2.1.4 4.7 2.8 4.7h15.6c2.4 0 3.9-2.6 2.8-4.7l-7.2-13.6v-8.2M26.2 19.5h11.6" fill="none" stroke="#eef2fa" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="30.4" cy="40.4" r="1.3" fill="#fff"/>
+  <circle cx="33.7" cy="38" r=".85" fill="#fff" fill-opacity=".8"/>
 </svg>
