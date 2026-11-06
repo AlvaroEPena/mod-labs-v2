@@ -60,7 +60,12 @@ Reviews are not in `src/data/`. Customers write them on `/reviews` and they're s
    so a mail app opening links in the background can't approve anything. Approve links last 30 days, delete links a year.
 4. Approved reviews appear on the home page (latest 3) and on `/reviews` straight away, in the page HTML, so Google sees them too.
 
-Lost the email? Run `npm run reviews:pending` to see what's waiting. No email addresses or IP addresses are stored.
+Lost the email, or the link expired? Run `npm run reviews:pending` to see what's waiting, then
+`npm run reviews:approve -- 12` or `npm run reviews:delete -- 12` (use the review's id). The site catches up within
+about a minute.
+
+No email addresses or IP addresses are stored. To stop one person flooding the form, each visitor gets 3 reviews a day,
+counted with a scrambled code that changes daily and is deleted after two days.
 
 ## Managing photos & videos
 Gallery photos and videos are managed with a small admin page that runs **only on your computer**.
@@ -137,7 +142,7 @@ Good to know:
 ## How this site is deployed (current setup)
 - **Live URL:** https://modlabs.store (domain from Namecheap, nameservers on Cloudflare).
   `www.modlabs.store` 301-redirects to it (proxied DNS record + zone Redirect Rule "Redirect from WWW to root").
-  Fallback: https://seattle.modlabs.workers.dev (Cloudflare Worker `seattle`, account subdomain `modlabs`).
+  Fallback: https://seattle.thecorvis.workers.dev (Cloudflare Worker `seattle`; the account's workers.dev subdomain is `thecorvis`, it used to be `modlabs`).
   The custom domain is declared in `wrangler.jsonc` → `routes`. The Turnstile widget must list `modlabs.store`.
 - **Automatic deploys:** the Worker is connected to GitHub (`AlvaroEPena/mod-labs-v2`, branch `main`)
   through Cloudflare Workers Builds, so **every `git push` rebuilds and redeploys the site** in a few minutes.
@@ -155,10 +160,10 @@ Good to know:
 All free. Do these in order:
 
 1. **Cloudflare account.** Sign up at dash.cloudflare.com. Under **Workers & Pages**, note your
-   `workers.dev` subdomain. Your site will be at `https://mod-labs.<subdomain>.workers.dev`.
+   `workers.dev` subdomain. Your site will be at `https://seattle.<subdomain>.workers.dev`.
 2. **Log in from this folder:** `npx wrangler login`
 3. **Turnstile.** In the Cloudflare dashboard, go to **Turnstile → Add widget**. Add the hostname
-   `mod-labs.<subdomain>.workers.dev` (and your custom domain later) and choose the "Managed"
+   `seattle.<subdomain>.workers.dev` (and your custom domain later) and choose the "Managed"
    mode. Copy the **site key** and the **secret key**.
 4. **Resend.** Sign up at resend.com **with the email address that should receive the leads**,
    then create an API key. Until you verify your own domain, Resend can only send to that
@@ -166,7 +171,7 @@ All free. Do these in order:
    first time.
 5. **Fill in `.env.production`** in this folder. It's committed, and holds only public values:
    ```
-   PUBLIC_SITE_URL=https://mod-labs.<subdomain>.workers.dev
+   PUBLIC_SITE_URL=https://seattle.<subdomain>.workers.dev
    PUBLIC_TURNSTILE_SITE_KEY=<site key from step 3>
    ```
 6. **Set the Worker secrets.** Each command asks you to paste the value:
@@ -175,10 +180,31 @@ All free. Do these in order:
    npx wrangler secret put RESEND_API_KEY
    npx wrangler secret put LEAD_EMAIL_TO
    ```
-7. **Deploy:** `npm run deploy`. This refuses to deploy if the site URL is the placeholder or
-   the Turnstile key is the test key.
-8. **Test it live.** Send one booking and one quote with a photo, and check that both emails
-   arrive.
+7. **Reviews database and signing key** (see "Turning on reviews" below).
+8. **Deploy:** `npm run deploy`. This refuses to deploy if the site URL is the placeholder,
+   the Turnstile key is the test key, or the reviews database id is the placeholder.
+9. **Test it live.** Send one booking and one quote with a photo, and one review, and check that all three emails
+   arrive. Approve the review from the email and check it shows on the home page.
+
+### Turning on reviews
+Do these **in this order, before** the reviews code reaches `main` (every push to `main` deploys):
+1. Create the database: `npx wrangler d1 create mod-labs-reviews`. Put the printed `database_id` in
+   `wrangler.jsonc` (the build refuses to run with the placeholder id).
+2. Create the tables: `npm run db:migrate:remote`. Run it again whenever a new file appears in `migrations/`,
+   before pushing the code that needs it.
+3. Set the link-signing secret. Generate a random value and paste it when asked (don't share it anywhere):
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+   npx wrangler secret put REVIEW_SIGNING_KEY
+   ```
+   Without it the review form answers "Reviews aren't switched on yet" and saves nothing.
+4. Push. Then send yourself a test review and approve it from the email.
+
+**Free-plan request budget.** The home page and `/reviews` run the Worker on every view (that's how approved
+reviews appear without a rebuild), and so do the forms. On the Workers Free plan that draws on 100,000 requests a
+day, shared by every Worker on the account. A free **rate limiting rule** for the modlabs.store zone (Cloudflare
+dashboard → Security → WAF → Rate limiting rules) keeps one visitor from burning it, for example: requests to
+`/`, `/reviews` or `/api/` from the same IP, more than 60 in 10 seconds → block for 10 seconds.
 
 ### Adding a custom domain later
 1. Add the domain in Cloudflare, under **Workers → mod-labs → Settings → Domains & Routes**.

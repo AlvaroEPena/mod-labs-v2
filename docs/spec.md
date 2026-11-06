@@ -306,7 +306,8 @@ Only `renderReviewItem` produces review HTML, and it escapes every user string. 
    D1 row stores `source` too.
 5. Limits (as built): 2 reviews / 60 s per IP (binding) plus the global 20 / 24 h cap; approve links expire
    after 30 days, delete links after 365 days; moderation pages send a strict CSP and `noindex`.
-   No email, IP or user agent is stored.
+   No email, IP address or user agent is stored. The per-visitor daily limit (§18) keeps only an HMAC of the IPv4
+   address or IPv6 /64 under a per-day key, for at most 2 days.
 
 **Phase 2 redesign scope:** every remaining page in the lab-glass system (spec §16), allowed to deviate further
 from the original, more interactive (motivated motion only), mobile-first; refined logo mark + regenerated
@@ -321,3 +322,29 @@ descriptive photo alt text, sitemap incl. /reviews, OG image, Lighthouse mobile 
 | frontend-engineer | `src/pages/**`, `src/components/**` (incl. `layout/seo.ts`, `nav.ts`), `src/styles/**`, `src/scripts/**`, `src/assets/brand/**`, `public/**` except `_headers`/`_redirects`/`media/**`, `scripts/brand-assets.mjs`, `astro.config.mjs`, `package.json` dependencies, `tests/e2e/**` (update for new markup without weakening intent), delete `src/data/reviews.ts` | `src/lib/**`, other `src/data/**`, `worker/**`, `wrangler.jsonc`, `migrations/**`, `admin/**` |
 | backend-engineer | `worker/**`, `migrations/**`, `wrangler.jsonc`, `.dev.vars.example`, `public/_headers`, the `webServer` command in `playwright.config.ts` | everything else; no `package.json` edits (report needed scripts) |
 | orchestrator | `src/lib/**`, `src/data/**`, `docs/**`, `scripts/predeploy-check.mjs`, `package.json` scripts | |
+
+## 18. Review-fix round (2026-11-05, after the security code review)
+**Contract changes (orchestrator, done):** `reviewSchema` strips invisible/control characters, turns CRLF into LF before
+length checks, refuses any bare `name.tld` (lowercase) plus schemes/`www.`/common TLDs in any case, in the body *and* the
+name, and refuses 3+ stacked combining marks. `PublicReviewJson` (= `PublicReview` without `id`) is what `GET /api/reviews`
+returns and what `renderReviewItem` takes. `ApiResult` gains `daily_limit` (429, review-only: "try again tomorrow").
+
+**Backend:** ids never reused (`AUTOINCREMENT`, edited in 0001: not applied to production yet); per-visitor daily limit
+(3 reviews / UTC day per IPv4 address or IPv6 /64, stored only as an HMAC with a per-day key, rows older than 2 days
+purged); global cap stays 20 new reviews / 24 h; both daily limits answer `daily_limit`; Turnstile action must match
+exactly outside test secrets; list API omits ids; page + D1 fetched in parallel; hash-based `script-src` (postbuild
+script writes the inline-script hashes into `dist/_headers`, `'unsafe-inline'` kept only as the CSP1 fallback).
+
+**Frontend:** `daily_limit` copy; /reviews hero star display matches the real average (no five lit stars by default);
+backdrop blur only where a panel overlaps imagery or content (header, menus, CTA bar, lightbox, photo overlays, sticky
+filter), other panels use the blur-free `.card` look; one-line moderation policy on /reviews (owner to confirm).
+
+**Ownership:** backend-engineer: `worker/**`, `migrations/**`, `wrangler.jsonc`, `public/_headers`, new
+`scripts/csp-hashes.mjs` (+ test), the `build` script line in `package.json`, `playwright.config.ts` webServer,
+`tests/e2e/security.spec.ts`. frontend-engineer: `src/components/**`, `src/pages/**`, `src/styles/**`, `src/scripts/**`,
+`tests/e2e/**` except security.spec.ts. Orchestrator: `src/lib/**`, `docs/**`, README.
+
+**As built (frontend):** `.glass` stays frosted; new blur-free `.glass-flat` shares its tint/edge (`--glass-fill`, `--glass-frost`).
+Home page backdrop-filter elements went from 23 to 5 (390 px) / 7 (1440 px). Frost kept on: header, mobile menu, CTA bar, lightbox,
+hero card, services spotlight, builds hero labels, gallery zoom chip, sticky gallery filter, home "9+ years" stat, about stat chip,
+home build panels from 40rem (they sit over photos).

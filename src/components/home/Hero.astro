@@ -1,7 +1,7 @@
 ---
 /**
  * Home hero: asymmetric split. Copy left (eyebrow, headline, one-sentence promise, two CTAs);
- * right, the GWii in a frosted-glass frame wired into the powered-on circuit traces, with a glass
+ * right, the GWii in a glass frame wired into the powered-on circuit traces, with a frosted-glass
  * commission card centred across the frame's bottom edge.
  */
 import Photo from "../media/Photo.astro";
@@ -35,7 +35,7 @@ const gwii = builds.find((b) => b.slug === "gwii")!;
     <div class="hero-visual">
       <CircuitArt />
       <div class="hero-light" aria-hidden="true"></div>
-      <div class="hero-frame glass">
+      <div class="hero-frame glass-flat">
         <Photo
           photo={photo}
           priority
@@ -130,6 +130,9 @@ const gwii = builds.find((b) => b.slug === "gwii")!;
   }
 
   .hero-frame {
+    /* blur-free: the trace pads and pulses animate right at its edge, and a frost over moving art repaints
+       every frame on phones. The denser fill hides the inner halves of the pads that straddle the edge. */
+    --glass-fill: rgb(12 17 31 / 0.86);
     position: relative;
     z-index: 1;
     padding: 0.6rem;

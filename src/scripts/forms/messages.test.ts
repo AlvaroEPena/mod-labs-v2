@@ -1,7 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { bookSchema, formDataToObject } from "../../lib/forms/schema";
 import { reviewFormToObject, reviewSchema } from "../../lib/reviews/contract";
-import { errorCopy, fieldErrorsFromIssues, outcomeFromQuery, outcomeFromResponse, reviewCopy, successCopy, summaryText } from "./messages";
+import {
+  errorCopy,
+  fieldErrorsFromIssues,
+  isErrorCode,
+  outcomeFromQuery,
+  outcomeFromResponse,
+  requestCopy,
+  reviewCopy,
+  successCopy,
+  summaryText,
+  type CopySet,
+} from "./messages";
+
+const SERVER_CODES = ["captcha", "rate_limited", "daily_limit", "too_large", "not_configured", "server"] as const;
 
 describe("outcomeFromResponse", () => {
   it("maps ok:true to the success copy", () => {
@@ -14,7 +27,7 @@ describe("outcomeFromResponse", () => {
     expect(o).toMatchObject({ kind: "error", code: "validation", fieldErrors });
   });
 
-  it.each(["captcha", "rate_limited", "too_large", "not_configured", "server"] as const)("gives friendly copy for %s", (code) => {
+  it.each(SERVER_CODES)("gives friendly copy for %s", (code) => {
     const o = outcomeFromResponse(500, { ok: false, error: code, message: "raw server text" });
     expect(o).toEqual({ kind: "error", code, message: errorCopy[code] });
   });
@@ -35,6 +48,31 @@ describe("outcomeFromResponse", () => {
   });
 });
 
+describe("copy sets", () => {
+  const sets: [string, CopySet][] = [
+    ["book/quote", requestCopy],
+    ["review", reviewCopy],
+  ];
+
+  it("recognises daily_limit as an error code", () => {
+    expect(isErrorCode("daily_limit")).toBe(true);
+    expect(isErrorCode("weekly_limit")).toBe(false);
+  });
+
+  it("book and quote never get daily_limit, but still have a generic line for it", () => {
+    expect(outcomeFromResponse(429, { ok: false, error: "daily_limit", message: "raw" })).toEqual({
+      kind: "error",
+      code: "daily_limit",
+      message: requestCopy.errors.daily_limit,
+    });
+    expect(requestCopy.errors.daily_limit).toMatch(/tomorrow/);
+  });
+
+  it.each(sets)("%s copy never uses em or en dashes", (_name, copy) => {
+    for (const text of [copy.success, copy.noJsValidation, ...Object.values(copy.errors)]) expect(text).not.toMatch(/[–—]/);
+  });
+});
+
 describe("outcomeFromQuery (no-JS 303 round trip)", () => {
   it("returns null without status params", () => {
     expect(outcomeFromQuery("?build=gwii")).toBeNull();
@@ -43,7 +81,7 @@ describe("outcomeFromQuery (no-JS 303 round trip)", () => {
     expect(outcomeFromQuery("?sent=1")?.kind).toBe("success");
   });
   it("reads every error code and treats unknown codes as server errors", () => {
-    for (const code of ["validation", "captcha", "too_large", "rate_limited", "not_configured", "server"]) {
+    for (const code of ["validation", ...SERVER_CODES]) {
       expect(outcomeFromQuery(`?error=${code}`)).toMatchObject({ kind: "error", code });
     }
     expect(outcomeFromQuery("?error=<script>")).toMatchObject({ kind: "error", code: "server" });
@@ -100,9 +138,20 @@ describe("review copy", () => {
     expect(outcomeFromQuery("?sent=1", reviewCopy)?.message).toBe(reviewCopy.success);
   });
 
-  it.each(["captcha", "rate_limited", "too_large", "not_configured", "server"] as const)("has its own wording for %s", (code) => {
+  it.each(SERVER_CODES)("has its own wording for %s", (code) => {
     expect(outcomeFromResponse(500, { ok: false, error: code, message: "raw" }, reviewCopy)).toEqual({ kind: "error", code, message: reviewCopy.errors[code] });
     expect(reviewCopy.errors[code]).not.toMatch(/request/i);
+  });
+
+  it("daily_limit says come back tomorrow, while rate_limited says wait a minute", () => {
+    const o = outcomeFromResponse(429, { ok: false, error: "daily_limit", message: "raw" }, reviewCopy);
+    expect(o).toEqual({ kind: "error", code: "daily_limit", message: "You've hit today's review limit. Please try again tomorrow." });
+    expect(reviewCopy.errors.rate_limited).toMatch(/wait a minute/);
+    expect(outcomeFromQuery("?error=daily_limit", reviewCopy)?.message).toBe(reviewCopy.errors.daily_limit);
+  });
+
+  it("a bare 429 without a JSON body is treated as the short wait, not the daily limit", () => {
+    expect(outcomeFromResponse(429, null, reviewCopy)).toMatchObject({ code: "rate_limited" });
   });
 
   it("labels review fields in the error summary", () => {

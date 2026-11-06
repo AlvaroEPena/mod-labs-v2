@@ -135,11 +135,11 @@ test.describe("legal table of contents", () => {
     test.skip(isMobile, "the TOC is a closed disclosure on phones (next test)");
     await page.goto("/privacy");
     const toc = page.getByRole("navigation", { name: "On this page" });
-    const link = toc.getByRole("link", { name: "Cookies & analytics" });
+    const link = toc.getByRole("link", { name: "Cookies", exact: true });
     await expect(link).toBeVisible();
     await link.click();
-    await expect(page).toHaveURL(/#cookies-and-analytics$/);
-    await expect(page.getByRole("heading", { level: 2, name: "Cookies & analytics" })).toBeInViewport();
+    await expect(page).toHaveURL(/#cookies$/);
+    await expect(page.getByRole("heading", { level: 2, name: "Cookies", exact: true })).toBeInViewport();
     await expect(link).toHaveAttribute("aria-current", "location");
   });
 

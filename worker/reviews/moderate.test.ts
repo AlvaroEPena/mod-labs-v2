@@ -126,7 +126,7 @@ describe("POST /api/reviews/moderate", () => {
     expect(res.status).toBe(200);
     expect(await res.text()).toContain("Published");
     expect(await store.findById(review.id)).toMatchObject({ status: "approved", approvedAt: NOW });
-    expect((await loadApproved(store, ctx, ORIGIN)).reviews.map((r) => r.id)).toEqual([review.id]); // purged
+    expect((await loadApproved(store, ctx, ORIGIN)).reviews.map((r) => r.name)).toEqual([review.name]); // purged
   });
 
   it("is idempotent: approving twice reports Already published", async () => {
@@ -147,6 +147,18 @@ describe("POST /api/reviews/moderate", () => {
     expect(await store.findById(live.id)).toBeNull();
     expect((await loadApproved(store, ctx, ORIGIN)).reviews).toHaveLength(0);
     expect((await confirm(url)).status).toBe(404);
+  });
+
+  it("never lets an old link act on a later review that came after the newest one was deleted (M1)", async () => {
+    const deleted = pending({ name: "Deleted Newest" });
+    const staleApprove = await link(deleted.id, "approve");
+    const staleDelete = await link(deleted.id, "delete");
+    expect((await confirm(staleDelete)).status).toBe(200);
+    const next = pending({ name: "Next Reviewer" });
+    expect(next.id).toBeGreaterThan(deleted.id);
+    expect((await confirm(staleApprove)).status).toBe(404);
+    expect((await confirm(staleDelete)).status).toBe(404);
+    expect(await store.findById(next.id)).toMatchObject({ name: "Next Reviewer", status: "pending" });
   });
 
   it("keeps delete links working for a year and approve links for 30 days", async () => {

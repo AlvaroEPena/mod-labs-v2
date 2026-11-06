@@ -5,8 +5,10 @@ import { TURNSTILE_VERIFY_URL } from "../lib/integrations";
 import { MemoryReviewStore } from "./memory-store";
 import { parseModerationParams, verifyModeration } from "./signing";
 import { handleReviewSubmit, MAX_NEW_REVIEWS_PER_DAY, MAX_REVIEW_BODY_BYTES } from "./submit";
+import { MAX_REVIEWS_PER_VISITOR_PER_DAY, visitorBucketKey } from "./visitor-limit";
 import {
   DAY_MS,
+  HOST,
   LOCAL,
   makeContext,
   makeEnv,
@@ -188,14 +190,26 @@ describe("POST /api/review: rejections", () => {
     expect(limit).toHaveBeenCalledWith({ key: expect.stringMatching(/^review:/) });
   });
 
-  it("caps new reviews per rolling 24 h", async () => {
+  it("caps new reviews per rolling 24 h site-wide with daily_limit, without using the visitor's allowance", async () => {
     for (let i = 0; i < MAX_NEW_REVIEWS_PER_DAY; i++)
       store.seed({ ...sampleReview(), createdAt: NOW - DAY_MS + 1000 + i });
     store.seed({ ...sampleReview(), createdAt: NOW - 2 * DAY_MS });
     const res = await submit(reviewForm());
     expect(res.status).toBe(429);
+    expect(await res.json()).toMatchObject({
+      ok: false,
+      error: "daily_limit",
+      message: expect.stringContaining("tomorrow"),
+    });
     expect(store.all()).toHaveLength(MAX_NEW_REVIEWS_PER_DAY + 1);
+    expect(store.visitorBuckets()).toEqual([]);
     expect(resendCalls(net)).toHaveLength(0);
+  });
+
+  it("redirects no-JS posts over a daily limit to /reviews?error=daily_limit", async () => {
+    for (let i = 0; i < MAX_NEW_REVIEWS_PER_DAY; i++) store.seed({ ...sampleReview(), createdAt: NOW - i });
+    const res = await submit(reviewForm(), { json: false });
+    expect(res.headers.get("Location")).toBe(`${ORIGIN}/reviews?error=daily_limit`);
   });
 
   it("rejects oversized bodies before parsing", async () => {
@@ -212,6 +226,108 @@ describe("POST /api/review: rejections", () => {
     expect(get.status).toBe(405);
     expect(get.headers.get("Allow")).toBe("POST");
     expect(net.calls).toHaveLength(0);
+  });
+});
+
+describe("POST /api/review: per-visitor daily limit (M2)", () => {
+  // The per-minute limiter is a separate guard; let it through so only the daily limit is exercised.
+  const openMinuteLimit = () =>
+    makeEnv({ REVIEW_RATE_LIMITER: { limit: async () => ({ success: true }) } as unknown as RateLimit });
+  const from = (ip: string | null, now = NOW) => {
+    const env = openMinuteLimit();
+    return async () => {
+      const request = await post("/api/review", reviewForm());
+      const headers = new Headers(request.headers);
+      if (ip === null) headers.delete("CF-Connecting-IP");
+      else headers.set("CF-Connecting-IP", ip);
+      return handleReviewSubmit(new Request(request, { headers }), makeContext({ store, env, now }));
+    };
+  };
+  const statusesOf = async (send: () => Promise<Response>, times: number) => {
+    const statuses: number[] = [];
+    for (let i = 0; i < times; i++) statuses.push((await send()).status);
+    return statuses;
+  };
+
+  it(`refuses review ${MAX_REVIEWS_PER_VISITOR_PER_DAY + 1} from one IPv4 address in a UTC day with daily_limit`, async () => {
+    const send = from("192.0.2.10");
+    expect(await statusesOf(send, MAX_REVIEWS_PER_VISITOR_PER_DAY)).toEqual([200, 200, 200]);
+    const refused = await send();
+    expect(refused.status).toBe(429);
+    expect(await refused.json()).toMatchObject({
+      ok: false,
+      error: "daily_limit",
+      message: expect.stringContaining("tomorrow"),
+    });
+    expect(store.all()).toHaveLength(MAX_REVIEWS_PER_VISITOR_PER_DAY);
+    expect(resendCalls(net)).toHaveLength(MAX_REVIEWS_PER_VISITOR_PER_DAY);
+    expect((await from("192.0.2.11")()).status).toBe(200); // another address has its own allowance
+  });
+
+  it("stores only a keyed hash of the address, never the address itself", async () => {
+    await from("192.0.2.10")();
+    const [bucket, ...others] = store.visitorBuckets();
+    expect(others).toEqual([]);
+    expect(bucket?.key).toMatch(/^[0-9a-f]{64}$/);
+    expect(bucket?.key).toBe(await visitorBucketKey(SIGNING_KEY, "2026-11-05", "v4:192.0.2.10"));
+    expect(JSON.stringify(store.visitorBuckets())).not.toContain("192.0.2");
+    expect(JSON.stringify(store.all())).not.toContain("192.0.2");
+  });
+
+  it("shares one allowance across an IPv6 /64, but not with other /64s", async () => {
+    expect((await from("2001:db8:1:2::1")()).status).toBe(200);
+    expect((await from("2001:db8:1:2:aaaa:bbbb:cccc:dddd")()).status).toBe(200);
+    expect((await from("2001:DB8:1:2:ffff::9")()).status).toBe(200);
+    expect((await from("2001:db8:1:2::42")()).status).toBe(429);
+    expect((await from("2001:db8:1:3::1")()).status).toBe(200);
+  });
+
+  it("starts a fresh allowance on the next UTC day and purges buckets from before yesterday", async () => {
+    const lateToday = Date.UTC(2026, 10, 5, 23, 59);
+    const tomorrow = Date.UTC(2026, 10, 6, 0, 1);
+    expect(await statusesOf(from("192.0.2.10", lateToday), 4)).toEqual([200, 200, 200, 429]);
+    expect(await statusesOf(from("192.0.2.10", tomorrow), 4)).toEqual([200, 200, 200, 429]);
+    expect(
+      store
+        .visitorBuckets()
+        .map((b) => b.day)
+        .sort(),
+    ).toEqual(["2026-11-05", "2026-11-06"]);
+
+    await from("192.0.2.10", Date.UTC(2026, 10, 7, 12))();
+    await Promise.resolve(); // the purge runs via waitUntil
+    expect(
+      store
+        .visitorBuckets()
+        .map((b) => b.day)
+        .sort(),
+    ).toEqual(["2026-11-06", "2026-11-07"]);
+  });
+
+  it.each([
+    ["a missing", null],
+    ["an empty", ""],
+    ["a malformed", "not-an-ip"],
+    ["a list instead of an", "192.0.2.1, 192.0.2.2"],
+  ])("puts %s CF-Connecting-IP in one shared, still-limited bucket", async (_label, ip) => {
+    expect(await statusesOf(from(ip), 3)).toEqual([200, 200, 200]);
+    expect((await from("also-bad")()).status).toBe(429); // same shared bucket: bad input can't skip the limit
+    expect(store.visitorBuckets()).toHaveLength(1);
+    expect(store.visitorBuckets()[0]?.key).toBe(await visitorBucketKey(SIGNING_KEY, "2026-11-05", "unknown"));
+  });
+
+  it("doesn't use up the allowance on invalid input or a failed spam check", async () => {
+    const send = from("192.0.2.10");
+    const env = openMinuteLimit();
+    const invalid = await post("/api/review", reviewForm({ [reviewFields.body]: "short" }), {
+      headers: { "CF-Connecting-IP": "192.0.2.10" },
+    });
+    expect((await handleReviewSubmit(invalid, makeContext({ store, env }))).status).toBe(400);
+    net.siteverify = { success: false };
+    expect((await send()).status).toBe(403);
+    net.siteverify = { success: true, hostname: HOST, action: "review" };
+    expect(store.visitorBuckets()).toEqual([]);
+    expect(await statusesOf(send, 3)).toEqual([200, 200, 200]);
   });
 });
 

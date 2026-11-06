@@ -1,58 +1,87 @@
 ---
-/** Privacy (spec §16 phase 2): compact hero → long-form doc with a scrollspy table of contents. */
+/**
+ * Privacy policy (spec §16 phase 2): compact hero → long-form doc with a scrollspy table of contents.
+ * Owner request (2026-11-05): professional tone, service providers described by category, not by name
+ * or by how the site works. Update this page before adding analytics, ad pixels or new data uses.
+ */
 import BaseLayout from "../layouts/BaseLayout.astro";
 import PageHero from "../components/ui/PageHero.astro";
 import LegalDoc, { type LegalSection } from "../components/legal/LegalDoc.astro";
 
 const sections: LegalSection[] = [
   {
-    id: "what-i-collect",
-    title: "What I collect",
-    html: `<p>When you use the booking or quote forms, I collect what you enter: your name, email, phone number (optional), how you'll get the device to me, the services or request type you pick, your message and any photos you attach. When you leave a review, I collect your name, star rating, the service and how you heard about Mod Labs (both optional) and your review. Reviews don't ask for your email. There are no accounts on this site.</p>`,
+    id: "overview",
+    title: "Overview",
+    html: `<p>This Privacy Policy explains how Mod Labs ("Mod Labs", "we", "us") collects, uses, shares and protects personal information when you visit modlabs.store (the "Site"), request a service or quote, leave a review, or leave a device in our care.</p>`,
   },
   {
-    id: "how-the-forms-work",
-    title: "How the forms work",
-    html: `<p>Form submissions are processed on Cloudflare, which hosts this site. To block spam, the forms use <strong>Cloudflare Turnstile</strong>, which may check basic browser and device signals to tell people from bots. Booking and quote requests are then emailed to me through <strong>Resend</strong>, an email delivery service, along with any photos you attached. Photos are resized in your browser before they're sent, which also drops their location data.</p>`,
+    id: "information-we-collect",
+    title: "Information we collect",
+    html: `<p><strong>Information you give us.</strong> When you request a service or quote, we collect the details you provide, such as your name, email address, phone number, device and service details, your preferred drop-off or shipping method, your message and any photos you attach. When you leave a review, we collect the name you enter, your rating and your review, and, if you choose to share them, the service you received and how you found us.</p><p><strong>Information collected automatically.</strong> Like most websites, the Site and its hosting and security providers process standard technical information, such as your IP address, browser and device type, and the pages you request, to deliver the Site, keep it secure and prevent spam and abuse.</p><p>The Site has no user accounts, and we don't ask for payment card details through the Site.</p>`,
+  },
+  {
+    id: "how-we-use-information",
+    title: "How we use information",
+    html: `<p>We use personal information to:</p><ul><li>respond to your requests and provide quotes;</li><li>schedule, perform, test and support the services you request;</li><li>communicate with you about your job;</li><li>publish reviews you submit, once approved;</li><li>protect the Site, our customers and our business from spam, fraud and abuse; and</li><li>meet our legal and accounting obligations.</li></ul><p>We do not sell your personal information, and we do not share it for targeted advertising.</p>`,
   },
   {
     id: "reviews",
     title: "Reviews",
-    html: `<p>Reviews are stored in a Cloudflare database and stay private until I approve them. Each new review is emailed to me through Resend so I can check it. Once approved, your name, rating and review, plus the service and how you heard about Mod Labs if you picked them, are shown publicly on this site. You can ask me to remove your review at any time.</p>`,
+    html: `<p>Reviews are checked before they're published. Once approved, the name you entered, your rating and your review, along with the service and how you found us if you provided them, are displayed publicly on the Site. We publish genuine reviews whether they're positive or negative. We may decline reviews that are spam, abusive, unlawful or unrelated to our services, or that contain someone's personal information, and declined reviews are deleted. You can ask us to remove your review at any time.</p>`,
   },
   {
-    id: "why-i-use-it",
-    title: "Why I use it",
-    html: `<p>Only to reply to your request, give you a quote, schedule the work, coordinate drop-off or shipping, and show the reviews you chose to share. I don't sell your personal information, and I don't use it for advertising.</p>`,
+    id: "how-we-share-information",
+    title: "How we share information",
+    html: `<p>We share personal information only with service providers that help us run the Site and our business, such as website hosting, security and spam-protection, and email delivery providers. They may use it only to provide their services to us. We may also disclose information when required by law, to protect the rights, property or safety of Mod Labs, our customers or others, or as part of a sale or transfer of the business.</p>`,
   },
   {
-    id: "how-long-i-keep-it",
-    title: "How long I keep it",
-    html: `<p>Requests are kept as long as needed for the job and for reasonable business records, unless the law requires longer. You can ask me to delete your information at any time.</p>`,
+    id: "cookies",
+    title: "Cookies",
+    html: `<p>We don't use advertising or cross-site tracking cookies. Our providers may use strictly necessary cookies or similar technologies to keep the Site secure and protect our forms from spam. You can manage cookies in your browser settings.</p>`,
   },
   {
-    id: "cookies-and-analytics",
-    title: "Cookies & analytics",
-    html: `<p>This site doesn't use advertising or tracking cookies. Cloudflare may process technical data (like IP addresses) to deliver the site securely and prevent abuse.</p>`,
+    id: "retention",
+    title: "How long we keep information",
+    html: `<p>We keep personal information only as long as needed for the purposes described in this policy, such as completing and supporting your job and keeping reasonable business records, or longer where the law requires it. Security information used to limit spam, such as a scrambled code derived from your network address, is deleted within two days. Published reviews remain on the Site until they're removed.</p>`,
   },
   {
-    id: "devices-and-data",
-    title: "Devices & data on hardware",
-    html: `<p>Consoles and other devices may contain your accounts, saves and personal files. Please back up anything important before handing a device over. Typical mod installs don't require wiping storage, and I don't go through your data.</p>`,
+    id: "security",
+    title: "Security",
+    html: `<p>We use reasonable administrative, technical and physical safeguards to protect personal information. No website, email or storage system is completely secure, so we can't guarantee absolute security.</p>`,
   },
   {
-    id: "questions",
-    title: "Questions or requests",
-    html: `<p>To ask about or delete your information, send a message through the <a href="/quote">quote form</a> and pick "General question".</p>`,
+    id: "devices-in-our-care",
+    title: "Devices in our care",
+    html: `<p>Devices you bring or send to us may contain personal data, such as accounts, saved games and files. We access a device's storage and system software only as needed to perform and test the service you requested, and we don't browse, use or share your personal content. Please back up anything important before handing over a device.</p>`,
+  },
+  {
+    id: "childrens-privacy",
+    title: "Children's privacy",
+    html: `<p>The Site isn't directed to children under 13, and we don't knowingly collect personal information from them. If you believe a child has given us personal information, contact us and we'll delete it.</p>`,
+  },
+  {
+    id: "your-choices",
+    title: "Your choices and rights",
+    html: `<p>You can ask us to access, correct or delete the personal information we hold about you, or to remove a review. Depending on where you live, you may have additional rights under applicable law. We'll respond within a reasonable time and may need to confirm your identity first.</p>`,
+  },
+  {
+    id: "changes",
+    title: "Changes to this policy",
+    html: `<p>We may update this policy from time to time. Changes take effect when they're posted on this page, and the "Last updated" date shows when the policy last changed.</p>`,
+  },
+  {
+    id: "contact",
+    title: "Contact us",
+    html: `<p>For privacy questions or requests, contact us through the <a href="/quote">quote form</a> and choose "General question". Mod Labs is based in Seattle, Washington.</p>`,
   },
 ];
 ---
 
 <BaseLayout
-  title="Privacy"
-  description="How Mod Labs collects, uses and keeps information when you book a service, request a quote, leave a review or send a device in."
+  title="Privacy Policy"
+  description="How Mod Labs collects, uses, shares and protects personal information when you visit the site, request a service, leave a review or leave a device in our care."
   breadcrumbs={[{ name: "Privacy", path: "/privacy" }]}
 >
-  <PageHero title="Privacy" intro="The plain-language version of how I handle your information." compact />
-  <LegalDoc sections={sections} updated="November 2026" />
+  <PageHero title="Privacy Policy" intro="How Mod Labs collects, uses and protects your information." compact />
+  <LegalDoc sections={sections} updated="November 5, 2026" />
 </BaseLayout>

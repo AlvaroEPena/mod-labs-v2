@@ -56,16 +56,40 @@ export const reviewFields = {
   turnstile: "cf-turnstile-response",
 } as const;
 
-/** Links are the #1 review-spam payload, so reviews can't contain any. */
-const LINK_PATTERN = /(https?:\/\/|www\.|\b[a-z0-9-]+\.(?:com|net|org|io|ru|xyz|top|info|biz|store|shop|link|click)\b)/i;
+/**
+ * Links are the #1 review-spam payload, so reviews can't contain any. Review text is also shown in the
+ * owner's moderation email, where mail apps auto-link bare domains, so any `word.tld` is refused:
+ * schemes and `www.` in any case, common TLDs in any case, and any lowercase `name.tld` (t.me, bit.ly,
+ * evil.co). A capitalised `done.Great` typo is still allowed.
+ */
+const LINK_PATTERN = /(https?:\/\/|www\.|\b[a-z0-9-]+\.(?:com|net|org|io|ru|xyz|top|info|biz|store|shop|link|click|co|me|ly|gg|app|dev)\b)/i;
+const BARE_DOMAIN = /\b[a-z0-9-]+\.[a-z]{2,24}\b/;
+const hasLink = (v: string) => LINK_PATTERN.test(v) || BARE_DOMAIN.test(v);
+
+/** Invisible formatting / direction-override characters (used to disguise text), stripped before checks. */
+const INVISIBLE = /[\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]/g;
+/** C0/C1 control characters except tab and newline. */
+// eslint-disable-next-line no-control-regex
+const CONTROL = /[\u0000-\u0008\u000B-\u001F\u007F-\u009F]/g;
+/** 3+ stacked combining marks ("zalgo" text); real names and words need at most two. */
+const STACKED_MARKS = /\p{M}{3,}/u;
+
+/** Browsers send textarea newlines as CRLF in multipart bodies; count and store them as "\n". */
+const cleanText = (v: unknown) =>
+  typeof v === "string" ? v.replace(/\r\n?/g, "\n").replace(INVISIBLE, "").replace(CONTROL, "") : v;
 
 export const reviewSchema = z.object({
-  name: z
-    .string({ error: "Name is required." })
-    .trim()
-    .min(2, "Name must be at least 2 characters.")
-    .max(REVIEW_NAME_MAX, `Name must be at most ${REVIEW_NAME_MAX} characters.`)
-    .regex(/^[\p{L}\p{M}0-9 .'-]+$/u, "Use letters, numbers, spaces, apostrophes, periods or hyphens only."),
+  name: z.preprocess(
+    cleanText,
+    z
+      .string({ error: "Name is required." })
+      .trim()
+      .min(2, "Name must be at least 2 characters.")
+      .max(REVIEW_NAME_MAX, `Name must be at most ${REVIEW_NAME_MAX} characters.`)
+      .regex(/^[\p{L}\p{M}0-9 .'-]+$/u, "Use letters, numbers, spaces, apostrophes, periods or hyphens only.")
+      .refine((v) => !STACKED_MARKS.test(v), "Please remove the unusual characters from your name.")
+      .refine((v) => !hasLink(v), "Please leave links out of your name."),
+  ),
   rating: z.coerce
     .number({ error: "Choose a star rating." })
     .int("Choose a star rating.")
@@ -73,12 +97,16 @@ export const reviewSchema = z.object({
     .max(5, "Choose a star rating."),
   service: z.enum(REVIEW_SERVICES).optional().or(z.literal("")),
   source: z.enum(REVIEW_SOURCES).optional().or(z.literal("")),
-  body: z
-    .string({ error: "Review is required." })
-    .trim()
-    .min(REVIEW_BODY_MIN, `Review must be at least ${REVIEW_BODY_MIN} characters.`)
-    .max(REVIEW_BODY_MAX, `Review must be at most ${REVIEW_BODY_MAX} characters.`)
-    .refine((v) => !LINK_PATTERN.test(v), "Please leave links out of your review."),
+  body: z.preprocess(
+    cleanText,
+    z
+      .string({ error: "Review is required." })
+      .trim()
+      .min(REVIEW_BODY_MIN, `Review must be at least ${REVIEW_BODY_MIN} characters.`)
+      .max(REVIEW_BODY_MAX, `Review must be at most ${REVIEW_BODY_MAX} characters.`)
+      .refine((v) => !hasLink(v), "Please leave links out of your review.")
+      .refine((v) => !STACKED_MARKS.test(v), "Please remove the unusual characters from your review."),
+  ),
   consent: z.literal("yes", { message: "Please confirm your name and review can be shown on the site." }),
   /** honeypot: must be empty */
   hp: z.string().max(0).optional().or(z.literal("")),
@@ -105,6 +133,7 @@ export function reviewFormToObject(fd: FormData) {
 
 /** An approved review as it is published. Never contains private data. */
 export type PublicReview = {
+  /** internal row id; never sent to the browser (see PublicReviewJson) */
   id: number;
   name: string;
   rating: number;
@@ -118,8 +147,11 @@ export type PublicReview = {
 
 export type ReviewSummary = { count: number; average: number | null };
 
+/** A review as `GET /api/reviews` returns it: no row id, so the API doesn't reveal how many were rejected. */
+export type PublicReviewJson = Omit<PublicReview, "id">;
+
 /** `GET /api/reviews` success body (approved reviews only). Text is raw: never insert it as HTML. */
-export type ReviewListResult = { ok: true; reviews: PublicReview[] } & ReviewSummary;
+export type ReviewListResult = { ok: true; reviews: PublicReviewJson[] } & ReviewSummary;
 
 export const summarize = (reviews: readonly Pick<PublicReview, "rating">[]): ReviewSummary => ({
   count: reviews.length,
@@ -144,7 +176,7 @@ export const reviewDate = (ms: number) => {
  * Markup contract for one published review (styled by the site's .review-card rules).
  * All user text is escaped here; callers must insert the result as HTML only via this function.
  */
-export function renderReviewItem(r: PublicReview): string {
+export function renderReviewItem(r: PublicReviewJson): string {
   const rating = Math.min(5, Math.max(1, Math.round(r.rating)));
   const stars = Array.from({ length: 5 }, (_, i) => `<span class="star${i < rating ? " is-on" : ""}"></span>`).join("");
   const meta = [r.service ? escapeHtml(r.service) : "", reviewDate(r.approvedAt)].filter(Boolean).join(" · ");

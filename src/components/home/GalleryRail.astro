@@ -33,7 +33,7 @@ import { categories, photosInCategory } from "../../data/gallery";
           <a href={`/gallery/${c.slug}`} class="cat-card card glow-edge">
             <Photo photo={categoryCover(c.slug)} ratio="3 / 4" sizes="(min-width: 1024px) 340px, 72vw" widths={[400, 800]} class="cat-photo" alt="" />
             <span class="cat-shade" aria-hidden="true" />
-            <span class="cat-caption glass">
+            <span class="cat-caption glass-flat">
               <span class="min-w-0">
                 <span class="block truncate font-semibold text-fg">{c.short}</span>
                 <span class="mono mt-0.5 block text-xs text-muted">{photosInCategory(c.slug).length} photos</span>

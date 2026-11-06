@@ -4,7 +4,7 @@ import {
   renderReviewItem,
   summarize,
   summaryText,
-  type PublicReview,
+  type PublicReviewJson,
 } from "../../src/lib/reviews/contract";
 
 export interface ReviewsView {
@@ -25,7 +25,7 @@ async function shortHash(value: string): Promise<string> {
 }
 
 /** `reviews` must already be newest first (ReviewStore.listApproved order). */
-export async function buildReviewsView(reviews: readonly PublicReview[]): Promise<ReviewsView> {
+export async function buildReviewsView(reviews: readonly PublicReviewJson[]): Promise<ReviewsView> {
   const items = reviews.map(renderReviewItem);
   const homeHtml = items.slice(0, HOME_REVIEW_LIMIT).join("");
   const allHtml = items.join("");

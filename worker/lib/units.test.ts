@@ -5,6 +5,7 @@ import { isCrossSite } from "./guards";
 import { MemoryRateLimiter } from "./ratelimit";
 import { emailMode, isLocalHostname, isTestTurnstileSecret, type Env } from "./env";
 import { checkSiteverify } from "./integrations";
+import { ipBucket } from "./ip";
 import { byteLimitStream, readFormDataLimited } from "./body";
 import { validateFields } from "./validate";
 import type { BookInput, QuoteInput } from "../../src/lib/forms/schema";
@@ -109,16 +110,87 @@ describe("env helpers", () => {
 });
 
 describe("checkSiteverify", () => {
-  const expectBook = { hostname: "site.test", action: "book" };
-  it("requires success, matching hostname and (if present) matching action", () => {
-    expect(checkSiteverify({ success: true, hostname: "site.test" }, expectBook)).toBe("ok");
-    expect(checkSiteverify({ success: true, hostname: "SITE.test", action: "book" }, expectBook)).toBe("ok");
-    expect(checkSiteverify({ success: false, hostname: "site.test" }, expectBook)).toBe("failed");
-    expect(checkSiteverify({ success: true, hostname: "other.test" }, expectBook)).toBe("failed");
-    expect(checkSiteverify({ success: true, hostname: "site.test", action: "quote" }, expectBook)).toBe("failed");
+  const expectBook = { hostname: "site.test", action: "book", isActionRequired: true };
+  const bookVerdict = (data: Parameters<typeof checkSiteverify>[0]) => checkSiteverify(data, expectBook);
+  it("requires success, a matching hostname and exactly the expected action (real secrets)", () => {
+    expect(bookVerdict({ success: true, hostname: "site.test", action: "book" })).toBe("ok");
+    expect(bookVerdict({ success: true, hostname: "SITE.test", action: "book" })).toBe("ok");
+    expect(bookVerdict({ success: false, hostname: "site.test", action: "book" })).toBe("failed");
+    expect(bookVerdict({ success: true, hostname: "other.test", action: "book" })).toBe("failed");
+    expect(bookVerdict({ success: true, hostname: "site.test", action: "quote" })).toBe("failed");
+  });
+  it.each([
+    ["missing", undefined],
+    ["empty", ""],
+    ["differently cased", "Book"],
+    ["padded", " book"],
+  ])("fails a %s action when the action is required (L4)", (_label, action) => {
+    expect(bookVerdict({ success: true, hostname: "site.test", action })).toBe("failed");
+  });
+  it("with a test secret, accepts a missing action but still refuses a wrong one", () => {
+    const testKeys = { hostname: null, action: "book", isActionRequired: false };
+    expect(checkSiteverify({ success: true, hostname: "example.com" }, testKeys)).toBe("ok");
+    expect(checkSiteverify({ success: true, hostname: "example.com", action: "" }, testKeys)).toBe("ok");
+    expect(checkSiteverify({ success: true, hostname: "example.com", action: "quote" }, testKeys)).toBe(
+      "failed",
+    );
   });
   it("skips the hostname check when expectation is null (test keys return example.com)", () => {
-    expect(checkSiteverify({ success: true, hostname: "example.com" }, { hostname: null, action: "book" })).toBe("ok");
+    const local = { hostname: null, action: "book", isActionRequired: true };
+    expect(checkSiteverify({ success: true, hostname: "example.com", action: "book" }, local)).toBe("ok");
+  });
+});
+
+describe("ipBucket", () => {
+  it("keeps an IPv4 address as its own bucket", () => {
+    expect(ipBucket("192.0.2.10")).toBe("v4:192.0.2.10");
+    expect(ipBucket(" 192.0.2.10 ")).toBe("v4:192.0.2.10");
+    expect(ipBucket("192.0.2.11")).not.toBe(ipBucket("192.0.2.10"));
+  });
+
+  it("groups IPv6 addresses by /64, whatever their spelling", () => {
+    const bucket = ipBucket("2001:db8:1:2::1");
+    expect(bucket).toBe("v6:2001:db8:1:2::/64");
+    for (const sameNetwork of [
+      "2001:0DB8:0001:0002:ffff:ffff:ffff:ffff",
+      "2001:db8:1:2:aaaa:bbbb:cccc:dddd",
+      "2001:db8:1:2::",
+      "2001:db8:1:2:0:0:192.0.2.1",
+    ]) {
+      expect(ipBucket(sameNetwork), sameNetwork).toBe(bucket);
+    }
+    expect(ipBucket("2001:db8:1:3::1")).toBe("v6:2001:db8:1:3::/64");
+    expect(ipBucket("2001:db8::1")).toBe("v6:2001:db8:0:0::/64");
+    expect(ipBucket("::1")).toBe("v6:0:0:0:0::/64");
+  });
+
+  it("treats IPv4-mapped IPv6 as the IPv4 address", () => {
+    expect(ipBucket("::ffff:192.0.2.10")).toBe("v4:192.0.2.10");
+    expect(ipBucket("::ffff:c000:20a")).toBe("v4:192.0.2.10");
+  });
+
+  it.each([
+    [null],
+    [undefined],
+    [""],
+    ["   "],
+    ["unknown"],
+    ["256.1.1.1"],
+    ["1.2.3"],
+    ["1.2.3.4.5"],
+    ["01.2.3.4"],
+    ["1.2.3.4, 5.6.7.8"],
+    ["1::2::3"],
+    ["2001:db8::g"],
+    ["1:2:3:4:5:6:7:8:9"],
+    ["1:2:3:4:5:6:7"],
+    [":1:2:3:4:5:6:7"],
+    ["1:2:3:4::5:6:7:8"],
+    ["fe80::1%eth0"],
+    ["::ffff:999.0.2.1"],
+    ["a".repeat(46)],
+  ])("returns null for a missing or malformed address: %j", (raw) => {
+    expect(ipBucket(raw)).toBeNull();
   });
 });
 

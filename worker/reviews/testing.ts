@@ -174,5 +174,39 @@ export function describeReviewStoreContract(name: string, makeStore: () => Promi
       await store.insertPending(sampleReview(), NOW);
       expect(await store.countCreatedSince(NOW - DAY_MS)).toBe(2);
     });
+
+    it("never reuses an id, even the newest one after it is deleted (M1)", async () => {
+      const store = await makeStore();
+      const older = await store.insertPending(sampleReview(), NOW);
+      const newest = await store.insertPending(sampleReview(), NOW);
+      expect(await store.remove(newest)).toBe(true);
+      const next = await store.insertPending(sampleReview({ name: "Next" }), NOW);
+      expect(next).toBeGreaterThan(newest);
+      expect(await store.approve(newest, NOW)).toBe(false);
+      expect(await store.findById(next)).toMatchObject({ name: "Next", status: "pending" });
+      expect(older).toBeLessThan(newest);
+    });
+
+    it("counts visitor submissions per bucket, atomically", async () => {
+      const store = await makeStore();
+      const day = "2026-11-05";
+      const counts = await Promise.all(
+        Array.from({ length: 5 }, () => store.recordVisitorSubmission("bucket-a", day)),
+      );
+      expect([...counts].sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5]);
+      expect(await store.recordVisitorSubmission("bucket-b", day)).toBe(1);
+      expect(await store.recordVisitorSubmission("bucket-a", day)).toBe(6);
+    });
+
+    it("purges visitor buckets of days before a given day", async () => {
+      const store = await makeStore();
+      await store.recordVisitorSubmission("old", "2026-11-03");
+      await store.recordVisitorSubmission("yesterday", "2026-11-04");
+      await store.recordVisitorSubmission("today", "2026-11-05");
+      await store.purgeVisitorCountsBefore("2026-11-04");
+      expect(await store.recordVisitorSubmission("old", "2026-11-03")).toBe(1); // gone, so it starts over
+      expect(await store.recordVisitorSubmission("yesterday", "2026-11-04")).toBe(2);
+      expect(await store.recordVisitorSubmission("today", "2026-11-05")).toBe(2);
+    });
   });
 }

@@ -16,7 +16,10 @@ export interface Env {
   REVIEW_RATE_LIMITER?: RateLimit;
   /** D1 database with the `reviews` table (spec §17). Optional so a missing binding degrades gracefully. */
   DB?: D1Database;
-  /** HMAC key for the signed Approve/Delete links (secret, at least 32 characters). */
+  /**
+   * HMAC key (secret, at least 32 characters) for the signed Approve/Delete links, and the root of the per-day
+   * keys that hash visitor addresses for the daily review limit (reviews/visitor-limit.ts).
+   */
   REVIEW_SIGNING_KEY?: string;
 }
 

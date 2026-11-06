@@ -14,7 +14,7 @@ import { builds } from "../../data/builds";
     builds.map((b, i) => (
       <li class:list={["pick", i === 1 && "is-low"]}>
         <a href={`#${b.slug}`} class="pick-link">
-          <span class="pick-frame glass">
+          <span class="pick-frame glass-flat">
             <Photo
               photo={buildCover(b.slug)}
               ratio="4 / 5"

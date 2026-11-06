@@ -1,4 +1,4 @@
-/** GET /api/reviews: the published list as JSON (approved reviews only). */
+/** GET /api/reviews: the published list as JSON (approved reviews only, without row ids: see cache.ts). */
 import { summarize, type ReviewListResult } from "../../src/lib/reviews/contract";
 import { jsonDataResponse, jsonResponse } from "../lib/http";
 import { loadApproved, MEMORY_TTL_MS } from "./cache";

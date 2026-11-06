@@ -23,6 +23,7 @@ export const STATUS_BY_ERROR: Record<ErrorCode, number> = {
   captcha: 403,
   too_large: 413,
   rate_limited: 429,
+  daily_limit: 429,
   not_configured: 503,
   server: 500,
 };

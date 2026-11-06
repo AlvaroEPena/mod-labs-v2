@@ -17,5 +17,6 @@ EMAIL_MODE=log
 # 32 characters, random, and different in every environment. Generate one with either:
 #   openssl rand -base64 32
 #   node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
-# Production: npx wrangler secret put REVIEW_SIGNING_KEY (rotating it invalidates every link already emailed).
+# Production: npx wrangler secret put REVIEW_SIGNING_KEY (rotating it invalidates every link already emailed and
+# resets the per-visitor daily review counts).
 REVIEW_SIGNING_KEY=

@@ -1,4 +1,4 @@
-/** Review persistence (D1 table `reviews`, migrations/0001_create_reviews.sql). */
+/** Review persistence (D1 tables `reviews` and `review_limits`, migrations/0001_create_reviews.sql). */
 import type { PublicReview } from "../../src/lib/reviews/contract";
 
 export type ReviewStatus = "pending" | "approved";
@@ -41,6 +41,13 @@ export interface ReviewStore {
   remove(id: number): Promise<boolean>;
   /** Approved reviews, newest approval first, at most MAX_PUBLISHED_REVIEWS. */
   listApproved(): Promise<PublicReview[]>;
+  /**
+   * Count one submission in a visitor's daily bucket (atomic upsert) and return the bucket's new total.
+   * `bucketKey` is already a keyed hash (visitor-limit.ts); `day` is its UTC day (yyyy-mm-dd).
+   */
+  recordVisitorSubmission(bucketKey: string, day: string): Promise<number>;
+  /** Delete the daily buckets of every UTC day before `day` (yyyy-mm-dd). */
+  purgeVisitorCountsBefore(day: string): Promise<void>;
 }
 
 interface ReviewRow {
@@ -130,5 +137,21 @@ export class D1ReviewStore implements ReviewStore {
   async listApproved(): Promise<PublicReview[]> {
     const { results } = await this.db.prepare(LIST_APPROVED_SQL).bind(MAX_PUBLISHED_REVIEWS).all<PublicRow>();
     return results.map(toPublic);
+  }
+
+  async recordVisitorSubmission(bucketKey: string, day: string): Promise<number> {
+    // A single statement, so two concurrent submissions can't both read the old count.
+    const count = await this.db
+      .prepare(
+        "INSERT INTO review_limits (key, day, count) VALUES (?, ?, 1) ON CONFLICT (key) DO UPDATE SET count = count + 1 RETURNING count",
+      )
+      .bind(bucketKey, day)
+      .first<number>("count");
+    if (typeof count !== "number") throw new Error("visitor count upsert returned no count");
+    return count;
+  }
+
+  async purgeVisitorCountsBefore(day: string): Promise<void> {
+    await this.db.prepare("DELETE FROM review_limits WHERE day < ?").bind(day).run();
   }
 }

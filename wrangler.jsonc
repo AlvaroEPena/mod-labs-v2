@@ -13,14 +13,14 @@
     // Keep the page entries in sync with REVIEW_PAGE_PATHS in worker/reviews/publish.ts.
     "run_worker_first": ["/api/*", "/", "/index.html", "/reviews", "/reviews.html"]
   },
-  // Reviews (spec §17). PLACEHOLDER database_id: replace it with the id printed by
-  // `npx wrangler d1 create mod-labs-reviews` before any deploy (a deploy with this id fails).
+  // Reviews (spec §17): the production database, created 2026-11-05. Apply migrations/ to it with
+  // `npm run db:migrate:remote` before pushing code that needs them.
   // Local `wrangler dev` / `--local` commands use local D1 state under .wrangler/ and work as is.
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "mod-labs-reviews",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "135788ab-aad5-4cef-b423-608c17769540",
       "migrations_dir": "migrations"
     }
   ],
@@ -34,7 +34,7 @@
   // best-effort in-memory limiter if a binding is missing. Keep the numbers in sync with worker/lib/ratelimit.ts.
   //  - FORM_RATE_LIMITER: 5 book/quote submissions / 60 s
   //  - REVIEW_RATE_LIMITER: 2 review submissions / 60 s (the binding only allows 10 s or 60 s periods;
-  //    a rolling 24 h cap in worker/reviews/submit.ts bounds the rest)
+  //    the D1-backed daily limits in worker/reviews/ bound the rest: 3 per visitor per UTC day, 20 site-wide / 24 h)
   "ratelimits": [
     {
       "name": "FORM_RATE_LIMITER",
@@ -49,7 +49,7 @@
   ],
   // Custom domain, kept in code so every deploy re-asserts it. www.modlabs.store is a proxied DNS record
   // + a zone Redirect Rule (www → root, 301, query string kept), configured in the dashboard.
-  // The seattle.modlabs.workers.dev URL stays enabled as a fallback.
+  // The seattle.thecorvis.workers.dev URL stays enabled as a fallback.
   "routes": [{ "pattern": "modlabs.store", "custom_domain": true }],
   "observability": { "enabled": true }
 }

@@ -1,58 +1,97 @@
 ---
-/** Terms (spec §16 phase 2): compact hero → long-form doc with a scrollspy table of contents. Copy unchanged. */
+/**
+ * Terms of service (spec §16 phase 2): compact hero → long-form doc with a scrollspy table of contents.
+ * Owner request (2026-11-05): professional tone. The review license covers display on the Site only,
+ * matching the review form's consent checkbox; widen both together if reviews are reused elsewhere.
+ */
 import BaseLayout from "../layouts/BaseLayout.astro";
 import PageHero from "../components/ui/PageHero.astro";
 import LegalDoc, { type LegalSection } from "../components/legal/LegalDoc.astro";
 
 const sections: LegalSection[] = [
   {
-    id: "services",
-    title: "Services",
-    html: `<p>Mod Labs provides console modding, repair and custom build services as described on this site. Prices on the Services and Builds pages are informational until confirmed with you after I've seen the device or discussed the build. Complex damage, prior rework or missing parts may change the scope and cost, and I'll always check with you before going ahead.</p>`,
+    id: "about-these-terms",
+    title: "About these terms",
+    html: `<p>These Terms of Service ("Terms") apply to your use of modlabs.store (the "Site") and to any modding, repair or custom build work you request from Mod Labs ("Mod Labs", "we", "us"). By using the Site or our services, you agree to these Terms.</p>`,
   },
   {
-    id: "requests",
-    title: "Requests aren't bookings yet",
-    html: `<p>Sending a booking or quote request doesn't commit either of us. A job is confirmed once we've agreed on the price, timing and how the device gets to me.</p>`,
+    id: "services-and-pricing",
+    title: "Services and pricing",
+    html: `<p>We provide console modding, repair and custom build services as described on the Site. Listed prices are estimates until we confirm them with you after inspecting the device or discussing the build. Damage, previous repairs or missing parts can change the scope and cost of a job, and we'll always check with you before doing additional work.</p>`,
   },
   {
-    id: "commissions",
+    id: "requests-and-bookings",
+    title: "Requests and bookings",
+    html: `<p>Submitting a booking or quote request through the Site doesn't create a binding agreement. A job is confirmed once we've both agreed on the price, timing and how the device will get to us.</p>`,
+  },
+  {
+    id: "payment",
+    title: "Payment",
+    html: `<p>The amount, method and timing of payment are agreed with you before work begins.</p>`,
+  },
+  {
+    id: "custom-builds",
     title: "Custom build commissions",
-    html: `<p>Commission builds are made to order by hand. The timeline, final spec and payment details are agreed with you before work starts.</p>`,
+    html: `<p>Commission builds are handmade to order. The specification, timeline and payment terms are agreed with you before work starts, and timelines are estimates rather than guarantees.</p>`,
   },
   {
-    id: "shipping",
-    title: "Shipping & risk",
-    html: `<p>For mail-in work, you're responsible for packing and insuring your shipment to me. Risk of loss in transit rests with the carrier and any insurance you choose, unless we agree otherwise in writing.</p>`,
+    id: "mail-in-and-shipping",
+    title: "Mail-in service and shipping",
+    html: `<p>For mail-in jobs, you're responsible for packing your device securely and insuring it in transit to us. Risk of loss or damage in transit rests with the carrier and any insurance you purchase, unless we agree otherwise in writing.</p>`,
   },
   {
     id: "warranty",
     title: "Warranty",
-    html: `<p>Any workmanship coverage is confirmed with your completed job. Physical damage, abuse or changes made by others after pickup aren't covered.</p>`,
+    html: `<p>Any workmanship warranty is described when your job is completed. It doesn't cover physical or liquid damage, misuse, or changes or repairs made by anyone else after you collect the device. Except for any warranty we give you in writing, and to the extent permitted by law, our services are provided without other warranties.</p>`,
   },
   {
-    id: "responsibilities",
+    id: "your-responsibilities",
     title: "Your responsibilities",
-    html: `<p>You confirm you own the device (or have permission to have it worked on) and that you'll use it lawfully. Modding a console can affect manufacturer warranties and online-service access. I'll explain the trade-offs, and the decision is yours.</p>`,
+    html: `<p>You confirm that you own the device or are authorized to have it serviced, and that you'll use it and any installed software lawfully. Modifying a console may void the manufacturer's warranty and may affect access to online services. We'll explain these trade-offs before starting, and the decision to proceed is yours.</p>`,
   },
   {
-    id: "liability",
+    id: "reviews",
+    title: "Reviews you submit",
+    html: `<p>When you submit a review, you confirm that it reflects your genuine experience with Mod Labs, that you wrote it, and that it contains no one's private information and nothing unlawful. You give Mod Labs a non-exclusive, royalty-free license to publish and display your review, with the name you provided, on the Site. We may decline or remove reviews as described in our <a href="/privacy">Privacy Policy</a>.</p>`,
+  },
+  {
+    id: "site-content",
+    title: "Site content",
+    html: `<p>The text, photos, graphics and logo on the Site belong to Mod Labs unless otherwise noted. Please don't copy or reuse them without our permission.</p>`,
+  },
+  {
+    id: "trademarks",
+    title: "Trademarks",
+    html: `<p>Nintendo Switch, Wii, GameCube, Xbox, PlayStation and other product names are trademarks of their respective owners. Mod Labs is an independent service provider and isn't affiliated with or endorsed by Nintendo, Microsoft or Sony.</p>`,
+  },
+  {
+    id: "limitation-of-liability",
     title: "Limitation of liability",
-    html: `<p>To the extent permitted by law, Mod Labs' liability is limited to the amount you paid for the specific service giving rise to the claim. Advanced board work carries some inherent risk, which you accept by proceeding.</p>`,
+    html: `<p>To the fullest extent permitted by law, Mod Labs' total liability for any claim related to a service is limited to the amount you paid for that service, and we aren't liable for indirect or consequential losses, including lost data. Advanced board-level work carries some inherent risk, which we'll explain and which you accept by choosing to proceed.</p>`,
   },
   {
-    id: "questions",
-    title: "Questions",
-    html: `<p>Anything unclear? <a href="/quote">Send me a message</a> before booking and I'll explain.</p>`,
+    id: "governing-law",
+    title: "Governing law",
+    html: `<p>These Terms are governed by the laws of the State of Washington, without regard to its conflict-of-law rules.</p>`,
+  },
+  {
+    id: "changes",
+    title: "Changes to these terms",
+    html: `<p>We may update these Terms from time to time. The version posted on the Site when you make a request applies to that request.</p>`,
+  },
+  {
+    id: "contact",
+    title: "Contact us",
+    html: `<p>Questions about these Terms? <a href="/quote">Send us a message</a> before booking and we'll be happy to explain.</p>`,
   },
 ];
 ---
 
 <BaseLayout
-  title="Terms"
-  description="Terms for using the Mod Labs website and requesting console modding, repair or custom build work."
+  title="Terms of Service"
+  description="The terms that apply when you use the Mod Labs website or request console modding, repair or custom build work."
   breadcrumbs={[{ name: "Terms", path: "/terms" }]}
 >
-  <PageHero title="Terms" intro="The ground rules for working together, kept short and readable." compact />
-  <LegalDoc sections={sections} updated="September 2026" />
+  <PageHero title="Terms of Service" intro="The terms that apply when you use this site or request work from Mod Labs." compact />
+  <LegalDoc sections={sections} updated="November 5, 2026" />
 </BaseLayout>

@@ -92,11 +92,19 @@ export const fieldNames = {
   turnstile: "cf-turnstile-response",
 } as const;
 
-/** JSON response contract for /api/book and /api/quote */
+/**
+ * JSON response contract for /api/book, /api/quote and /api/review.
+ * `daily_limit` (HTTP 429) is review-only: the per-visitor or site-wide daily review limit was reached,
+ * so the visitor should try again tomorrow (unlike `rate_limited`: wait a minute).
+ */
 export type ApiResult =
   | { ok: true; message: string }
   | { ok: false; error: "validation"; fieldErrors: Record<string, string[]> }
-  | { ok: false; error: "captcha" | "rate_limited" | "too_large" | "not_configured" | "server"; message: string };
+  | {
+      ok: false;
+      error: "captcha" | "rate_limited" | "daily_limit" | "too_large" | "not_configured" | "server";
+      message: string;
+    };
 
 /** Convert multipart FormData into the plain object the schemas expect. */
 export function formDataToObject(fd: FormData) {

@@ -1,7 +1,8 @@
 /**
- * POST /api/review (spec §17 step 1). Same pipeline as book/quote:
- * origin → rate limit → bounded body → honeypot → Turnstile ("review") → reviewSchema → insert pending
- * → moderation email with signed Approve/Delete links → ApiResult (JSON) or 303 back to /reviews.
+ * POST /api/review (spec §17 step 1, §18). Same pipeline as book/quote:
+ * origin → rate limit → bounded body → honeypot → Turnstile ("review") → reviewSchema → daily limits
+ * (site-wide, then per visitor) → insert pending → moderation email with signed Approve/Delete links
+ * → ApiResult (JSON) or 303 back to /reviews.
  */
 import {
   reviewFields,
@@ -20,6 +21,7 @@ import type { ReviewContext } from "./context";
 import { renderModerationEmail, type ModerationLinks } from "./moderation-email";
 import { createModerationLink, signingKeyFrom } from "./signing";
 import type { NewReview } from "./store";
+import { consumeVisitorAllowance, MAX_REVIEWS_PER_VISITOR_PER_DAY } from "./visitor-limit";
 
 export const REVIEW_PAGE = "/reviews";
 /** Text fields + a Turnstile token fit in a few KB; nothing legitimate comes close to this. */
@@ -121,11 +123,20 @@ async function processReview(request: Request, ctx: ReviewContext): Promise<Outc
     resend = { apiKey: env.RESEND_API_KEY, to: env.LEAD_EMAIL_TO };
   }
 
-  // 7. Daily cap, then store as pending (never published until approved)
+  // 7. Daily limits, then store as pending (never published until approved). The site-wide cap is only read,
+  // so a refused review doesn't use up the visitor's own allowance.
   const now = ctx.now();
   if ((await ctx.store.countCreatedSince(now - DAY_MS)) >= MAX_NEW_REVIEWS_PER_DAY) {
     console.warn("review daily cap reached", JSON.stringify({ cap: MAX_NEW_REVIEWS_PER_DAY }));
-    return failure("rate_limited", "We've had a lot of reviews today. Please try again tomorrow.");
+    return failure("daily_limit", "We've had a lot of reviews today. Please try again tomorrow.");
+  }
+  const visitor = { store: ctx.store, waitUntil: ctx.waitUntil };
+  if (!(await consumeVisitorAllowance(visitor, signingKey, ip, now))) {
+    console.warn("review visitor limit reached", JSON.stringify({ limit: MAX_REVIEWS_PER_VISITOR_PER_DAY }));
+    return failure(
+      "daily_limit",
+      "That's the most reviews we take from one connection in a day. Please try again tomorrow.",
+    );
   }
   const review = toNewReview(parsed.data);
   const id = await ctx.store.insertPending(review, now);
@@ -163,7 +174,8 @@ async function processReview(request: Request, ctx: ReviewContext): Promise<Outc
     attachments: [],
   });
   if (!sent) {
-    // Without the email nobody can moderate the row, so remove it and let the reviewer retry.
+    // Without the email nobody can moderate the row, so remove it and let the reviewer retry. The visitor's
+    // daily count is deliberately kept: a retry within the allowance still works, and failures can't reset it.
     await ctx.store.remove(id);
     return failure("server", "Your review couldn't be sent right now. Please try again in a moment.", 502);
   }

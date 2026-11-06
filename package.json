@@ -8,8 +8,8 @@
   "scripts": {
     "prebuild": "node scripts/predeploy-check.mjs --ci-only",
     "dev": "astro dev",
-    "dev:full": "astro build && wrangler d1 migrations apply mod-labs-reviews --local && wrangler dev --port 8787 --local-upstream localhost:8787",
-    "build": "astro build",
+    "dev:full": "npm run build && wrangler d1 migrations apply mod-labs-reviews --local && wrangler dev --port 8787 --local-upstream localhost:8787",
+    "build": "astro build && node scripts/csp-hashes.mjs",
     "preview": "wrangler dev --port 8787 --local-upstream localhost:8787",
     "admin": "node admin/server.ts",
     "typecheck": "astro check && tsc -p worker/tsconfig.json --noEmit && tsc -p admin/tsconfig.json && tsc -p admin/public/tsconfig.json",
@@ -18,11 +18,13 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "check": "npm run typecheck && npm run lint && npm test",
-    "deploy": "node scripts/predeploy-check.mjs && astro build && node scripts/predeploy-check.mjs && wrangler deploy",
+    "deploy": "node scripts/predeploy-check.mjs && npm run build && node scripts/predeploy-check.mjs && wrangler deploy",
     "db:migrate:local": "wrangler d1 migrations apply mod-labs-reviews --local",
     "db:migrate:remote": "wrangler d1 migrations apply mod-labs-reviews --remote",
     "db:seed:local": "wrangler d1 execute mod-labs-reviews --local --file worker/reviews/dev-seed.sql",
-    "reviews:pending": "wrangler d1 execute mod-labs-reviews --remote --command \"SELECT id, name, rating, datetime(created_at / 1000, 'unixepoch') AS submitted FROM reviews WHERE status = 'pending' ORDER BY created_at DESC\""
+    "reviews:pending": "wrangler d1 execute mod-labs-reviews --remote --command \"SELECT id, name, rating, datetime(created_at / 1000, 'unixepoch') AS submitted FROM reviews WHERE status = 'pending' ORDER BY created_at DESC\"",
+    "reviews:approve": "node scripts/reviews-admin.mjs approve",
+    "reviews:delete": "node scripts/reviews-admin.mjs delete"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",

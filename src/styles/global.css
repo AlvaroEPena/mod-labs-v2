@@ -54,6 +54,8 @@
     color-scheme: dark;
     --header-h: 4.5rem;
     --cta-bar-h: 0px;
+    /* the one frost recipe (.glass and width-gated overlays); `none` under reduced transparency */
+    --glass-frost: blur(20px) saturate(160%);
     accent-color: var(--color-cyan);
     -webkit-tap-highlight-color: transparent;
   }
@@ -273,14 +275,13 @@
       0 14px 36px -12px rgb(78 224 239 / 0.95);
   }
 
-  /* Glass pill */
+  /* Glass pill, without backdrop blur: ghost buttons sit on the flat page or inside a panel that is already
+     frosted, where a nested blur would only re-blur that panel's own fill. */
   .btn-ghost {
     color: var(--color-fg);
     background: linear-gradient(180deg, rgb(255 255 255 / 0.09), rgb(255 255 255 / 0.03));
     border: 1px solid rgb(255 255 255 / 0.14);
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
-    backdrop-filter: blur(12px) saturate(150%);
-    -webkit-backdrop-filter: blur(12px) saturate(150%);
   }
   .btn-ghost:hover {
     border-color: rgb(255 255 255 / 0.28);
@@ -320,18 +321,31 @@
     background: rgb(255 255 255 / 0.045);
     border: 1px solid var(--color-line-soft);
   }
-  /* ----- Glass ----- */
-  /* Frosted panel for anything that sits over imagery or the page (header, overlays, floating cards). */
-  .glass {
+  /* ----- Glass: one tint, edge and highlight in two weights (spec §16, §18) -----
+     .glass       frosted (backdrop blur). Blur is the costliest paint on phones, so it is a budget: only
+                  for panels that overlap imagery or content scrolling under them (header, menus, photo
+                  overlays, the sticky gallery filter).
+     .glass-flat  the same look without the blur, for panels on the flat page backdrop (photo frames,
+                  boards, asides). A denser fill stands in for the frost, so the circuit tile behind it
+                  doesn't show through sharply. Components tune the fill with --glass-fill, and a panel
+                  that only overlaps a photo at some widths adds `backdrop-filter: var(--glass-frost)` there. */
+  .glass,
+  .glass-flat {
+    --glass-fill: rgb(12 17 31 / 0.55);
     background:
       linear-gradient(180deg, rgb(255 255 255 / 0.085), rgb(255 255 255 / 0.02) 55%),
-      rgb(12 17 31 / 0.55);
+      var(--glass-fill);
     border: 1px solid rgb(255 255 255 / 0.1);
     box-shadow:
       inset 0 1px 0 rgb(255 255 255 / 0.1),
       0 24px 60px -34px rgb(0 0 0 / 0.85);
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
+  }
+  .glass {
+    backdrop-filter: var(--glass-frost);
+    -webkit-backdrop-filter: var(--glass-frost);
+  }
+  .glass-flat {
+    --glass-fill: rgb(12 17 31 / 0.66);
   }
 
   /* Content panel: the same glass look without the blur (cheap to scroll on phones). */
@@ -601,13 +615,15 @@
   pointer-events: none;
 }
 
-/* Reduced transparency: solid panels, no blur */
+/* Reduced transparency: solid panels, no blur (frosted panels read --glass-frost) */
 @media (prefers-reduced-transparency: reduce) {
+  :root {
+    --glass-frost: none;
+  }
   .glass,
+  .glass-flat,
   .btn-ghost {
     background: var(--color-panel-2);
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
   }
   .card {
     background: var(--color-panel);

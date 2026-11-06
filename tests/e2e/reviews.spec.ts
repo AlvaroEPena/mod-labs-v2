@@ -49,7 +49,7 @@ test.describe("reviews page (static)", () => {
 
   test("injected review markup is styled by the global review CSS (lit vs dim stars)", async ({ page }) => {
     await page.goto("/");
-    const html = renderReviewItem({ id: 1, name: "Layout Check", rating: 3, service: "Repair", source: "Google", body: "Markup check only.", approvedAt: 0 });
+    const html = renderReviewItem({ name: "Layout Check", rating: 3, service: "Repair", source: "Google", body: "Markup check only.", approvedAt: 0 });
     const [on, off] = await page.evaluate((item) => {
       document.querySelectorAll("[data-reviews-when-any]").forEach((e) => ((e as HTMLElement).hidden = false));
       const ul = document.querySelector('[data-reviews-slot="home"]')!;
@@ -210,6 +210,7 @@ test.describe("review form API outcomes (mocked)", () => {
   for (const [code, status] of [
     ["captcha", 403],
     ["rate_limited", 429],
+    ["daily_limit", 429],
     ["too_large", 413],
     ["not_configured", 503],
     ["server", 500],
@@ -225,6 +226,20 @@ test.describe("review form API outcomes (mocked)", () => {
       await expect(star(page, 4)).toBeChecked();
     });
   }
+
+  test("daily_limit: tells the visitor to come back tomorrow, and the button comes back for later", async ({ page }) => {
+    await mock(page, 429, { ok: false, error: "daily_limit", message: "raw server text" });
+    await openForm(page);
+    await fillValidReview(page);
+    await waitForTurnstileToken(page, "review");
+    const button = form(page).getByRole("button", { name: "Send my review" });
+    await button.click();
+    const status = form(page).getByRole("status");
+    await expect(status).toHaveText(/try again tomorrow/);
+    await expect(status).not.toHaveText(/minute/);
+    await expect(status).toBeFocused();
+    await expect(button).toBeEnabled();
+  });
 
   test("a network failure is explained, and the button comes back", async ({ page }) => {
     await page.route("**/api/review", (route) => route.abort("internetdisconnected"));

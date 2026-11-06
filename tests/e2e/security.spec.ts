@@ -1,8 +1,23 @@
 /** Security headers on static responses + no CSP violations where third-party/dynamic code runs. */
-import { test, expect, trackCsp, waitForTurnstileToken } from "./fixtures";
+import { test, expect, trackCsp, waitForTurnstileToken, type FormId } from "./fixtures";
+import { scanHtml, scriptHash } from "../../scripts/csp-hashes.mjs";
+
+/** / and /reviews are served through the Worker (run_worker_first); /book and /gallery straight from assets. */
+const HASHED_PAGES: { route: string; form?: FormId }[] = [
+  { route: "/" },
+  { route: "/reviews", form: "review" },
+  { route: "/book", form: "book" },
+  { route: "/gallery" },
+];
+
+const scriptSrcOf = (csp: string) =>
+  csp
+    .split(";")
+    .map((directive) => directive.trim())
+    .find((directive) => directive.startsWith("script-src ")) ?? "";
 
 test("static page responses include the security headers", async ({ request }) => {
-  for (const route of ["/", "/quote", "/gallery/switch"]) {
+  for (const route of ["/", "/reviews", "/book", "/quote", "/gallery/switch"]) {
     const res = await request.get(route);
     const h = res.headers();
     expect(h["x-content-type-options"], route).toBe("nosniff");
@@ -12,6 +27,34 @@ test("static page responses include the security headers", async ({ request }) =
     expect(h["x-frame-options"], route).toBe("DENY");
   }
 });
+
+test("script-src is hash-based and covers every inline script each page ships (M4)", async ({ request }) => {
+  for (const { route } of HASHED_PAGES) {
+    const res = await request.get(route);
+    expect(res.status(), route).toBe(200);
+    const scriptSrc = scriptSrcOf(res.headers()["content-security-policy"] ?? "");
+    // With a hash present, CSP2+ browsers ignore the 'unsafe-inline' that stays as the CSP1 fallback.
+    expect(scriptSrc, route).toMatch(/ 'sha256-[A-Za-z0-9+/]{43}='/);
+    expect(scriptSrc, route).not.toContain("'unsafe-eval'");
+    const { scripts } = scanHtml(await res.text());
+    expect(scripts.length, `${route} has inline scripts to check`).toBeGreaterThan(0);
+    for (const script of scripts) {
+      expect(scriptSrc, `${route}: ${script.slice(0, 60)}`).toContain(scriptHash(script));
+    }
+  }
+});
+
+for (const { route, form } of HASHED_PAGES) {
+  const title = `no CSP violations on ${route} under the hash-based policy${form ? " (Turnstile loads)" : ""}`;
+  test(title, async ({ page }) => {
+    const violations = await trackCsp(page);
+    const response = await page.goto(route);
+    expect(scriptSrcOf(response?.headers()["content-security-policy"] ?? "")).toContain("'sha256-");
+    await page.waitForLoadState("networkidle");
+    if (form) await waitForTurnstileToken(page, form);
+    expect(violations).toEqual([]);
+  });
+}
 
 test("the 404 response also carries the security headers", async ({ request }) => {
   const res = await request.get("/definitely-missing");

@@ -4,7 +4,9 @@ import { MAX_PUBLISHED_REVIEWS, type NewReview, type ReviewStore, type StoredRev
 
 export class MemoryReviewStore implements ReviewStore {
   private rows = new Map<number, StoredReview>();
-  private nextId = 1;
+  /** Like SQLite AUTOINCREMENT: only ever grows, so a deleted row's id is never handed out again. */
+  private lastId = 0;
+  private visitorCounts = new Map<string, { day: string; count: number }>();
   /** Set to make every call reject, to exercise error paths. */
   failWith: Error | null = null;
 
@@ -15,9 +17,10 @@ export class MemoryReviewStore implements ReviewStore {
   /** Test helper: insert a row in any state. */
   seed(review: NewReview & Partial<Pick<StoredReview, "status" | "createdAt" | "approvedAt">>): StoredReview {
     const status = review.status ?? "pending";
+    this.lastId += 1;
     const row: StoredReview = {
       ...review,
-      id: this.nextId++,
+      id: this.lastId,
       status,
       createdAt: review.createdAt ?? 0,
       approvedAt: status === "approved" ? (review.approvedAt ?? review.createdAt ?? 0) : null,
@@ -29,6 +32,11 @@ export class MemoryReviewStore implements ReviewStore {
   /** Test helper: a copy of every row, by id. */
   all(): StoredReview[] {
     return [...this.rows.values()].map((r) => ({ ...r }));
+  }
+
+  /** Test helper: every visitor bucket, as stored. */
+  visitorBuckets(): { key: string; day: string; count: number }[] {
+    return [...this.visitorCounts].map(([key, value]) => ({ key, ...value }));
   }
 
   async insertPending(review: NewReview, createdAt: number): Promise<number> {
@@ -77,5 +85,19 @@ export class MemoryReviewStore implements ReviewStore {
         body,
         approvedAt,
       }));
+  }
+
+  async recordVisitorSubmission(bucketKey: string, day: string): Promise<number> {
+    this.guard();
+    // Same as the D1 upsert: an existing key keeps its day and only counts up.
+    const existing = this.visitorCounts.get(bucketKey);
+    const next = existing ? { ...existing, count: existing.count + 1 } : { day, count: 1 };
+    this.visitorCounts.set(bucketKey, next);
+    return next.count;
+  }
+
+  async purgeVisitorCountsBefore(day: string): Promise<void> {
+    this.guard();
+    for (const [key, value] of this.visitorCounts) if (value.day < day) this.visitorCounts.delete(key);
   }
 }

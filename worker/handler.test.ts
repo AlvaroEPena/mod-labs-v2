@@ -107,7 +107,8 @@ let resendStatus: number;
 
 beforeEach(() => {
   calls = [];
-  siteverify = { success: true, hostname: HOST };
+  // A genuine pass for the booking widget (with a real secret the action must match exactly).
+  siteverify = { success: true, hostname: HOST, action: "book" };
   resendStatus = 200;
   memoryLimiter.reset();
   vi.spyOn(console, "log").mockImplementation(() => {});
@@ -355,7 +356,7 @@ describe("Turnstile hardening", () => {
   });
 
   it("rejects a token solved on a different hostname (L3)", async () => {
-    siteverify = { success: true, hostname: "evil.example" };
+    siteverify = { success: true, hostname: "evil.example", action: "book" };
     const res = await worker.fetch(await post("/api/book", bookForm()), makeEnv());
     expect(res.status).toBe(403);
     expect(await res.json()).toMatchObject({ error: "captcha" });
@@ -374,10 +375,21 @@ describe("Turnstile hardening", () => {
     expect(res.status).toBe(200);
   });
 
-  it("skips the hostname check on localhost", async () => {
-    siteverify = { success: true, hostname: "example.com" };
+  it("rejects a token without an action when the secret is real (L4)", async () => {
+    siteverify = { success: true, hostname: HOST };
+    const res = await worker.fetch(await post("/api/book", bookForm()), makeEnv());
+    expect(res.status).toBe(403);
+    expect(await res.json()).toMatchObject({ error: "captcha" });
+    expect(resendCalls()).toHaveLength(0);
+  });
+
+  it("skips the hostname check on localhost (the action is still required)", async () => {
+    siteverify = { success: true, hostname: "example.com", action: "book" };
     const res = await worker.fetch(await post("/api/book", bookForm(), { origin: LOCAL }), makeEnv());
     expect(res.status).toBe(200);
+    siteverify = { success: true, hostname: "example.com" };
+    const noAction = await worker.fetch(await post("/api/book", bookForm(), { origin: LOCAL }), makeEnv());
+    expect(noAction.status).toBe(403);
   });
 });
 
@@ -409,6 +421,7 @@ describe("no-JS form posts (303 redirects)", () => {
   });
 
   it("redirects to /quote?error=validation on invalid input", async () => {
+    siteverify = { ...siteverify, action: "quote" };
     const res = await worker.fetch(await post("/api/quote", quoteForm({ email: "x" }), { json: false }), makeEnv());
     expect(res.status).toBe(303);
     expect(res.headers.get("Location")).toBe(`${ORIGIN}/quote?error=validation`);
@@ -422,6 +435,10 @@ describe("no-JS form posts (303 redirects)", () => {
 });
 
 describe("POST /api/quote", () => {
+  beforeEach(() => {
+    siteverify = { ...siteverify, action: "quote" };
+  });
+
   it("sends photos as base64 attachments", async () => {
     const photo = new File([JPEG], "IMG_0001.jpg", { type: "image/jpeg" });
     const png = new File([PNG], "../../etc/board<1>.png", { type: "image/png" });

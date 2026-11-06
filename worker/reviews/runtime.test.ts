@@ -11,7 +11,13 @@ import {
 } from "miniflare";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import migrationSql from "../../migrations/0001_create_reviews.sql?raw";
-import { renderReviewItem, summarize, summaryText, type PublicReview } from "../../src/lib/reviews/contract";
+import {
+  renderReviewItem,
+  summarize,
+  summaryText,
+  type PublicReview,
+  type ReviewListResult,
+} from "../../src/lib/reviews/contract";
 import { createModerationLink, MODERATE_PATH, type ModerationAction } from "./signing";
 import { D1ReviewStore, LIST_APPROVED_SQL, MAX_PUBLISHED_REVIEWS, type NewReview } from "./store";
 import {
@@ -119,7 +125,7 @@ afterAll(async () => {
 });
 
 describeReviewStoreContract("D1ReviewStore (real D1, migrations/0001)", async () => {
-  await storeDb.prepare("DELETE FROM reviews").run();
+  await storeDb.batch([storeDb.prepare("DELETE FROM reviews"), storeDb.prepare("DELETE FROM review_limits")]);
   return new D1ReviewStore(storeDb);
 });
 
@@ -137,6 +143,19 @@ describe("D1 schema", () => {
     await expect(insert(5, "approved", null)).rejects.toThrow();
     await expect(insert(5, "pending", 1)).rejects.toThrow();
     await expect(insert(5, "approved", 1)).resolves.toBeTruthy();
+  });
+
+  it("keeps visitor buckets to a fixed-width UTC day and a positive count", async () => {
+    const insert = (day: string, count: number) =>
+      storeDb
+        .prepare("INSERT INTO review_limits (key, day, count) VALUES ('k', ?, ?)")
+        .bind(day, count)
+        .run();
+    await expect(insert("yesterday", 1)).rejects.toThrow();
+    await expect(insert("2026-11-5", 1)).rejects.toThrow();
+    await expect(insert("2026-11-05", 0)).rejects.toThrow();
+    await expect(insert("2026-11-05", 1)).resolves.toBeTruthy();
+    await storeDb.prepare("DELETE FROM review_limits").run();
   });
 
   it("uses the partial index for the published list", async () => {
@@ -267,15 +286,12 @@ describe("publishing approved reviews with HTMLRewriter", () => {
     expect(await res.text()).toBe("not found");
   });
 
-  it("returns the same list from GET /api/reviews", async () => {
+  it("returns the same list from GET /api/reviews, without row ids", async () => {
     const res = await mf.dispatchFetch(`${ORIGIN}/api/reviews`);
     expect(res.status).toBe(200);
-    const body = (await res.json()) as {
-      ok: boolean;
-      reviews: PublicReview[];
-      count: number;
-      average: number;
-    };
+    const text = await res.text();
+    expect(text).not.toContain('"id"');
+    const body = JSON.parse(text) as ReviewListResult;
     expect(body.ok).toBe(true);
     expect(body.reviews.map((r) => r.name)).toEqual([...reviews].reverse().map((r) => r.name));
     expect(body.count).toBe(4);
@@ -321,6 +337,53 @@ describe("publishing approved reviews with HTMLRewriter", () => {
     const { results } = await pagesDb.prepare("SELECT id FROM reviews").all<{ id: number }>();
     for (const { id } of results) expect((await moderate(id, "delete")).status).toBe(200);
     expect(await (await fetchPage("/")).text()).toBe(PAGES["/"]);
+  });
+});
+
+describe("review ids and daily limits on real D1, through the Worker", () => {
+  it("never lets a signed link for a deleted newest review act on the next one (M1)", async () => {
+    const store = new D1ReviewStore(pagesDb);
+    const deletedId = await store.insertPending(sampleReview({ name: "Deleted Newest" }), Date.now());
+    const link = async (action: ModerationAction) =>
+      new URL((await createModerationLink(ORIGIN, SIGNING_KEY, deletedId, action, Date.now())).url)
+        .searchParams;
+    const [staleApprove, staleDelete] = [await link("approve"), await link("delete")];
+    expect((await postForm(MODERATE_PATH, staleDelete)).status).toBe(200);
+
+    const nextId = await store.insertPending(sampleReview({ name: "Next Reviewer" }), Date.now());
+    expect(nextId).toBeGreaterThan(deletedId);
+    expect((await postForm(MODERATE_PATH, staleApprove)).status).toBe(404);
+    expect((await postForm(MODERATE_PATH, staleDelete)).status).toBe(404);
+    expect(await store.findById(nextId)).toMatchObject({ name: "Next Reviewer", status: "pending" });
+    await store.remove(nextId);
+  });
+
+  it("refuses the 4th review in a UTC day from one IPv6 /64 with daily_limit, storing only hashes", async () => {
+    // Different addresses in one /64: separate per-minute limiter keys, one daily bucket.
+    const submitFrom = (ip: string) =>
+      postForm("/api/review", new URLSearchParams(validReviewFields()), {
+        Accept: "application/json",
+        "CF-Connecting-IP": ip,
+      });
+    const statuses: number[] = [];
+    for (const host of ["1", "2", "3", "4"])
+      statuses.push((await submitFrom(`2001:db8:77:77::${host}`)).status);
+    expect(statuses).toEqual([200, 200, 200, 429]);
+    expect(await (await submitFrom("2001:db8:77:77::5")).json()).toMatchObject({ error: "daily_limit" });
+    expect((await submitFrom("2001:db8:77:78::1")).status).toBe(200);
+
+    const { results } = await pagesDb.prepare("SELECT key, day, count FROM review_limits").all<{
+      key: string;
+      day: string;
+      count: number;
+    }>();
+    expect(results.find((r) => r.count === 5)).toMatchObject({ day: new Date().toISOString().slice(0, 10) });
+    for (const row of results) expect(row.key).toMatch(/^[0-9a-f]{64}$/);
+    expect(JSON.stringify(results)).not.toContain("2001");
+    await pagesDb.batch([
+      pagesDb.prepare("DELETE FROM reviews"),
+      pagesDb.prepare("DELETE FROM review_limits"),
+    ]);
   });
 });
 

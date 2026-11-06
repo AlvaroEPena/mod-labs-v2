@@ -29,7 +29,7 @@ const slides = [cover, ...photosFor(b.project).filter((p) => p.id !== cover.id)]
       <div class="media reveal min-w-0">
         <Carousel photos={slides} label={`${b.name} photos`} group={`build-${b.slug}`} />
       </div>
-      <div class="info glass min-w-0">
+      <div class="info glass-flat min-w-0">
         <h2 id={`${b.slug}-title`} class="text-3xl sm:text-4xl">{b.name}</h2>
         <p class="mt-3 text-lg leading-snug font-medium text-fg">{b.tagline}</p>
         <div class="mt-6 flex flex-wrap items-center gap-3">

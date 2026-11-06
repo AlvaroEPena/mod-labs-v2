@@ -1,5 +1,9 @@
 # Security + caching headers for static assets (Cloudflare Workers static assets).
-# Worker-generated /api/* responses set their own headers in worker/lib/http.ts.
+# Worker-generated /api/* responses set their own headers in worker/lib/http.ts. The Worker-first pages
+# (/ and /reviews) get these too: they come from env.ASSETS.fetch(), which applies this file.
+# script-src: `npm run build` (scripts/csp-hashes.mjs) appends a sha256 hash for every inline script to the
+# copy in dist/_headers. 'unsafe-inline' is only the CSP1 fallback (ignored once a hash is present).
+# Cloudflare limits each line to 2,000 characters; the build fails before that.
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin

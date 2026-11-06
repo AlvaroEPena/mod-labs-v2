@@ -71,11 +71,14 @@ export async function checkCaptcha({
     );
     return failure("not_configured", NOT_SET_UP);
   }
-  // Test secrets report hostname "example.com", and local runs have no real hostname: skip that check there.
-  const checkHostname = !isLocalHostname(hostname) && !isTestTurnstileSecret(secret);
+  // Test secrets report hostname "example.com" and no action, and local runs have no real hostname:
+  // skip those checks there.
+  const isTestSecret = isTestTurnstileSecret(secret);
+  const checkHostname = !isLocalHostname(hostname) && !isTestSecret;
   const verdict = await verifyTurnstile(secret, typeof token === "string" ? token : "", ip, {
     hostname: checkHostname ? hostname : null,
     action,
+    isActionRequired: !isTestSecret,
   });
   if (verdict === "failed") {
     return failure("captcha", "The spam check failed. Please complete the verification and try again.");

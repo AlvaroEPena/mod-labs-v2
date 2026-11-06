@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import entry from "../index";
-import { renderReviewItem, type PublicReview } from "../../src/lib/reviews/contract";
+import { renderReviewItem, type PublicReview, type ReviewListResult } from "../../src/lib/reviews/contract";
 import { derivedEtag, etagMatches } from "../lib/etag";
 import { EDGE_TTL_SECONDS, loadApproved, MEMORY_TTL_MS, purgeApproved, resetApprovedCache } from "./cache";
+import type { ReviewContext } from "./context";
 import { handleReviewList } from "./list";
 import { MemoryReviewStore } from "./memory-store";
 import { renderModerationEmail } from "./moderation-email";
@@ -157,6 +158,9 @@ describe("approved list cache", () => {
     const first = await loadApproved(store, deps, ORIGIN);
     await Promise.all(pendingWrites);
     expect(edge.entries.size).toBe(1);
+    const [cachedJson = ""] = edge.entries.values();
+    expect(JSON.parse(cachedJson)).toEqual([expect.not.objectContaining({ id: expect.anything() })]);
+    expect(cachedJson).not.toContain('"id"');
 
     resetApprovedCache(); // a different isolate in the same location
     const spy = vi.spyOn(store, "listApproved");
@@ -165,6 +169,15 @@ describe("approved list cache", () => {
 
     await purgeApproved(deps, ORIGIN);
     expect(edge.entries.size).toBe(0);
+  });
+
+  it("drops ids even from an edge entry that still has them", async () => {
+    const edge = new FakeCache();
+    const withId = [{ ...published(9), extra: "x" }];
+    edge.entries.set(`${ORIGIN}/__reviews-cache/approved-v2`, JSON.stringify(withId));
+    const deps = { edgeCache: edge as unknown as Cache, now: () => NOW, waitUntil: () => {} };
+    const { reviews } = await loadApproved(new MemoryReviewStore(), deps, ORIGIN);
+    expect(reviews).toEqual([{ ...sampleReview({ name: "Reviewer 9" }), approvedAt: NOW - 9000 }]);
   });
 
   it("propagates store failures (callers degrade)", async () => {
@@ -177,16 +190,16 @@ describe("approved list cache", () => {
 });
 
 describe("GET /api/reviews", () => {
-  it("returns approved reviews only, with count and average and a short cache", async () => {
+  it("returns approved reviews only, without row ids, with count and average and a short cache", async () => {
     const store = new MemoryReviewStore();
-    const a = store.seed({
-      ...sampleReview({ rating: 4 }),
+    store.seed({
+      ...sampleReview({ name: "Older", rating: 4 }),
       status: "approved",
       createdAt: NOW,
       approvedAt: NOW - 5,
     });
-    const b = store.seed({
-      ...sampleReview({ rating: 5 }),
+    store.seed({
+      ...sampleReview({ name: "Newer", rating: 5 }),
       status: "approved",
       createdAt: NOW,
       approvedAt: NOW,
@@ -196,18 +209,14 @@ describe("GET /api/reviews", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("Cache-Control")).toBe("public, max-age=10");
     expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
-    const body = (await res.json()) as {
-      ok: boolean;
-      reviews: PublicReview[];
-      count: number;
-      average: number;
-    };
+    const text = await res.text();
+    expect(text).not.toContain('"id"');
+    const body = JSON.parse(text) as ReviewListResult;
     expect(body).toEqual({ ok: true, reviews: expect.any(Array), count: 2, average: 4.5 });
-    expect(body.reviews.map((r) => r.id)).toEqual([b.id, a.id]);
+    expect(body.reviews.map((r) => r.name)).toEqual(["Newer", "Older"]);
     expect(Object.keys(body.reviews[0] ?? {}).sort()).toEqual([
       "approvedAt",
       "body",
-      "id",
       "name",
       "rating",
       "service",
@@ -237,30 +246,85 @@ describe("GET /api/reviews", () => {
 });
 
 describe("servePageWithReviews fallbacks (the HTMLRewriter path runs in runtime.test.ts)", () => {
-  const conditional = () => new Request(`${ORIGIN}/`, { headers: { "If-None-Match": '"asset"' } });
+  const ASSET_ETAG = '"asset"';
+  const PAGE_HEADERS = {
+    "Content-Type": "text/html; charset=utf-8",
+    ETag: ASSET_ETAG,
+    "Content-Security-Policy": "script-src 'self' 'sha256-abc='",
+  };
+  /** Like the asset layer: the built page with its _headers headers (validators are never forwarded). */
+  const htmlAssets = () =>
+    makeEnv({
+      ASSETS: {
+        fetch: vi.fn(async () => new Response("<p>asset</p>", { headers: PAGE_HEADERS })),
+      } as unknown as Fetcher,
+    });
+  const failingStore = () => {
+    const store = new MemoryReviewStore();
+    store.failWith = new Error("D1 down");
+    return store;
+  };
+  const forwarded = (ctx: ReviewContext) => vi.mocked(ctx.env.ASSETS.fetch).mock.calls[0]?.[0] as Request;
 
   it.each([
-    ["no reviews", () => makeContext()],
-    ["no DB binding", () => makeContext({ store: null })],
-    [
-      "a database error",
-      () => {
-        const store = new MemoryReviewStore();
-        store.failWith = new Error("D1 down");
-        return makeContext({ store });
-      },
-    ],
-  ])("passes the original request straight to the assets with %s", async (_label, makeCtx) => {
-    const ctx = makeCtx();
-    const request = conditional();
-    expect(await (await servePageWithReviews(request, ctx)).text()).toBe("asset");
-    expect(ctx.env.ASSETS.fetch).toHaveBeenCalledWith(request); // validators kept → the asset layer can 304
+    ["no reviews", () => makeContext({ env: htmlAssets() })],
+    ["no DB binding", () => makeContext({ env: htmlAssets(), store: null })],
+    ["a database error", () => makeContext({ env: htmlAssets(), store: failingStore() })],
+  ])(
+    "serves the page exactly as built with %s, and answers its validators itself",
+    async (_label, makeCtx) => {
+      const ctx = makeCtx();
+      const page = await servePageWithReviews(new Request(`${ORIGIN}/`), ctx);
+      expect(page.status).toBe(200);
+      expect(await page.text()).toBe("<p>asset</p>");
+      expect(Object.fromEntries(page.headers)).toMatchObject({
+        etag: ASSET_ETAG,
+        "content-security-policy": PAGE_HEADERS["Content-Security-Policy"],
+      });
+
+      const conditional = new Request(`${ORIGIN}/`, { headers: { "If-None-Match": ASSET_ETAG } });
+      const notModified = await servePageWithReviews(conditional, makeCtx());
+      expect(notModified.status).toBe(304);
+      expect(await notModified.text()).toBe("");
+      expect(notModified.headers.get("ETag")).toBe(ASSET_ETAG);
+      expect(notModified.headers.get("Content-Security-Policy")).toBe(
+        PAGE_HEADERS["Content-Security-Policy"],
+      );
+    },
+  );
+
+  it("never forwards the browser's validators to the asset layer", async () => {
+    const ctx = makeContext({ env: htmlAssets() });
+    const conditional = new Request(`${ORIGIN}/`, {
+      headers: { "If-None-Match": ASSET_ETAG, "If-Modified-Since": "Wed, 04 Nov 2026 00:00:00 GMT" },
+    });
+    await servePageWithReviews(conditional, ctx);
+    expect(forwarded(ctx).headers.get("If-None-Match")).toBeNull();
+    expect(forwarded(ctx).headers.get("If-Modified-Since")).toBeNull();
+  });
+
+  it("fetches the page while the reviews are still loading (L9)", async () => {
+    const store = new MemoryReviewStore();
+    let releaseReviews: (rows: PublicReview[]) => void = () => {};
+    vi.spyOn(store, "listApproved").mockReturnValue(new Promise((resolve) => (releaseReviews = resolve)));
+    const ctx = makeContext({ env: htmlAssets(), store });
+    const serving = servePageWithReviews(new Request(`${ORIGIN}/`), ctx);
+    await vi.waitFor(() => expect(ctx.env.ASSETS.fetch).toHaveBeenCalledOnce());
+    releaseReviews([]);
+    expect(await (await serving).text()).toBe("<p>asset</p>");
+  });
+
+  it("passes non-HTML or non-200 asset responses through untouched", async () => {
+    const ctx = makeContext(); // makeEnv's stub answers text/plain
+    expect(await (await servePageWithReviews(new Request(`${ORIGIN}/`), ctx)).text()).toBe("asset");
   });
 
   it("doesn't touch non-GET/HEAD requests", async () => {
     const ctx = makeContext();
-    await servePageWithReviews(new Request(`${ORIGIN}/`, { method: "POST" }), ctx);
+    const post = new Request(`${ORIGIN}/`, { method: "POST" });
+    await servePageWithReviews(post, ctx);
     expect(ctx.env.ASSETS.fetch).toHaveBeenCalledOnce();
+    expect(forwarded(ctx)).toBe(post);
   });
 });
 

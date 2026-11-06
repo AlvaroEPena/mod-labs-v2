@@ -5,12 +5,18 @@
  */
 import type { ApiResult } from "../../lib/forms/schema";
 
-export type ErrorCode = "validation" | "captcha" | "rate_limited" | "too_large" | "not_configured" | "server" | "network";
+/**
+ * Every error an ApiResult can carry, plus "network" (the request never got an answer). Derived from the
+ * shared contract, so a new server code fails the typecheck until every CopySet has wording for it.
+ */
+export type ErrorCode = Extract<ApiResult, { ok: false }>["error"] | "network";
 
 export const errorCopy: Record<ErrorCode, string> = {
   validation: "A few fields need a quick fix. They're highlighted below.",
   captcha: "The spam check didn't go through. It has been reset, so please try sending again.",
   rate_limited: "That's a lot of requests in a short time. Please wait a minute, then try again.",
+  // Only /api/review sends daily_limit today; book and quote keep a generic line so the copy stays total.
+  daily_limit: "You've hit today's limit for sending. Please try again tomorrow, or DM me if it can't wait.",
   too_large: "Those photos are too big to send. Try fewer photos, or smaller ones.",
   not_configured:
     "Email isn't set up on the site yet, so your message couldn't be delivered. Please DM me instead, or try again later.",
@@ -34,6 +40,7 @@ export const reviewCopy: CopySet = {
   errors: {
     ...errorCopy,
     rate_limited: "That's a lot of reviews in a short time. Please wait a minute, then try again.",
+    daily_limit: "You've hit today's review limit. Please try again tomorrow.",
     too_large: "That review is too long to send. Please trim it a little and try again.",
     not_configured: "Reviews aren't switched on yet, so yours couldn't be saved. Please DM me instead, or try again later.",
     server: "Something went wrong on my end and your review wasn't saved. Please try again in a moment.",
@@ -48,7 +55,7 @@ export type Outcome =
   | { kind: "success"; message: string }
   | { kind: "error"; code: ErrorCode; message: string; fieldErrors?: Record<string, string[]> };
 
-/** Interpret a parsed JSON body (or its absence) + HTTP status from /api/book or /api/quote. */
+/** Interpret a parsed JSON body (or its absence) + HTTP status from /api/book, /api/quote or /api/review. */
 export function outcomeFromResponse(status: number, body: unknown, copy: CopySet = requestCopy): Outcome {
   const r = body as Partial<ApiResult> | null;
   if (r && r.ok === true) return { kind: "success", message: copy.success };
@@ -60,7 +67,8 @@ export function outcomeFromResponse(status: number, body: unknown, copy: CopySet
     }
     if (isErrorCode(r.error)) return { kind: "error", code: r.error, message: copy.errors[r.error] };
   }
-  // No usable JSON: fall back on the HTTP status
+  // No usable JSON: fall back on the HTTP status. A bare 429 can't say which limit it hit, so it gets the
+  // short-wait copy (the common case) rather than turning someone away until tomorrow.
   const code: ErrorCode =
     status === 413 ? "too_large" : status === 429 ? "rate_limited" : status === 403 ? "captcha" : status === 503 ? "not_configured" : "server";
   return { kind: "error", code, message: copy.errors[code] };

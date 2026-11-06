@@ -9,8 +9,13 @@ export type TurnstileResult = "ok" | "failed" | "unavailable";
 export interface TurnstileExpectations {
   /** Hostname the widget must have been solved on (the request's hostname), or null to skip the check. */
   hostname: string | null;
-  /** Widget action (e.g. "book" / "quote"); enforced only when siteverify reports a non-empty action. */
+  /** Widget action the form renders with (e.g. "book" / "quote" / "review"). */
   action: string;
+  /**
+   * True with a real secret: siteverify must report exactly `action`, and a missing action fails.
+   * Cloudflare's test secrets report no action, so with them an action only has to match when present.
+   */
+  isActionRequired: boolean;
 }
 
 interface SiteverifyResponse {
@@ -30,7 +35,8 @@ export function checkSiteverify(data: SiteverifyResponse, expect: TurnstileExpec
     console.warn("turnstile hostname mismatch");
     return "failed";
   }
-  if (data.action && data.action !== expect.action) {
+  const isActionOk = data.action === expect.action || (!expect.isActionRequired && !data.action);
+  if (!isActionOk) {
     console.warn("turnstile action mismatch");
     return "failed";
   }
