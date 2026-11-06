@@ -84,3 +84,11 @@
 - Orchestrator QA fixes before commit: review star picker SVGs had no fill (rendered black), "How did you find us?" label (was wrapping), denser panel over the services photos.
 - Gates (orchestrator): check 0 errors / 344 unit; build 17 pages; e2e 341 pass / 61 skip / 0 fail (full run before the small fixes; reviews + interactive specs rerun after: 59 pass / 3 skip).
 - Pending: security code review (running), Lighthouse/SEO check, owner OK on the new Reviews section of the privacy policy, D1 creation (waiting for owner "go"), owner sets `REVIEW_SIGNING_KEY` secret, merge to main for the owner to push.
+
+### 2026-11-05 — review + fix round, production D1 → ready to merge
+- Security code review: no Critical. H1 (/, /reviews now count against the Workers Free 100k/day quota) → README recommends a free WAF rate-limit rule (owner action). M1-M4 + L1-L9 fixed (commit 0a03e53, spec §18).
+- Lighthouse mobile (local wrangler): SEO 100 on every page; perf 95-100 except /gallery (all 166 photos) 89-90 (observed LCP 0.3 s; Lantern counts the early lazy-image fetches). FAQ CLS fixed; gallery a11y 96 → 100; phone tile images halved.
+- Production D1 `mod-labs-reviews` created (WNAM, id 135788ab-…) and 0001 applied remotely (reviews + review_limits). Owner set `REVIEW_SIGNING_KEY` with wrangler.
+- Privacy Policy + Terms rewritten (professional, providers by category). Owner to confirm: Washington governing law, site-only review license, device-data wording, payment line, the /reviews moderation line.
+- Gates (orchestrator, final): check 0 errors / 464 unit; build 17 pages + 9 CSP hashes; e2e 355 pass / 61 skip / 0 fail.
+- Next: owner pushes `main` (Workers Builds deploys), then: send a test review, approve it from the email, `curl -I https://modlabs.store/` to confirm hash CSP. Then Instagram + ads discussion.
