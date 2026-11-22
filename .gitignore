@@ -28,3 +28,6 @@ npm-debug.log*
 
 # local photo admin trash (deleted photos, restorable from the admin)
 .admin-trash/
+
+# Exported social/marketing assets (regenerate from src/assets)
+marketing/

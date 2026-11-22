@@ -169,7 +169,7 @@ test.describe("review form API outcomes (mocked)", () => {
   const mock = (page: Page, status: number, body: unknown) =>
     page.route("**/api/review", (route) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(body) }));
 
-  test("success: multipart + JSON accept, approval-pending message, then a clean form for another", async ({ page }) => {
+  test("success: multipart + JSON accept, thank-you message, then a clean form for another", async ({ page }) => {
     await mock(page, 200, { ok: true, message: "Thanks" });
     await openForm(page);
     await fillValidReview(page);
@@ -268,7 +268,7 @@ test.describe("review form against the real Worker", () => {
     await expect(page.getByRole("heading", { name: "Thanks for the review!" })).toBeVisible();
   });
 
-  test("a real review is stored as pending and the visitor is told it appears once approved", async ({ page, request, clientIp }) => {
+  test("a real review is stored as pending and the visitor is thanked", async ({ page, request, clientIp }) => {
     // No Turnstile token: a configured Worker stops at the captcha check (403, nothing stored);
     // one without the database answers 503 not_configured before that.
     const probe = await request.post("/api/review", {

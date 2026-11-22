@@ -19,7 +19,8 @@ interface Props {
   honeypot: string;
   /** extra data-* for the controller (limits, JSON maps...) */
   data?: Record<string, string | number>;
-  success: { title: string; message: string; next: string[]; again: string; link: { href: string; label: string } };
+  /** `next`: optional "what happens next" checklist under the message (omit for none) */
+  success: { title: string; message: string; next?: string[]; again: string; link: { href: string; label: string } };
 }
 const { kind, action, submitLabel, honeypot, data = {}, success } = Astro.props;
 const id = kind;
@@ -74,9 +75,15 @@ const dataAttrs = Object.fromEntries(Object.entries(data).map(([k, v]) => [`data
     <div class="success-icon" aria-hidden="true"><Icon name="check" size={34} /></div>
     <h2 id={`${id}-success-title`} class="mt-6 text-3xl">{success.title}</h2>
     <p class="lead mx-auto mt-3 max-w-md" data-success-message>{success.message}</p>
-    <ul class="solder-list mx-auto mt-6 max-w-sm text-left">
-      {success.next.map((n) => <li>{n}</li>)}
-    </ul>
+    {
+      success.next?.length ? (
+        <ul class="solder-list mx-auto mt-6 max-w-sm text-left">
+          {success.next.map((n) => (
+            <li>{n}</li>
+          ))}
+        </ul>
+      ) : null
+    }
     <div class="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
       <button type="button" class="btn btn-ghost" data-again>{success.again}</button>
       <a href={success.link.href} class="btn btn-primary">{success.link.label}</a>

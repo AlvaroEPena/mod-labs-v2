@@ -132,9 +132,10 @@ describe("honeypot errors are never shown", () => {
 });
 
 describe("review copy", () => {
-  it("says reviews appear once approved, for the API and the no-JS round trip", () => {
+  it("thanks the reviewer without explaining moderation, for the API and the no-JS round trip", () => {
     expect(outcomeFromResponse(200, { ok: true, message: "x" }, reviewCopy)).toEqual({ kind: "success", message: reviewCopy.success });
-    expect(reviewCopy.success).toMatch(/once I've approved it/);
+    expect(reviewCopy.success).toMatch(/show up on the site soon/);
+    expect(reviewCopy.success).not.toMatch(/approv|check/i);
     expect(outcomeFromQuery("?sent=1", reviewCopy)?.message).toBe(reviewCopy.success);
   });
 

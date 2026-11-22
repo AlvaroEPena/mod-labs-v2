@@ -3,28 +3,15 @@
  * Reviews (spec §17). Job: read real reviews, and write one. Static HTML is the empty state; the Worker
  * injects every approved review into [data-reviews-slot="all"], sets [data-reviews-summary] and flips the
  * when-empty / when-any blocks. Layout: split hero with a state-aware summary card → masonry wall of
- * reviews (only when there are any) → write section: how reviews work beside the form (#write).
- * The phone CTA pill is off here, like on the other form pages.
+ * reviews (only when there are any) → write section: a short invitation beside the form (#write).
+ * Owner decision (2026-11-21): customer-facing copy only, no explanation of moderation here (the
+ * Privacy Policy and Terms still describe it). The phone CTA pill is off here, like on the other form pages.
  */
 import "../styles/reviews.css";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import PageHero from "../components/ui/PageHero.astro";
 import ReviewForm from "../components/forms/ReviewForm.astro";
 import Icon from "../components/ui/Icon.astro";
-import type { IconName } from "../components/ui/icons";
-
-/** `note`: a quieter follow-up line under the body (the moderation policy, so visitors know reviews aren't cherry-picked). */
-const howItWorks: { icon: IconName; title: string; body: string; note?: string }[] = [
-  { icon: "pencil", title: "Anyone I've worked for can write one", body: "Mods, repairs or a commission build. A few honest sentences is plenty." },
-  {
-    icon: "seal-check",
-    title: "I check every review first",
-    body: "Nothing goes live until I've approved it, which keeps spam off the page.",
-    // FTC rule on review suppression: say plainly that negative reviews are published too. Owner to confirm wording.
-    note: "I publish every genuine review, good or bad. I only remove spam, abuse or private details.",
-  },
-  { icon: "shield", title: "No email, no account", body: "Just your name and your words. Links aren't allowed in reviews." },
-];
 ---
 
 <BaseLayout
@@ -36,16 +23,15 @@ const howItWorks: { icon: IconName; title: string; body: string; note?: string }
   <PageHero
     title="Had work done? Say how it went."
     highlight="Say how it went."
-    intro="Reviews are written by customers and go live once I've checked them, so the page stays spam-free."
+    intro="What customers say about their mods, repairs and custom builds."
   >
     <div class="score glass-flat" slot="aside">
       <div data-reviews-when-any hidden>
         {/* one star as a symbol next to the real average: five lit stars would claim a rating the reviews may not have */}
         <p class="score-text">
           <Icon name="star-fill" size={24} class="score-star" />
-          <span data-reviews-summary>Approved customer reviews</span>
+          <span data-reviews-summary>Customer reviews</span>
         </p>
-        <p class="mt-1 text-sm text-muted">Every one checked by me before it went live.</p>
       </div>
       <div data-reviews-when-empty>
         <span class="score-stars" aria-hidden="true">{[1, 2, 3, 4, 5].map(() => <Icon name="star" size={26} />)}</span>
@@ -65,24 +51,11 @@ const howItWorks: { icon: IconName; title: string; body: string; note?: string }
 
   <section id="write" class="write section-y ambient scroll-mt-20" aria-labelledby="write-title">
     <div class="container-x grid gap-10 lg:grid-cols-12 lg:gap-12">
-      <div class="lg:col-span-5">
+      <div class="write-intro lg:col-span-5">
         <h2 id="write-title" class="text-4xl sm:text-5xl">Write a review</h2>
-        <ul class="mt-8 grid gap-6">
-          {
-            howItWorks.map((h) => (
-              <li class="flex gap-4">
-                <span class="icon-pad" aria-hidden="true">
-                  <Icon name={h.icon} size={22} />
-                </span>
-                <span>
-                  <span class="block font-semibold text-fg">{h.title}</span>
-                  <span class="mt-1 block leading-relaxed text-muted">{h.body}</span>
-                  {h.note && <span class="mt-2 block text-sm leading-relaxed text-pretty text-dim">{h.note}</span>}
-                </span>
-              </li>
-            ))
-          }
-        </ul>
+        <p class="mt-5 max-w-md text-lg leading-relaxed text-pretty text-muted">
+          A few honest sentences about your mod, repair or build help the next person decide.
+        </p>
       </div>
       <div class="card p-5 sm:p-9 lg:col-span-7">
         <ReviewForm />
@@ -153,5 +126,13 @@ const howItWorks: { icon: IconName; title: string; body: string; note?: string }
   .write {
     --ax: 72%;
     --ay: 45%;
+  }
+  /* beside the (much taller) form on desktop, the invitation stays in view while filling it in */
+  @media (width >= 64rem) {
+    .write-intro {
+      position: sticky;
+      top: calc(var(--header-h) + 2.5rem);
+      align-self: start;
+    }
   }
 </style>

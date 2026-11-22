@@ -36,7 +36,8 @@ export const requestCopy: CopySet = {
 };
 
 export const reviewCopy: CopySet = {
-  success: "Thanks! Your review is in. It'll show up on the site once I've approved it.",
+  // Customer-facing: no moderation details (owner decision 2026-11-21); it still appears only once approved.
+  success: "Thanks for taking the time. Your review will show up on the site soon.",
   errors: {
     ...errorCopy,
     rate_limited: "That's a lot of reviews in a short time. Please wait a minute, then try again.",
